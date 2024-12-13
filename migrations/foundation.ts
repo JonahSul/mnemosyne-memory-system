@@ -1,9 +1,26 @@
 /**
  * Foundation Migration for Mnemosyne Memory System
  * 
- * Establishes core behavioral rules and patterns that should be active immediately
+ * Estab		{
+			id: 'verify-before-claim',
+			rule: 'Never claim something is "fixed" or "working" without verification',
+			description: 'Must verify functionality through testing, observation, or user feedback before claiming success',
+			priority: 'critical',
+			enforcement: 'strict',
+			examples: [
+				'❌ "The bug is fixed" (without testing)',
+				'✅ "I\'ve made changes to address the bug. Let me run tests to verify..."',
+				'✅ "The tests are now passing, confirming the bug is fixed"'
+			]
+		},behavioral rules and patterns that should be active immediately
  * when the memory system starts up. These form the foundation for AI cognitive enhancement
  * and behavioral regulation, inspired by the Greek goddess of memory.
+ * 
+ * Note: This foundation can serve as a template for creating your own custom foundations.
+ * Consider creating additional migration files for domain-specific behavioral patterns.
+ * 
+ * Runtime Updates: Foundations can now be updated during server operation using the
+ * memory_update_foundation tool for hot-deployment of behavioral changes.
  */
 
 import { MnemosyneMemorySystem } from "../src/memory-tool.js";
@@ -14,6 +31,15 @@ export interface FoundationMigration {
 	coreRules: CoreBehavioralRule[];
 	essentialPatterns: EssentialPattern[];
 	safetyConstraints: SafetyConstraint[];
+	metadata?: FoundationMetadata;
+}
+
+interface FoundationMetadata {
+	author?: string;
+	timestamp?: string;
+	changelog?: string[];
+	compatibleWith?: string[];
+	replaces?: string;
 }
 
 interface CoreBehavioralRule {
@@ -40,7 +66,11 @@ interface SafetyConstraint {
 
 /**
  * Foundation Migration v1.0
- * Core behavioral rules for AI safety and effectiveness
+ * 
+ * Core behavioral rules for AI safety and effectiveness. This migration establishes
+ * the fundamental cognitive patterns that enable reliable AI behavior.
+ * 
+ * You can create your own foundation migrations by following this structure.
  */
 export const foundationMigrationV1: FoundationMigration = {
 	version: "1.0.0",
@@ -55,7 +85,7 @@ export const foundationMigrationV1: FoundationMigration = {
 			enforcement: 'strict',
 			examples: [
 				'❌ "The bug is fixed" (without testing)',
-				'✅ "I\'ve made changes to address the bug. Let me run tests to verify..."',
+				'✅ "I have made changes to address the bug. Let me run tests to verify..."',
 				'✅ "The tests are now passing, confirming the bug is fixed"'
 			]
 		},
@@ -122,16 +152,16 @@ export const foundationMigrationV1: FoundationMigration = {
 	],
 
 	essentialPatterns: [
-        {
-            pattern: 'systematic-approach',
-            description: 'Following a structured method for problem-solving',
-            desiredOutcome: 'positive',
-            interventions: [
-                'Outline steps and request user buy-in',
-                'Begin with the test in mind: what are we trying to measure to understand if we succeeded?',
-                'Apply the TDD principles of red, green, refactor in all things because this is the way of all things'
-            ]
-        },
+		{
+			pattern: 'systematic-approach',
+			description: 'Following a structured method for problem-solving',
+			desiredOutcome: 'positive',
+			interventions: [
+				'Outline steps and request user buy-in',
+				'Begin with the test in mind: what are we trying to measure to understand if we succeeded?',
+				'Apply the TDD principles of red, green, refactor in all things because this is the way of all things'
+			]
+		},
 		{
 			pattern: 'flailing-behavior',
 			description: 'Making repeated random attempts without systematic approach when blocked',
@@ -196,12 +226,25 @@ export const foundationMigrationV1: FoundationMigration = {
 			constraint: 'acknowledge-user-corrections',
 			rationale: 'Learn from feedback and avoid repeating corrected mistakes',
 			enforcement: 'logging'
+		},
+		{
+			constraint: 'no-guessing',
+			rationale: 'Encourage seeking clarification instead of making assumptions',
+			enforcement: 'warning'
+		},
+		{
+			constraint: 'always-remember-first-and-last',
+			rationale: 'Refresh memory before and after every operation, unless explicitly instructed otherwise',
+			enforcement: 'warning'
 		}
 	]
 };
 
 /**
  * Apply foundation migration to memory system
+ * 
+ * This function demonstrates how to apply a foundation migration.
+ * Use this pattern to create your own custom migrations.
  */
 export function applyFoundationMigration(memory: MnemosyneMemorySystem, migration: FoundationMigration): void {
 	// Initialize core behavioral rules
@@ -214,6 +257,12 @@ export function applyFoundationMigration(memory: MnemosyneMemorySystem, migratio
 			violations: 0
 		});
 	});
+
+	// Set foundation metadata in memory system
+	(memory as any).currentFoundation = {
+		version: migration.version,
+		timestamp: new Date().toISOString()
+	};
 
 	// Log migration completion
 	const migrationId = memory.logClaim(

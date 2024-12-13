@@ -1,12 +1,13 @@
 /**
  * Mnemosyne Memory System MCP Agent
  * 
- * Implements MCP server using the McpAgent framework for proper transport handling.
+ * Implements MCP server using the standard MCP SDK for proper transport handling.
  * Provides cognitive enhancement and behavioral regulation through persistent memory.
  */
 
-import { McpAgent } from "agents/mcp";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MnemosyneMemorySystem } from "./memory-tool.js";
 import { foundationMigrationV1, applyFoundationMigration } from "../migrations/foundation.js";
 import { registerMemoryTools } from "./tools/registry.js";
@@ -14,16 +15,25 @@ import { registerMemoryTools } from "./tools/registry.js";
 /**
  * Mnemosyne Memory System MCP Agent
  * 
- * Extends McpAgent to provide behavioral memory tools through proper MCP transport.
- * Implements cognitive enhancement and long-term behavioral consistency for AI agents.
+ * Implements MCP server as a Durable Object for persistent memory storage.
+ * Provides cognitive enhancement and behavioral regulation through persistent memory.
  */
-export class MnemosyneMemoryMCP extends McpAgent {
-	server = new McpServer({
-		name: "mnemosyne-memory-system",
-		version: "1.0.0",
-	});
+export class MnemosyneMemoryMCP {
+	private memory: MnemosyneMemorySystem;
+	private server: Server;
+	private initialized = false;
 
-	private memory = new MnemosyneMemorySystem();
+	constructor(private state: DurableObjectState, private env: any) {
+		this.memory = new MnemosyneMemorySystem();
+		this.server = new Server({
+			name: "mnemosyne-memory-system",
+			version: "1.0.0",
+		}, {
+			capabilities: {
+				tools: {}
+			}
+		});
+	}
 
 	/**
 	 * Gets the memory instance for tool execution context
@@ -37,13 +47,321 @@ export class MnemosyneMemoryMCP extends McpAgent {
 	 * Initialize all memory tools using the modular registry
 	 */
 	async init() {
-		// Apply foundation migration to establish core behavioral rules
-		applyFoundationMigration(this.memory, foundationMigrationV1);
+		if (this.initialized) return;
 		
-		// Set up global memory instance getter for tools
-		(globalThis as any).getMemoryInstance = () => this.memory;
-		
-		// Register all memory tools using the modular registry
-		registerMemoryTools(this.server, this);
+		try {
+			// Apply foundation migration to establish core behavioral rules
+			applyFoundationMigration(this.memory, foundationMigrationV1);
+			
+			// Set up global memory instance getter for tools
+			(globalThis as any).getMemoryInstance = () => this.memory;
+			
+			// Re-enable tools registry
+			registerMemoryTools(this.server, this);
+			
+			this.initialized = true;
+			console.log('Mnemosyne Memory System initialized successfully');
+		} catch (error) {
+			console.error('Failed to initialize Mnemosyne Memory System:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Handle fetch requests (required for Durable Object)
+	 */
+	async fetch(request: Request): Promise<Response> {
+		try {
+			await this.init();
+
+			const url = new URL(request.url);
+
+			// Add CORS headers to all responses
+			const corsHeaders = {
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept, Cache-Control',
+			};
+
+			// Handle CORS preflight
+			if (request.method === 'OPTIONS') {
+				return new Response(null, { status: 200, headers: corsHeaders });
+			}
+
+			// Handle SSE endpoint for MCP communication
+			if (url.pathname === "/sse" || url.pathname === "/sse/message") {
+				return this.handleMcpRequest(request, corsHeaders);
+			}
+
+			// Handle standard MCP requests (legacy endpoint)
+			if (url.pathname === "/mcp") {
+				return this.handleMcpRequest(request, corsHeaders);
+			}
+
+			// Default response
+			return new Response("Mnemosyne Memory System MCP Server - Runtime Foundation Updates Ready", {
+				headers: { 
+					'Content-Type': 'text/plain',
+					...corsHeaders
+				}
+			});
+
+		} catch (error) {
+			// Log error and return a safe response
+			console.error('Worker error:', error);
+			return new Response(`Worker Error: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+				status: 500,
+				headers: { 
+					'Content-Type': 'text/plain',
+					'Access-Control-Allow-Origin': '*'
+				}
+			});
+		}
+	}
+
+	/**
+	 * Handle MCP JSON-RPC requests
+	 */
+	private async handleMcpRequest(request: Request, corsHeaders: Record<string, string>): Promise<Response> {
+		if (request.method !== 'POST') {
+			return new Response(JSON.stringify({
+				jsonrpc: "2.0",
+				error: { code: -32600, message: "Invalid Request: Only POST method supported" }
+			}), {
+				status: 405,
+				headers: { 
+					'Content-Type': 'application/json',
+					...corsHeaders
+				}
+			});
+		}
+
+		try {
+			const body = await request.json() as any;
+			
+			// Handle initialization
+			if (body.method === 'initialize') {
+				return new Response(JSON.stringify({
+					jsonrpc: "2.0",
+					id: body.id,
+					result: {
+						protocolVersion: "2024-11-05",
+						capabilities: {
+							tools: { listChanged: true },
+							resources: { subscribe: true, listChanged: true },
+							prompts: { listChanged: false },
+							logging: { level: "info" }
+						},
+						serverInfo: {
+							name: "mnemosyne-memory-system",
+							version: "1.0.0",
+							description: "Cognitive enhancement and behavioral regulation with runtime foundation updates"
+						}
+					}
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						...corsHeaders
+					}
+				});
+			}
+			
+			// Handle initialized notification
+			if (body.method === 'notifications/initialized') {
+				return new Response('', { 
+					status: 200,
+					headers: corsHeaders
+				});
+			}
+			
+			// Handle logging level setting
+			if (body.method === 'logging/setLevel') {
+				// Accept the logging level but don't actually change anything
+				// since we're running in a serverless environment
+				return new Response(JSON.stringify({
+					jsonrpc: "2.0",
+					id: body.id,
+					result: {}
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						...corsHeaders
+					}
+				});
+			}
+			
+			// Handle prompts list - return empty list since we don't provide prompts
+			if (body.method === 'prompts/list') {
+				return new Response(JSON.stringify({
+					jsonrpc: "2.0",
+					id: body.id,
+					result: {
+						prompts: []
+					}
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						...corsHeaders
+					}
+				});
+			}
+			
+			// Handle resources list - return empty list since we don't provide resources
+			if (body.method === 'resources/list') {
+				return new Response(JSON.stringify({
+					jsonrpc: "2.0",
+					id: body.id,
+					result: {
+						resources: []
+					}
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						...corsHeaders
+					}
+				});
+			}
+			
+			// Handle tools list
+			if (body.method === 'tools/list') {
+				const { memoryTools } = await import('./tools/registry.js');
+				
+				return new Response(JSON.stringify({
+					jsonrpc: "2.0",
+					id: body.id,
+					result: {
+						tools: memoryTools.map(tool => ({
+							name: tool.name,
+							description: tool.description || "No description available",
+							inputSchema: {
+								type: "object",
+								properties: tool.schema || {},
+								additionalProperties: false
+							}
+						}))
+					}
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						...corsHeaders
+					}
+				});
+			}
+			
+			// Handle tool execution
+			if (body.method === 'tools/call') {
+				const toolName = body.params?.name;
+				const toolArgs = body.params?.arguments || {};
+				
+				if (!toolName) {
+					return new Response(JSON.stringify({
+						jsonrpc: "2.0",
+						id: body.id,
+						error: { code: -32602, message: "Invalid params: missing tool name" }
+					}), {
+						status: 400,
+						headers: { 
+							'Content-Type': 'application/json',
+							...corsHeaders
+						}
+					});
+				}
+				
+				// Find tool in registry
+				const { memoryTools } = await import('./tools/registry.js');
+				const tool = memoryTools.find(t => t.name === toolName);
+				
+				if (!tool) {
+					return new Response(JSON.stringify({
+						jsonrpc: "2.0",
+						id: body.id,
+						error: { 
+							code: -32601, 
+							message: `Tool not found: ${toolName}`,
+							data: {
+								availableTools: memoryTools.map(t => t.name)
+							}
+						}
+					}), {
+						status: 404,
+						headers: { 
+							'Content-Type': 'application/json',
+							...corsHeaders
+						}
+					});
+				}
+				
+				try {
+					// Execute tool using the registry handler
+					const result = await tool.handler(toolArgs);
+					
+					return new Response(JSON.stringify({
+						jsonrpc: "2.0",
+						id: body.id,
+						result
+					}), {
+						headers: { 
+							'Content-Type': 'application/json',
+							...corsHeaders
+						}
+					});
+					
+				} catch (error) {
+					return new Response(JSON.stringify({
+						jsonrpc: "2.0",
+						id: body.id,
+						error: {
+							code: -32603,
+							message: "Tool execution error",
+							data: error instanceof Error ? error.message : 'Unknown error'
+						}
+					}), {
+						status: 500,
+						headers: { 
+							'Content-Type': 'application/json',
+							...corsHeaders
+						}
+					});
+				}
+			}			// Handle other methods
+			if (body.method === 'ping') {
+				return new Response(JSON.stringify({
+					jsonrpc: "2.0",
+					id: body.id,
+					result: {}
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						...corsHeaders
+					}
+				});
+			}
+			
+			// Method not found
+			return new Response(JSON.stringify({
+				jsonrpc: "2.0",
+				id: body.id,
+				error: { code: -32601, message: `Method not found: ${body.method}` }
+			}), {
+				status: 404,
+				headers: { 
+					'Content-Type': 'application/json',
+					...corsHeaders
+				}
+			});
+			
+		} catch (error) {
+			return new Response(JSON.stringify({
+				jsonrpc: "2.0",
+				id: null,
+				error: { code: -32700, message: "Parse error" }
+			}), {
+				status: 400,
+				headers: { 
+					'Content-Type': 'application/json',
+					...corsHeaders
+				}
+			});
+		}
 	}
 }

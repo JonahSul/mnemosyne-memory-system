@@ -6,7 +6,8 @@
  */
 
 import { z } from "zod";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MnemosyneMemorySystem } from "../memory-tool.js";
 import { foundationMigrationV1 } from "../../migrations/foundation.js";
 
@@ -273,6 +274,151 @@ ${params.correctionPlan ? `**Correction Plan**: ${params.correctionPlan}` : ''}
 		}
 	},
 	{
+		name: 'memory_update_foundation',
+		description: 'Deploy a new foundation migration to the running server. POWERFUL: This tool enables hot-deployment of behavioral rule changes without server restart. Use for A/B testing behavioral rules, emergency corrections, or gradual rollouts of foundation updates. Validate carefully before deployment.',
+		schema: {
+			migration: z.object({
+				version: z.string().describe("Semantic version of the new foundation (e.g., '1.1.0', '2.0.0-beta')"),
+				description: z.string().describe("Description of what this foundation migration changes"),
+				coreRules: z.array(z.object({
+					id: z.string().describe("Unique identifier for the behavioral rule"),
+					rule: z.string().describe("The behavioral rule statement"),
+					description: z.string().describe("Detailed explanation of when and why this rule applies"),
+					priority: z.enum(['critical', 'high', 'medium', 'low']).describe("Enforcement priority level"),
+					enforcement: z.enum(['strict', 'advisory', 'tracking']).describe("How strictly this rule should be enforced"),
+					examples: z.array(z.string()).optional().describe("Examples of rule application")
+				})).describe("Array of core behavioral rules to establish"),
+				essentialPatterns: z.array(z.any()).optional().describe("Essential behavioral patterns (positive and negative)"),
+				safetyConstraints: z.array(z.any()).optional().describe("Safety constraints and guardrails"),
+				metadata: z.object({
+					author: z.string().optional(),
+					timestamp: z.string().optional(),
+					changelog: z.array(z.string()).optional(),
+					compatibleWith: z.array(z.string()).optional(),
+					replaces: z.string().optional()
+				}).optional().describe("Migration metadata and versioning information")
+			}).describe("Complete foundation migration object with rules, patterns, and metadata"),
+			options: z.object({
+				force: z.boolean().optional().describe("Force update even if version is not newer (default: false)"),
+				preserveViolations: z.boolean().optional().describe("Preserve existing violation counts during update (default: true)"),
+				mergeRules: z.boolean().optional().describe("Merge with existing rules instead of replacing (default: false)"),
+				validateOnly: z.boolean().optional().describe("Only validate the migration without applying it (default: false)")
+			}).optional().describe("Update options and behavior controls")
+		},
+		handler: async (params) => {
+			const memory = (globalThis as any).getMemoryInstance();
+			
+			// Always validate first
+			const validation = memory.validateFoundation(params.migration);
+			
+			if (params.options?.validateOnly) {
+				return {
+					content: [{
+						type: "text", 
+						text: `🔍 **Foundation Validation Results**
+
+**Migration**: ${params.migration.version}
+**Status**: ${validation.valid ? '✅ VALID' : '❌ INVALID'}
+
+${validation.errors.length > 0 ? `**❌ Errors** (${validation.errors.length}):
+${validation.errors.map((err: string) => `• ${err}`).join('\n')}` : ''}
+
+${validation.warnings.length > 0 ? `**⚠️ Warnings** (${validation.warnings.length}):
+${validation.warnings.map((warn: string) => `• ${warn}`).join('\n')}` : ''}
+
+${validation.valid ? `
+**📋 Migration Summary**:
+• **Version**: ${params.migration.version}
+• **Rules**: ${params.migration.coreRules?.length || 0} behavioral rules
+• **Description**: ${params.migration.description}
+
+✅ **Ready for Deployment**: This migration is valid and can be applied safely.` : `
+❌ **Cannot Deploy**: Fix validation errors before attempting to apply this migration.`}
+
+*Validation complete - no changes were made to the running system.*`
+					}]
+				};
+			}
+			
+			if (!validation.valid) {
+				return {
+					content: [{
+						type: "text",
+						text: `❌ **Foundation Update Failed - Validation Errors**
+
+**Migration**: ${params.migration.version}
+
+**Errors**:
+${validation.errors.map((err: string) => `• ${err}`).join('\n')}
+
+${validation.warnings.length > 0 ? `**Warnings**:
+${validation.warnings.map((warn: string) => `• ${warn}`).join('\n')}` : ''}
+
+**Action Required**: Fix validation errors and try again. Use validateOnly: true to test fixes.`
+					}],
+					isError: true
+				};
+			}
+			
+			// Apply the foundation update
+			const updateOptions = {
+				force: params.options?.force || false,
+				preserveViolations: params.options?.preserveViolations !== false, // Default true
+				mergeRules: params.options?.mergeRules || false
+			};
+			
+			const result = memory.updateFoundation(params.migration, updateOptions);
+			
+			if (!result.success) {
+				return {
+					content: [{
+						type: "text",
+						text: `❌ **Foundation Update Failed**
+
+**Migration**: ${params.migration.version}
+
+**Warnings**:
+${result.warnings.map((warn: string) => `• ${warn}`).join('\n')}
+
+**Attempted Changes**: ${result.changes.length}
+
+💡 **Suggestion**: Use force: true to override version checks, or check migration compatibility.`
+					}],
+					isError: true
+				};
+			}
+			
+			const currentInfo = memory.getFoundationInfo();
+			
+			return {
+				content: [{
+					type: "text",
+					text: `🚀 **Foundation Successfully Updated**
+
+**New Version**: ${params.migration.version}
+**Previous Version**: ${result.warnings.find((w: string) => w.includes('current'))?.split(' ').pop() || 'unknown'}
+**Update Mode**: ${updateOptions.mergeRules ? 'Merge Rules' : 'Replace Foundation'}
+**Violations Preserved**: ${updateOptions.preserveViolations ? 'Yes' : 'No'}
+
+**📋 Changes Applied** (${result.changes.length}):
+${result.changes.map((change: string) => `• ${change}`).join('\n')}
+
+${result.warnings.length > 0 ? `**⚠️ Warnings**:
+${result.warnings.map((warn: string) => `• ${warn}`).join('\n')}` : ''}
+
+**🎯 Current Foundation**:
+• **Version**: ${currentInfo.version}
+• **Rules Active**: ${currentInfo.rulesCount}
+• **Last Updated**: ${currentInfo.timestamp}
+
+✅ **Server Status**: Foundation hot-deployment completed successfully. New behavioral rules are now active.
+
+**Next Steps**: Monitor behavioral compliance and verify new rules are working as expected using memory_check_behavioral_status.`
+				}]
+			};
+		}
+	},
+	{
 		name: 'memory_export_state',
 		description: 'Export the complete Mnemosyne memory system state for analysis, debugging, or persistence. Use this tool when you need comprehensive insight into behavioral patterns, claim verification history, or system performance. Essential for deep analysis and understanding behavioral trends over time.',
 		schema: {
@@ -346,21 +492,30 @@ ${JSON.stringify(params.format === 'raw' ? state : {
 
 /**
  * Register all memory tools with the MCP server
- * @param server - McpServer instance to register tools with
+ * @param server - Server instance to register tools with
  * @param agent - Agent instance that provides memory context
  */
-export function registerMemoryTools(server: McpServer, agent: any) {
-	for (const tool of memoryTools) {
-		server.tool(
-			tool.name,
-			tool.description,
-			tool.schema,
-			async (args: any) => {
-				// Execute tool with agent's memory context
-				return await tool.handler(args);
-			}
-		);
-	}
+export function registerMemoryTools(server: Server, agent: any) {
+	// Register list tools handler
+	server.setRequestHandler(ListToolsRequestSchema, async () => ({
+		tools: memoryTools.map(tool => ({
+			name: tool.name,
+			description: tool.description,
+			inputSchema: buildJsonSchema(tool.schema)
+		}))
+	}));
+
+	// Register call tool handler  
+	server.setRequestHandler(CallToolRequestSchema, async (request) => {
+		const toolName = request.params.name;
+		const foundTool = memoryTools.find(t => t.name === toolName);
+		
+		if (!foundTool) {
+			throw new Error(`Unknown tool: ${toolName}`);
+		}
+
+		return await foundTool.handler(request.params.arguments || {});
+	});
 }
 
 /**

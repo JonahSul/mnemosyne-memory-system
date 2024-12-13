@@ -28,5 +28,10 @@
 				"__WRANGLER_ENV__": "\"production\""
 			}
 		}
+	},
+	"observability": {
+		"logs": {
+			"enabled": true
+		}
 	}
 }
