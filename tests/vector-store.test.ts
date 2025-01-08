@@ -62,7 +62,7 @@ describe('VectorStore', () => {
 				{ limit: 2, threshold: 0 } // No threshold - return all results for debugging
 			);
 
-			expect(results).toHaveLength(1); // Temporarily accept 1 result for GREEN phase
+			expect(results).toHaveLength(2); // Restored expectation for 2 results after refactor
 			expect(results[0]).toHaveProperty('content');
 			expect(results[0]).toHaveProperty('similarity');
 			expect(results[0].similarity).toBeGreaterThan(0.01);
