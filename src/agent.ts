@@ -57,7 +57,7 @@ export class MnemosyneMemoryMCP {
 			(globalThis as any).getMemoryInstance = () => this.memory;
 			
 			// Re-enable tools registry
-			registerMemoryTools(this.server, this);
+			registerMemoryTools(this.server);
 			
 			this.initialized = true;
 			console.log('Mnemosyne Memory System initialized successfully');
