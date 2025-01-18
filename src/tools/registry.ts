@@ -10,6 +10,7 @@ import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MnemosyneMemorySystem } from "../memory-tool.js";
 import { VectorStore } from "../vector-store.js";
+import { MultiTierMemorySystem } from "../multi-tier-memory.js";
 import { foundationMigrationV1 } from "../../migrations/foundation.js";
 
 // Tool implementation interface
@@ -42,6 +43,14 @@ function getVectorStoreInstance(): VectorStore {
 		vectorStoreInstance = new VectorStore();
 	}
 	return vectorStoreInstance;
+}
+
+let multiTierMemoryInstance: MultiTierMemorySystem | null = null;
+function getMultiTierMemoryInstance(): MultiTierMemorySystem {
+	if (!multiTierMemoryInstance) {
+		multiTierMemoryInstance = new MultiTierMemorySystem();
+	}
+	return multiTierMemoryInstance;
 }
 
 // Memory tools definitions with full behavioral and vector capabilities
@@ -264,6 +273,102 @@ export const memoryTools: ToolImplementation[] = [
 				content: [{
 					type: "text" as const,
 					text: `${summaryText}\n${detailsText}`
+				}]
+			};
+		}
+	},
+
+	// Multi-Tier Memory Tools for hierarchical knowledge management
+	{
+		name: "memory_store_tiered",
+		description: "Store knowledge in the multi-tier memory system with automatic tier placement based on importance. Provides hierarchical memory with short-term (working), intermediate-term (frequent), and long-term (important) storage.",
+		schema: {
+			content: z.string().describe("The knowledge content to store"),
+			importance: z.number().optional().describe("Importance score 0-1 (determines tier placement: <0.3=short, 0.3-0.7=intermediate, >0.7=long)"),
+			targetTier: z.enum(["short", "intermediate", "long"]).optional().describe("Override automatic tier placement"),
+			metadata: z.record(z.unknown()).optional().describe("Additional metadata"),
+			tags: z.array(z.string()).optional().describe("Tags for categorization")
+		},
+		handler: async (params) => {
+			const multiTierMemory = getMultiTierMemoryInstance();
+			const result = await multiTierMemory.storeKnowledge({
+				content: params.content,
+				importance: params.importance,
+				targetTier: params.targetTier,
+				metadata: params.metadata || {},
+				tags: params.tags || []
+			});
+
+			return {
+				content: [{
+					type: "text" as const,
+					text: `Knowledge stored in ${result.tier} tier with ID: ${result.id}`
+				}]
+			};
+		}
+	},
+
+	{
+		name: "memory_search_tiered",
+		description: "Search across all memory tiers or target specific tiers with tier-aware ranking. Higher tiers (long-term) receive ranking boosts for better recall of important information.",
+		schema: {
+			query: z.string().describe("The search query"),
+			tierPreference: z.enum(["short", "intermediate", "long", "all"]).optional().describe("Which tier(s) to search (default: all)"),
+			limit: z.number().optional().describe("Maximum results (default: 5)"),
+			threshold: z.number().optional().describe("Similarity threshold (default: 0.1)")
+		},
+		handler: async (params) => {
+			const multiTierMemory = getMultiTierMemoryInstance();
+			const results = await multiTierMemory.searchSimilar(params.query, {
+				tierPreference: params.tierPreference || "all",
+				limit: params.limit || 5,
+				threshold: params.threshold || 0.1
+			});
+
+			const summaryText = `Found ${results.length} items across memory tiers for: "${params.query}"`;
+			const detailsText = results.map((result, index) => 
+				`${index + 1}. [${result.tier.toUpperCase()}] ${(result.similarity * 100).toFixed(1)}% - ${result.content}`
+			).join('\n');
+
+			return {
+				content: [{
+					type: "text" as const,
+					text: `${summaryText}\n${detailsText}`
+				}]
+			};
+		}
+	},
+
+	{
+		name: "memory_stats_tiered",
+		description: "Get memory statistics across all tiers including usage, capacity, and access patterns. Useful for monitoring memory system performance and tier utilization.",
+		schema: {},
+		handler: async (params) => {
+			const multiTierMemory = getMultiTierMemoryInstance();
+			const stats = multiTierMemory.getMemoryStats();
+
+			const statsText = [
+				"=== MULTI-TIER MEMORY STATISTICS ===",
+				"",
+				`SHORT-TERM MEMORY:`,
+				`  Items: ${stats.short.count}/${stats.short.capacity}`,
+				`  Utilization: ${stats.short.utilizationPercent.toFixed(1)}%`,
+				"",
+				`INTERMEDIATE-TERM MEMORY:`,
+				`  Items: ${stats.intermediate.count}/${stats.intermediate.capacity}`,
+				`  Utilization: ${stats.intermediate.utilizationPercent.toFixed(1)}%`,
+				"",
+				`LONG-TERM MEMORY:`,
+				`  Items: ${stats.long.count}/${stats.long.capacity}`,
+				`  Utilization: ${stats.long.utilizationPercent.toFixed(1)}%`,
+				"",
+				`TOTAL: ${stats.total.count} items across all tiers`
+			].join('\n');
+
+			return {
+				content: [{
+					type: "text" as const,
+					text: statsText
 				}]
 			};
 		}
