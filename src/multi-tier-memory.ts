@@ -31,6 +31,18 @@ export interface TieredKnowledgeItem {
 	lastAccessed: string;
 	importance: number; // 0-1 scale
 	promotionEligible: boolean;
+	
+	// Weight-based enhancement properties
+	significanceWeight: number;  // Inherent importance of the content (0-1)
+	semanticWeight: number;      // Reinforcement through semantic similarity (0-1)
+	combinedWeight: number;      // Total weight for promotion decisions (0-1)
+	weightHistory: Array<{       // Track weight changes over time
+		timestamp: string;
+		significance: number;
+		semantic: number;
+		combined: number;
+		reason: string;
+	}>;
 }
 
 export interface TierConfig {
@@ -94,6 +106,11 @@ export class MultiTierMemorySystem {
 		const importance = knowledge.importance || 0.5;
 		const targetTier = knowledge.targetTier || this.selectInitialTier(importance);
 		
+		// Calculate initial weight values
+		const significanceWeight = this.calculateSignificanceWeight(knowledge.content, importance);
+		const semanticWeight = await this.calculateSemanticWeight(knowledge.content, embedding);
+		const combinedWeight = this.calculateCombinedWeight(significanceWeight, semanticWeight);
+		
 		const item: TieredKnowledgeItem = {
 			id,
 			content: knowledge.content,
@@ -105,7 +122,17 @@ export class MultiTierMemorySystem {
 			accessCount: 0,
 			lastAccessed: timestamp,
 			importance,
-			promotionEligible: false
+			promotionEligible: false,
+			significanceWeight,
+			semanticWeight,
+			combinedWeight,
+			weightHistory: [{
+				timestamp,
+				significance: significanceWeight,
+				semantic: semanticWeight,
+				combined: combinedWeight,
+				reason: 'initial_calculation'
+			}]
 		};
 
 		// Store in appropriate tier
@@ -225,6 +252,98 @@ export class MultiTierMemorySystem {
 		if (importance >= 0.8) return 'long';
 		if (importance >= 0.6) return 'intermediate'; 
 		return 'short';
+	}
+
+	// Weight calculation methods
+	private calculateSignificanceWeight(content: string, importance: number): number {
+		// Base weight from importance score
+		let weight = importance;
+		
+		// Boost weight for longer, more detailed content
+		const contentLength = content.length;
+		const lengthBoost = Math.min(contentLength / 1000, 0.3); // Cap at 0.3 boost
+		weight += lengthBoost;
+		
+		// Boost weight for content with specific keywords indicating importance
+		const importanceKeywords = ['critical', 'important', 'error', 'bug', 'security', 'performance', 'urgent'];
+		const keywordMatches = importanceKeywords.filter(keyword => 
+			content.toLowerCase().includes(keyword)
+		).length;
+		const keywordBoost = Math.min(keywordMatches * 0.1, 0.2); // Cap at 0.2 boost
+		weight += keywordBoost;
+		
+		// Normalize to [0, 1] range
+		return Math.min(weight, 1.0);
+	}
+
+	private async calculateSemanticWeight(content: string, embedding: number[]): Promise<number> {
+		// Start with base weight
+		let semanticWeight = 0.5;
+		
+		// Find similar memories across all tiers to calculate semantic reinforcement
+		const allMemories = [
+			...this.shortTerm.values(),
+			...this.intermediateTerm.values(),
+			...this.longTerm.values()
+		];
+		
+		if (allMemories.length === 0) {
+			return semanticWeight;
+		}
+		
+		// Calculate similarity with existing memories
+		let maxSimilarity = 0;
+		let similarityCount = 0;
+		
+		for (const memory of allMemories) {
+			const similarity = this.calculateCosineSimilarity(embedding, memory.embedding);
+			
+			// Track highest similarity
+			if (similarity > maxSimilarity) {
+				maxSimilarity = similarity;
+			}
+			
+			// Count how many memories are semantically related (>0.7 similarity)
+			if (similarity > 0.7) {
+				similarityCount++;
+			}
+		}
+		
+		// Boost semantic weight based on similarity patterns
+		// High similarity to existing memories indicates semantic reinforcement
+		const similarityBoost = maxSimilarity * 0.3;
+		const reinforcementBoost = Math.min(similarityCount * 0.1, 0.2);
+		
+		semanticWeight += similarityBoost + reinforcementBoost;
+		
+		// Normalize to [0, 1] range
+		return Math.min(semanticWeight, 1.0);
+	}
+
+	private calculateCombinedWeight(significanceWeight: number, semanticWeight: number): number {
+		// Weighted combination: 60% significance, 40% semantic
+		// Significance weight indicates inherent importance
+		// Semantic weight indicates reinforcement through repetition/similarity
+		return (significanceWeight * 0.6) + (semanticWeight * 0.4);
+	}
+
+	private calculateCosineSimilarity(a: number[], b: number[]): number {
+		if (a.length !== b.length) return 0;
+		
+		let dotProduct = 0;
+		let normA = 0;
+		let normB = 0;
+		
+		for (let i = 0; i < a.length; i++) {
+			const aVal = a[i] || 0;
+			const bVal = b[i] || 0;
+			dotProduct += aVal * bVal;
+			normA += aVal * aVal;
+			normB += bVal * bVal;
+		}
+		
+		const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+		return denominator === 0 ? 0 : dotProduct / denominator;
 	}
 
 	private storeInTier(item: TieredKnowledgeItem, tier: 'short' | 'intermediate' | 'long'): void {
