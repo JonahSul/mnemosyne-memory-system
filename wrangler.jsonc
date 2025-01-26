@@ -29,6 +29,12 @@
 			}
 		}
 	},
+	"vectorize": [
+		{
+			"binding": "VECTORIZE_INDEX",
+			"index_name": "mnemosyne-memory-index"
+		}
+	],
 	"observability": {
 		"logs": {
 			"enabled": true
