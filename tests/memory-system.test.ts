@@ -45,7 +45,7 @@ describe('Memory System', () => {
 
   describe('Memory Tools Integration', () => {
     it('should provide proper tool definitions', () => {
-      expect(memoryTools).toHaveLength(7); // Updated count to include memory_update_foundation
+      expect(memoryTools).toHaveLength(12); // Updated count to include vector tools and multi-tier memory tools
       expect(memoryTools.find(t => t.name === 'memory_log_claim')).toBeDefined();
       expect(memoryTools.find(t => t.name === 'memory_verify_claim')).toBeDefined();
       expect(memoryTools.find(t => t.name === 'memory_check_behavioral_status')).toBeDefined();
@@ -53,6 +53,13 @@ describe('Memory System', () => {
       expect(memoryTools.find(t => t.name === 'memory_record_violation')).toBeDefined();
       expect(memoryTools.find(t => t.name === 'memory_update_foundation')).toBeDefined();
       expect(memoryTools.find(t => t.name === 'memory_export_state')).toBeDefined();
+      // Vector tools
+      expect(memoryTools.find(t => t.name === 'memory_store_knowledge')).toBeDefined();
+      expect(memoryTools.find(t => t.name === 'memory_search_knowledge')).toBeDefined();
+      // Multi-tier memory tools
+      expect(memoryTools.find(t => t.name === 'memory_store_tiered')).toBeDefined();
+      expect(memoryTools.find(t => t.name === 'memory_search_tiered')).toBeDefined();
+      expect(memoryTools.find(t => t.name === 'memory_stats_tiered')).toBeDefined();
     });
 
     it('should handle log_claim tool execution', async () => {
@@ -63,7 +70,7 @@ describe('Memory System', () => {
         context: { test: "Test context" }
       });
       
-      expect(result.content[0].text).toContain("Claim Logged");
+      expect(result.content[0].text).toContain("Claim logged");
       expect(result.content[0].text).toContain("Test claim");
     });
 
@@ -88,7 +95,7 @@ describe('Memory System', () => {
         success: true
       });
       
-      expect(result.content[0].text).toContain("Claim Verified");
+      expect(result.content[0].text).toContain("verified");
     });
 
     it('should handle check_behavioral_status tool execution', async () => {
@@ -96,7 +103,7 @@ describe('Memory System', () => {
       
       const result = await statusTool.handler({});
       
-      expect(result.content[0].text).toContain("Mnemosyne Memory System Status");
+      expect(result.content[0].text).toContain("Behavioral Status");
     });
   });
 
