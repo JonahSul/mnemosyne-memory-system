@@ -28,6 +28,7 @@ export interface BehavioralRule {
 	priority: 'critical' | 'high' | 'medium' | 'low';
 	violations: number;
 	lastViolation?: string;
+	examples?: string[];
 }
 
 export interface InteractionPattern {
@@ -38,10 +39,60 @@ export interface InteractionPattern {
 	lastOccurrence: string;
 }
 
+export interface ContextQuery {
+	id: string;
+	timestamp: string;
+	query: string;
+	context?: Record<string, unknown>;
+}
+
+/**
+ * Core behavioral rules that form the foundation of the memory system
+ */
+const CORE_BEHAVIORAL_RULES: Omit<BehavioralRule, 'violations' | 'lastViolation'>[] = [
+	{
+		id: 'consult-memory-before-response',
+		rule: 'Always consult memory system before providing responses',
+		description: 'Search relevant memory tiers and context to refresh understanding before answering',
+		priority: 'critical',
+		examples: [
+			'✅ Searched memory for similar past interactions before responding',
+			'✅ Checked behavioral patterns related to current query',
+			'❌ Responded immediately without consulting memory system',
+			'❌ Made assumptions without checking previous context'
+		]
+	},
+	{
+		id: 'no-unverified-claims',
+		rule: 'Never claim something is "fixed" or "working" without verification',
+		description: 'Must verify functionality through testing before claiming success',
+		priority: 'critical'
+	},
+	{
+		id: 'ask-for-help',
+		rule: 'Ask user for help when unable to observe expected output',
+		description: 'Instead of flailing with repeated attempts, request user assistance',
+		priority: 'critical'
+	},
+	{
+		id: 'evidence-required',
+		rule: 'Provide evidence for all claims about system state',
+		description: 'Back up statements with observable facts, test results, or user feedback',
+		priority: 'high'
+	},
+	{
+		id: 'systematic-approach',
+		rule: 'Break down complex problems into verifiable steps',
+		description: 'Address one component at a time with verification at each step',
+		priority: 'medium'
+	}
+];
+
 export class MnemosyneMemorySystem {
 	private entries: Map<string, MemoryEntry> = new Map();
 	private rules: Map<string, BehavioralRule> = new Map();
 	private patterns: Map<string, InteractionPattern> = new Map();
+	private contextQueries: Map<string, ContextQuery> = new Map();
 	private currentFoundation?: { version: string; timestamp: string };
 
 	constructor() {
@@ -52,38 +103,13 @@ export class MnemosyneMemorySystem {
 	 * Initialize core behavioral rules that should always be enforced
 	 */
 	private initializeCoreRules(): void {
-		const coreRules: BehavioralRule[] = [
-			{
-				id: 'no-unverified-claims',
-				rule: 'Never claim something is "fixed" or "working" without verification',
-				description: 'Must verify functionality through testing before claiming success',
-				priority: 'critical',
+		CORE_BEHAVIORAL_RULES.forEach(ruleTemplate => {
+			const rule: BehavioralRule = {
+				...ruleTemplate,
 				violations: 0
-			},
-			{
-				id: 'ask-for-help',
-				rule: 'Ask user for help when unable to observe expected output',
-				description: 'Instead of flailing with repeated attempts, request user assistance',
-				priority: 'critical',
-				violations: 0
-			},
-			{
-				id: 'evidence-required',
-				rule: 'Provide evidence for all claims about system state',
-				description: 'Back up statements with observable facts, test results, or user feedback',
-				priority: 'high',
-				violations: 0
-			},
-			{
-				id: 'systematic-approach',
-				rule: 'Break down complex problems into verifiable steps',
-				description: 'Address one component at a time with verification at each step',
-				priority: 'medium',
-				violations: 0
-			}
-		];
-
-		coreRules.forEach(rule => this.rules.set(rule.id, rule));
+			};
+			this.rules.set(rule.id, rule);
+		});
 	}
 
 	/**
@@ -129,6 +155,119 @@ export class MnemosyneMemorySystem {
 			entry.status = success ? 'verified' : 'failed';
 			entry.evidence = evidence;
 		}
+	}
+
+	/**
+	 * Get current foundation rules
+	 */
+	getFoundationRules(): BehavioralRule[] {
+		return Array.from(this.rules.values()).filter(rule => 
+			this.isFoundationRule(rule.id)
+		);
+	}
+
+	/**
+	 * Log a context query for memory consultation tracking
+	 */
+	logContextQuery(query: string, context?: Record<string, unknown>): string {
+		const id = this.generateId();
+		const contextQuery: ContextQuery = {
+			id,
+			timestamp: new Date().toISOString(),
+			query,
+			...(context !== undefined && { context })
+		};
+		this.contextQueries.set(id, contextQuery);
+		return id;
+	}
+
+	/**
+	 * Get logged context queries
+	 */
+	getContextLogs(): ContextQuery[] {
+		return Array.from(this.contextQueries.values()).sort(
+			(a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+		);
+	}
+
+	/**
+	 * Get recommended memory searches based on current query context
+	 */
+	getRecommendedMemorySearches(currentQuery: string): string[] {
+		const recommendations: string[] = [];
+		const queryTerms = this.extractKeyTerms(currentQuery);
+		
+		// Add semantic searches based on query content
+		this.addSemanticRecommendations(recommendations, queryTerms);
+		
+		// Add behavioral pattern recommendations
+		this.addBehavioralRecommendations(recommendations);
+		
+		// Add context-based recommendations from recent queries
+		this.addContextualRecommendations(recommendations);
+		
+		return recommendations.slice(0, 5); // Limit to 5 recommendations
+	}
+
+	/**
+	 * Add semantic search recommendations based on query terms
+	 */
+	private addSemanticRecommendations(recommendations: string[], queryTerms: string[]): void {
+		if (queryTerms.length > 0) {
+			recommendations.push(
+				`Recent similar queries: ${queryTerms.join(' ')}`,
+				`Behavioral patterns related to: ${queryTerms.slice(0, 2).join(' ')}`,
+				`Previous violations or issues with: ${queryTerms.slice(0, 3).join(' ')}`
+			);
+		}
+	}
+
+	/**
+	 * Add behavioral pattern recommendations based on rule violations
+	 */
+	private addBehavioralRecommendations(recommendations: string[]): void {
+		const recentViolations = Array.from(this.rules.values())
+			.filter(rule => rule.violations > 0)
+			.slice(0, 2);
+			
+		if (recentViolations.length > 0) {
+			recommendations.push(
+				`Check compliance with: ${recentViolations.map(r => r.id).join(', ')}`
+			);
+		}
+	}
+
+	/**
+	 * Add contextual recommendations based on recent query history
+	 */
+	private addContextualRecommendations(recommendations: string[]): void {
+		const recentQueries = this.getContextLogs().slice(0, 3);
+		if (recentQueries.length > 0) {
+			const recentTerms = recentQueries
+				.flatMap(q => this.extractKeyTerms(q.query))
+				.slice(0, 2);
+			if (recentTerms.length > 0) {
+				recommendations.push(
+					`Context continuation: ${recentTerms.join(' ')}`
+				);
+			}
+		}
+	}
+
+	/**
+	 * Extract key terms from a query string
+	 */
+	private extractKeyTerms(query: string): string[] {
+		if (!query || typeof query !== 'string') {
+			return [];
+		}
+		
+		return query
+			.toLowerCase()
+			.replace(/[^\w\s]/g, ' ')
+			.split(/\s+/)
+			.filter(term => term.length > 3 && !['this', 'that', 'with', 'from', 'they', 'were', 'been', 'have', 'will', 'would', 'could', 'should'].includes(term))
+			.slice(0, 5);
 	}
 
 	/**
@@ -204,12 +343,14 @@ export class MnemosyneMemorySystem {
 		entries: MemoryEntry[];
 		rules: BehavioralRule[];
 		patterns: InteractionPattern[];
+		contextQueries: ContextQuery[];
 		foundation?: { version: string; timestamp: string };
 	} {
 		return {
 			entries: Array.from(this.entries.values()),
 			rules: Array.from(this.rules.values()),
 			patterns: Array.from(this.patterns.values()),
+			contextQueries: Array.from(this.contextQueries.values()),
 			...(this.currentFoundation && { foundation: this.currentFoundation })
 		};
 	}
@@ -375,6 +516,7 @@ export class MnemosyneMemorySystem {
 	private isFoundationRule(ruleId: string): boolean {
 		// Foundation rules follow specific naming patterns
 		const foundationRuleIds = [
+			'consult-memory-before-response',
 			'verify-before-claim',
 			'ask-for-help-when-blocked', 
 			'evidence-for-claims',
