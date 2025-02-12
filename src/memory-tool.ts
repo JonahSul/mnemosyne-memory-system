@@ -46,6 +46,43 @@ export interface ContextQuery {
 	context?: Record<string, unknown>;
 }
 
+export interface VectorAnalysis {
+	semanticConcepts: string[];
+	vectorSearchAreas: string[];
+	priority: number;
+	estimatedRelevantVectors: number;
+}
+
+export interface VectorPrewarmingStrategy {
+	priorityVectors: string[];
+	semanticRadius: number;
+	estimatedLatency: number;
+}
+
+export interface VectorPrewarmingStatus {
+	isActive: boolean;
+	targetConcepts: string[];
+	startTime: string;
+}
+
+export interface AdaptivePrewarmingStrategy {
+	learnedConcepts: string[];
+	confidence: number;
+	relatedPatterns: string[];
+}
+
+export interface VectorPrioritization {
+	domainMatch: string;
+	priority: number;
+	suggestedVectors: string[];
+}
+
+export interface UserBehaviorPattern {
+	domain: string;
+	frequency: number;
+	recentQueries: string[];
+}
+
 /**
  * Core behavioral rules that form the foundation of the memory system
  */
@@ -93,6 +130,9 @@ export class MnemosyneMemorySystem {
 	private rules: Map<string, BehavioralRule> = new Map();
 	private patterns: Map<string, InteractionPattern> = new Map();
 	private contextQueries: Map<string, ContextQuery> = new Map();
+	private queryPatterns: Map<string, string[]> = new Map();
+	private userBehaviorPatterns: Map<string, UserBehaviorPattern> = new Map();
+	private vectorPrewarmingState: VectorPrewarmingStatus | null = null;
 	private currentFoundation?: { version: string; timestamp: string };
 
 	constructor() {
@@ -255,6 +295,117 @@ export class MnemosyneMemorySystem {
 	}
 
 	/**
+	 * Analyze query for vector pre-warming opportunities
+	 */
+	analyzeQueryForVectorPrewarming(query: string): VectorAnalysis {
+		const terms = this.extractKeyTerms(query);
+		// Include all meaningful terms, not just first 3
+		const semanticConcepts = terms;
+		
+		return {
+			semanticConcepts,
+			vectorSearchAreas: semanticConcepts,
+			priority: Math.min(terms.length / 5, 1),
+			estimatedRelevantVectors: terms.length * 10
+		};
+	}
+
+	/**
+	 * Generate vector pre-warming strategy
+	 */
+	generateVectorPrewarmingStrategy(query: string): VectorPrewarmingStrategy {
+		const analysis = this.analyzeQueryForVectorPrewarming(query);
+		
+		return {
+			priorityVectors: analysis.semanticConcepts,
+			semanticRadius: 0.8,
+			estimatedLatency: analysis.estimatedRelevantVectors * 0.1
+		};
+	}
+
+	/**
+	 * Start vector pre-warming process
+	 */
+	startVectorPrewarming(query: string): void {
+		const analysis = this.analyzeQueryForVectorPrewarming(query);
+		
+		this.vectorPrewarmingState = {
+			isActive: true,
+			targetConcepts: analysis.semanticConcepts,
+			startTime: new Date().toISOString()
+		};
+	}
+
+	/**
+	 * Get current vector pre-warming status
+	 */
+	getVectorPrewarmingStatus(): VectorPrewarmingStatus {
+		return this.vectorPrewarmingState || {
+			isActive: false,
+			targetConcepts: [],
+			startTime: ''
+		};
+	}
+
+	/**
+	 * Record query pattern for adaptive learning
+	 */
+	recordQueryPattern(query: string, concepts: string[]): void {
+		this.queryPatterns.set(query, concepts);
+	}
+
+	/**
+	 * Generate adaptive pre-warming strategy
+	 */
+	generateAdaptivePrewarmingStrategy(query: string): AdaptivePrewarmingStrategy {
+		const queryTerms = this.extractKeyTerms(query);
+		const allPatterns = Array.from(this.queryPatterns.values()).flat();
+		const learnedConcepts = allPatterns.filter(concept => 
+			queryTerms.some(term => concept.toLowerCase().includes(term.toLowerCase()))
+		);
+		
+		return {
+			learnedConcepts: [...new Set(learnedConcepts)],
+			confidence: learnedConcepts.length > 0 ? 0.8 : 0.3,
+			relatedPatterns: Array.from(this.queryPatterns.keys()).slice(0, 3)
+		};
+	}
+
+	/**
+	 * Record user behavior pattern
+	 */
+	recordUserBehaviorPattern(pattern: UserBehaviorPattern): void {
+		this.userBehaviorPatterns.set(pattern.domain, pattern);
+	}
+
+	/**
+	 * Prioritize vector pre-warming based on user behavior
+	 */
+	prioritizeVectorPrewarming(query: string): VectorPrioritization {
+		const queryTerms = this.extractKeyTerms(query);
+		const behaviors = Array.from(this.userBehaviorPatterns.values());
+		
+		// Find matching domain - check for "optimization" matching "frontend-development"
+		const matchingBehavior = behaviors.find(behavior => {
+			// Check if query terms match domain or recent queries
+			const domainTerms = behavior.domain.split('-');
+			const allBehaviorTerms = [...behavior.recentQueries, ...domainTerms].map(t => t.toLowerCase());
+			
+			return queryTerms.some(queryTerm => 
+				allBehaviorTerms.some(behaviorTerm => 
+					behaviorTerm.includes(queryTerm) || queryTerm.includes(behaviorTerm)
+				)
+			);
+		});
+		
+		return {
+			domainMatch: matchingBehavior?.domain || 'general',
+			priority: matchingBehavior?.frequency || 0.5,
+			suggestedVectors: queryTerms
+		};
+	}
+
+	/**
 	 * Extract key terms from a query string
 	 */
 	private extractKeyTerms(query: string): string[] {
@@ -266,7 +417,7 @@ export class MnemosyneMemorySystem {
 			.toLowerCase()
 			.replace(/[^\w\s]/g, ' ')
 			.split(/\s+/)
-			.filter(term => term.length > 3 && !['this', 'that', 'with', 'from', 'they', 'were', 'been', 'have', 'will', 'would', 'could', 'should'].includes(term))
+			.filter(term => term.length > 2 && !['this', 'that', 'with', 'from', 'they', 'were', 'been', 'have', 'will', 'would', 'could', 'should'].includes(term))
 			.slice(0, 5);
 	}
 
