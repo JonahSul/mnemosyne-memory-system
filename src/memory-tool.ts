@@ -83,6 +83,117 @@ export interface UserBehaviorPattern {
 	recentQueries: string[];
 }
 
+// Workflow Integration Interfaces
+export interface WorkflowCheckpoint {
+	id: string;
+	stage: string;
+	timestamp: string;
+	context: Record<string, unknown>;
+	requiresMemoryConsultation: boolean;
+	priority: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface TriggeredMemorySearch {
+	checkpointId: string;
+	query: string;
+	priority: number;
+	estimatedRelevance: number;
+}
+
+export interface WorkflowEfficiencyAnalysis {
+	workflowId: string;
+	totalDuration: number;
+	bottlenecks: Array<{
+		stage: string;
+		duration: number;
+		impact: 'low' | 'medium' | 'high';
+	}>;
+	optimizationSuggestions: string[];
+}
+
+export interface PrewarmingPrediction {
+	predictedTopics: string[];
+	confidence: number;
+	basedOnPatterns: string[];
+}
+
+export interface SessionPrewarmingStrategy {
+	sessionId: string;
+	targetConcepts: string[];
+	relatedTopics: string[];
+	priorityLevel: number;
+}
+
+export interface PrewarmingEffectiveness {
+	strategy: string;
+	targetConcepts: string[];
+	actualRelevance: number;
+	userSatisfaction: number;
+}
+
+export interface AdaptedPrewarmingStrategy {
+	preferredMethods: string[];
+	successRate: number;
+	confidenceLevel: number;
+}
+
+export interface BehaviorPattern {
+	id: string;
+	type: string;
+	successRate: number;
+	frequency: number;
+	context: Record<string, unknown>;
+}
+
+export interface FeedbackPattern {
+	userFeedback: string;
+	behaviorContext: string;
+	adjustment: string;
+}
+
+export interface BehaviorAdjustment {
+	searchScopeReduction: boolean;
+	consultationDepthIncrease: boolean;
+	balancedApproachReinforcement: boolean;
+}
+
+export interface FailurePattern {
+	pattern: string;
+	indicators: string[];
+	consequences: string[];
+	frequency: number;
+}
+
+export interface FailureAvoidanceStrategy {
+	targetPattern: string;
+	preventionMethods: string[];
+	earlyWarningSignals: string[];
+}
+
+export interface OptimizedWorkflow {
+	checkpointStrategy: string;
+	prewarmingIntensity: string;
+	responseStyle: string;
+}
+
+export interface SpeedThoroughnessBalance {
+	approach: string;
+	speedWeight: number;
+	thoroughnessWeight: number;
+}
+
+export interface ConsultationValue {
+	consulted: boolean;
+	valueAdded: number;
+	responseTime: number;
+}
+
+export interface OptimizedConsultationFrequency {
+	recommendedFrequency: number;
+	valueThreshold: number;
+	confidenceLevel: number;
+}
+
 /**
  * Core behavioral rules that form the foundation of the memory system
  */
@@ -134,6 +245,17 @@ export class MnemosyneMemorySystem {
 	private userBehaviorPatterns: Map<string, UserBehaviorPattern> = new Map();
 	private vectorPrewarmingState: VectorPrewarmingStatus | null = null;
 	private currentFoundation?: { version: string; timestamp: string };
+	
+	// Workflow Integration Properties
+	private workflowCheckpoints: Map<string, WorkflowCheckpoint> = new Map();
+	private triggeredSearches: Map<string, TriggeredMemorySearch[]> = new Map();
+	private workflowExecutions: Map<string, any[]> = new Map();
+	private userInteractions: Array<{ query: string; timestamp: number; context: Record<string, unknown> }> = [];
+	private prewarmingEffectiveness: PrewarmingEffectiveness[] = [];
+	private behaviorPatterns: Map<string, BehaviorPattern> = new Map();
+	private feedbackPatterns: FeedbackPattern[] = [];
+	private failurePatterns: Map<string, FailurePattern> = new Map();
+	private consultationValues: ConsultationValue[] = [];
 
 	constructor() {
 		this.initializeCoreRules();
@@ -686,5 +808,479 @@ export class MnemosyneMemorySystem {
 
 	private generateId(): string {
 		return `mem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	}
+
+	// Workflow Integration Methods
+
+	/**
+	 * Create workflow checkpoint at strategic AI interaction points
+	 */
+	createWorkflowCheckpoint(stage: string, context: Record<string, unknown>): WorkflowCheckpoint {
+		const checkpoint: WorkflowCheckpoint = {
+			id: `checkpoint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+			stage,
+			timestamp: new Date().toISOString(),
+			context,
+			requiresMemoryConsultation: this.shouldRequireMemoryConsultation(stage, context),
+			priority: this.determineCheckpointPriority(stage, context)
+		};
+
+		this.workflowCheckpoints.set(checkpoint.id, checkpoint);
+
+		// Automatically trigger memory searches if required
+		if (checkpoint.requiresMemoryConsultation) {
+			this.triggerMemorySearches(checkpoint);
+		}
+
+		return checkpoint;
+	}
+
+	/**
+	 * Get triggered memory searches for a checkpoint
+	 */
+	getTriggeredMemorySearches(checkpointId: string): TriggeredMemorySearch[] {
+		return this.triggeredSearches.get(checkpointId) || [];
+	}
+
+	/**
+	 * Track workflow execution with timing data
+	 */
+	trackWorkflowExecution(workflowEvents: Array<{ stage: string; timestamp: number }>): string {
+		const workflowId = `workflow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+		this.workflowExecutions.set(workflowId, workflowEvents);
+		return workflowId;
+	}
+
+	/**
+	 * Analyze workflow efficiency and suggest optimizations
+	 */
+	analyzeWorkflowEfficiency(workflowId: string): WorkflowEfficiencyAnalysis {
+		const events = this.workflowExecutions.get(workflowId) || [];
+		if (events.length < 2) {
+			return {
+				workflowId,
+				totalDuration: 0,
+				bottlenecks: [],
+				optimizationSuggestions: ['Need more workflow events to analyze']
+			};
+		}
+
+		const totalDuration = events[events.length - 1].timestamp - events[0].timestamp;
+		const bottlenecks = this.identifyBottlenecks(events);
+		const optimizationSuggestions = this.generateOptimizationSuggestions(bottlenecks);
+
+		return {
+			workflowId,
+			totalDuration,
+			bottlenecks,
+			optimizationSuggestions
+		};
+	}
+
+	/**
+	 * Record user interaction for pattern analysis
+	 */
+	recordUserInteraction(query: string, context: Record<string, unknown>): void {
+		this.userInteractions.push({
+			query,
+			timestamp: Date.now(),
+			context
+		});
+
+		// Keep only recent interactions (last 100)
+		if (this.userInteractions.length > 100) {
+			this.userInteractions = this.userInteractions.slice(-100);
+		}
+	}
+
+	/**
+	 * Generate pre-warming predictions based on user patterns
+	 */
+	generatePrewarmingPredictions(): PrewarmingPrediction {
+		const recentQueries = this.userInteractions.slice(-10).map(i => i.query);
+		const topics = this.extractTopics(recentQueries);
+		const patterns = this.identifyQueryPatterns(recentQueries);
+
+		return {
+			predictedTopics: topics,
+			confidence: this.calculatePredictionConfidence(topics, patterns),
+			basedOnPatterns: patterns
+		};
+	}
+
+	/**
+	 * Create session-based pre-warming strategy
+	 */
+	createSessionPrewarmingStrategy(sessionContext: {
+		sessionId: string;
+		userQueries: string[];
+		identifiedDomain: string;
+	}): SessionPrewarmingStrategy {
+		const targetConcepts = this.extractConcepts(sessionContext.userQueries);
+		const relatedTopics = this.findRelatedTopics(sessionContext.identifiedDomain);
+
+		return {
+			sessionId: sessionContext.sessionId,
+			targetConcepts,
+			relatedTopics,
+			priorityLevel: this.calculateSessionPriority(sessionContext)
+		};
+	}
+
+	/**
+	 * Record pre-warming effectiveness for learning
+	 */
+	recordPrewarmingEffectiveness(effectiveness: PrewarmingEffectiveness): void {
+		this.prewarmingEffectiveness.push(effectiveness);
+
+		// Keep only recent effectiveness data (last 50)
+		if (this.prewarmingEffectiveness.length > 50) {
+			this.prewarmingEffectiveness = this.prewarmingEffectiveness.slice(-50);
+		}
+	}
+
+	/**
+	 * Get adapted pre-warming strategy based on effectiveness
+	 */
+	getAdaptedPrewarmingStrategy(): AdaptedPrewarmingStrategy {
+		const strategies = this.prewarmingEffectiveness.reduce((acc, eff) => {
+			if (!acc[eff.strategy]) {
+				acc[eff.strategy] = [];
+			}
+			acc[eff.strategy]!.push(eff);
+			return acc;
+		}, {} as Record<string, PrewarmingEffectiveness[]>);
+
+		const strategyScores = Object.entries(strategies).map(([strategy, attempts]) => {
+			const avgRelevance = attempts.reduce((sum, a) => sum + a.actualRelevance, 0) / attempts.length;
+			const avgSatisfaction = attempts.reduce((sum, a) => sum + a.userSatisfaction, 0) / attempts.length;
+			return {
+				strategy,
+				score: (avgRelevance + avgSatisfaction) / 2
+			};
+		});
+
+		const preferredMethods = strategyScores
+			.filter(s => s.score > 0.7)
+			.map(s => s.strategy);
+
+		const successRate = strategyScores.length > 0 
+			? strategyScores.reduce((sum, s) => sum + s.score, 0) / strategyScores.length
+			: 0;
+
+		return {
+			preferredMethods,
+			successRate,
+			confidenceLevel: Math.min(this.prewarmingEffectiveness.length / 20, 1.0)
+		};
+	}
+
+	/**
+	 * Record successful interaction pattern
+	 */
+	recordSuccessfulPattern(interaction: {
+		pattern: string;
+		userQuery: string;
+		outcome: string;
+		responseQuality: number;
+	}): void {
+		const patternId = `pattern_${interaction.pattern}_${Date.now()}`;
+		const pattern: BehaviorPattern = {
+			id: patternId,
+			type: interaction.pattern,
+			successRate: interaction.responseQuality,
+			frequency: 1,
+			context: {
+				userQuery: interaction.userQuery,
+				outcome: interaction.outcome
+			}
+		};
+
+		this.behaviorPatterns.set(patternId, pattern);
+	}
+
+	/**
+	 * Get learned behavior patterns
+	 */
+	getLearnedBehaviorPatterns(): BehaviorPattern[] {
+		return Array.from(this.behaviorPatterns.values())
+			.filter(pattern => pattern.successRate > 0.8);
+	}
+
+	/**
+	 * Process feedback pattern for behavior adjustment
+	 */
+	processFeedbackPattern(feedback: FeedbackPattern): void {
+		this.feedbackPatterns.push(feedback);
+
+		// Keep only recent feedback (last 30)
+		if (this.feedbackPatterns.length > 30) {
+			this.feedbackPatterns = this.feedbackPatterns.slice(-30);
+		}
+	}
+
+	/**
+	 * Get behavior adjustments based on feedback
+	 */
+	getBehaviorAdjustments(): BehaviorAdjustment {
+		const feedbacks = this.feedbackPatterns;
+		
+		return {
+			searchScopeReduction: feedbacks.some(f => f.userFeedback.includes('slow') && f.adjustment.includes('reduce')),
+			consultationDepthIncrease: feedbacks.some(f => f.userFeedback.includes('thorough') && f.adjustment.includes('increase')),
+			balancedApproachReinforcement: feedbacks.some(f => f.userFeedback.includes('perfect') && f.adjustment.includes('maintain'))
+		};
+	}
+
+	/**
+	 * Record failure pattern for avoidance
+	 */
+	recordFailurePattern(pattern: FailurePattern): void {
+		this.failurePatterns.set(pattern.pattern, pattern);
+	}
+
+	/**
+	 * Get failure avoidance strategies
+	 */
+	getFailureAvoidanceStrategies(): FailureAvoidanceStrategy[] {
+		return Array.from(this.failurePatterns.values()).map(pattern => ({
+			targetPattern: pattern.pattern,
+			preventionMethods: this.generatePreventionMethods(pattern),
+			earlyWarningSignals: pattern.indicators
+		}));
+	}
+
+	/**
+	 * Create optimized workflow based on memory insights
+	 */
+	createOptimizedWorkflow(insights: {
+		userExpertiseLevel: string;
+		preferredInteractionStyle: string;
+		commonTopics: string[];
+		responsePatterns: Record<string, any>;
+	}): OptimizedWorkflow {
+		return {
+			checkpointStrategy: insights.responsePatterns.memoryConsultationPreference === 'always' 
+				? 'thorough-consultation' 
+				: 'selective-consultation',
+			prewarmingIntensity: insights.userExpertiseLevel === 'advanced' ? 'low' : 'high',
+			responseStyle: insights.preferredInteractionStyle
+		};
+	}
+
+	/**
+	 * Determine speed vs thoroughness balance
+	 */
+	determineSpeedThoroughnessBalance(context: {
+		urgency: string;
+		complexity: string;
+	}): SpeedThoroughnessBalance {
+		let approach = 'balanced';
+		
+		if (context.urgency === 'high' && context.complexity === 'low') {
+			approach = 'speed-optimized';
+		} else if (context.urgency === 'low' && context.complexity === 'high') {
+			approach = 'thoroughness-optimized';
+		}
+
+		return {
+			approach,
+			speedWeight: approach === 'speed-optimized' ? 0.8 : 0.5,
+			thoroughnessWeight: approach === 'thoroughness-optimized' ? 0.8 : 0.5
+		};
+	}
+
+	/**
+	 * Record consultation value for optimization
+	 */
+	recordConsultationValue(value: ConsultationValue): void {
+		this.consultationValues.push(value);
+
+		// Keep only recent values (last 100)
+		if (this.consultationValues.length > 100) {
+			this.consultationValues = this.consultationValues.slice(-100);
+		}
+	}
+
+	/**
+	 * Get optimized consultation frequency
+	 */
+	getOptimizedConsultationFrequency(): OptimizedConsultationFrequency {
+		const consultedEntries = this.consultationValues.filter(v => v.consulted);
+		const avgValue = consultedEntries.length > 0 
+			? consultedEntries.reduce((sum, v) => sum + v.valueAdded, 0) / consultedEntries.length
+			: 0;
+
+		return {
+			recommendedFrequency: Math.min(avgValue * 1.2, 1.0),
+			valueThreshold: 0.6,
+			confidenceLevel: Math.min(this.consultationValues.length / 50, 1.0)
+		};
+	}
+
+	// Helper methods for workflow integration
+
+	private shouldRequireMemoryConsultation(stage: string, context: Record<string, unknown>): boolean {
+		const consultationStages = ['memory_consultation_required', 'response_validation_phase', 'tool_selection_phase'];
+		return consultationStages.includes(stage) || 
+			   (context.priority === 'high' || context.complexity === 'high');
+	}
+
+	private determineCheckpointPriority(stage: string, context: Record<string, unknown>): 'low' | 'medium' | 'high' | 'critical' {
+		if (stage.includes('validation') || stage.includes('memory')) return 'critical';
+		if (context.priority === 'high') return 'high';
+		if (stage.includes('generation') || stage.includes('selection')) return 'medium';
+		return 'low';
+	}
+
+	private triggerMemorySearches(checkpoint: WorkflowCheckpoint): void {
+		const searches: TriggeredMemorySearch[] = [];
+		
+		// Generate relevant searches based on checkpoint context
+		if (checkpoint.context.userQuery) {
+			const query = String(checkpoint.context.userQuery);
+			searches.push({
+				checkpointId: checkpoint.id,
+				query: `related to: ${query}`,
+				priority: 0.8,
+				estimatedRelevance: 0.7
+			});
+		}
+
+		if (checkpoint.context.domain) {
+			searches.push({
+				checkpointId: checkpoint.id,
+				query: `domain: ${checkpoint.context.domain}`,
+				priority: 0.6,
+				estimatedRelevance: 0.6
+			});
+		}
+
+		this.triggeredSearches.set(checkpoint.id, searches);
+	}
+
+	private identifyBottlenecks(events: Array<{ stage: string; timestamp: number }>): Array<{
+		stage: string;
+		duration: number;
+		impact: 'low' | 'medium' | 'high';
+	}> {
+		const bottlenecks = [];
+		
+		for (let i = 1; i < events.length; i++) {
+			const currentEvent = events[i];
+			const previousEvent = events[i - 1];
+			
+			if (!currentEvent || !previousEvent) continue;
+			
+			const duration = currentEvent.timestamp - previousEvent.timestamp;
+			let impact: 'low' | 'medium' | 'high' = 'low';
+			
+			if (duration > 1000) impact = 'high';
+			else if (duration > 500) impact = 'medium';
+			
+			if (impact !== 'low') {
+				bottlenecks.push({
+					stage: previousEvent.stage,
+					duration,
+					impact
+				});
+			}
+		}
+		
+		return bottlenecks;
+	}
+
+	private generateOptimizationSuggestions(bottlenecks: Array<{ stage: string; duration: number; impact: string }>): string[] {
+		const suggestions = [];
+		
+		for (const bottleneck of bottlenecks) {
+			if (bottleneck.stage.includes('memory')) {
+				suggestions.push('Consider caching frequently accessed memory entries');
+			}
+			if (bottleneck.stage.includes('analysis')) {
+				suggestions.push('Implement parallel processing for context analysis');
+			}
+			if (bottleneck.stage.includes('generation')) {
+				suggestions.push('Use streaming response generation for faster perceived performance');
+			}
+		}
+		
+		return suggestions.length > 0 ? suggestions : ['Workflow is already optimized'];
+	}
+
+	private extractTopics(queries: string[]): string[] {
+		const topics = new Set<string>();
+		
+		for (const query of queries) {
+			const words = query.toLowerCase().split(/\s+/);
+			for (const word of words) {
+				if (word.length > 4 && !['help', 'with', 'this', 'that', 'what', 'when', 'where', 'why', 'how'].includes(word)) {
+					topics.add(word);
+				}
+			}
+		}
+		
+		return Array.from(topics).slice(0, 10);
+	}
+
+	private identifyQueryPatterns(queries: string[]): string[] {
+		const patterns = [];
+		
+		if (queries.some(q => q.includes('debug') || q.includes('error'))) {
+			patterns.push('debugging-focused');
+		}
+		if (queries.some(q => q.includes('test') || q.includes('testing'))) {
+			patterns.push('testing-focused');
+		}
+		if (queries.some(q => q.includes('performance') || q.includes('optimize'))) {
+			patterns.push('performance-focused');
+		}
+		
+		return patterns;
+	}
+
+	private calculatePredictionConfidence(topics: string[], patterns: string[]): number {
+		const topicConfidence = Math.min(topics.length / 5, 1.0);
+		const patternConfidence = Math.min(patterns.length / 3, 1.0);
+		return (topicConfidence + patternConfidence) / 2;
+	}
+
+	private extractConcepts(queries: string[]): string[] {
+		return this.extractTopics(queries);
+	}
+
+	private findRelatedTopics(domain: string): string[] {
+		const domainTopics: Record<string, string[]> = {
+			'web-development': ['javascript', 'react', 'css', 'html', 'node'],
+			'database-administration': ['sql', 'optimization', 'indexing', 'backup', 'performance'],
+			'debugging': ['testing', 'logging', 'profiling', 'troubleshooting', 'analysis']
+		};
+		
+		return domainTopics[domain] || [];
+	}
+
+	private calculateSessionPriority(sessionContext: { identifiedDomain: string; userQueries: string[] }): number {
+		const urgencyKeywords = ['urgent', 'critical', 'important', 'asap', 'quickly'];
+		const hasUrgency = sessionContext.userQueries.some(query => 
+			urgencyKeywords.some(keyword => query.toLowerCase().includes(keyword))
+		);
+		
+		return hasUrgency ? 0.9 : 0.6;
+	}
+
+	private generatePreventionMethods(pattern: FailurePattern): string[] {
+		const methods = [];
+		
+		if (pattern.pattern.includes('assumption')) {
+			methods.push('Always verify assumptions before proceeding');
+			methods.push('Request confirmation from user when uncertain');
+		}
+		
+		if (pattern.pattern.includes('context')) {
+			methods.push('Perform thorough context gathering before responding');
+			methods.push('Ask clarifying questions when context is unclear');
+		}
+		
+		return methods.length > 0 ? methods : ['Follow systematic approach', 'Verify before acting'];
 	}
 }
