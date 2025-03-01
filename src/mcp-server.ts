@@ -143,11 +143,11 @@ export class MnemosyneMemorySystemMCP {
 			// GET /foundation - Get current foundation info
 			if (url.pathname === '/foundation' && request.method === 'GET') {
 				const foundationInfo = this.memory.getFoundationInfo();
-				const state = this.memory.exportState();
+				const state = await this.memory.exportState();
 				
 				return new Response(JSON.stringify({
 					foundation: foundationInfo,
-					rules: state.rules.filter(rule => this.isFoundationRule(rule.id)),
+					rules: state.rules.filter((rule: any) => this.isFoundationRule(rule.id)),
 					serverInfo: {
 						name: "Mnemosyne Memory System",
 						version: "1.0.0",
@@ -195,7 +195,7 @@ export class MnemosyneMemorySystemMCP {
 				}
 
 				// Apply update
-				const result = this.memory.updateFoundation(migration, options);
+				const result = await this.memory.updateFoundation(migration, options);
 				
 				return new Response(JSON.stringify({
 					success: result.success,

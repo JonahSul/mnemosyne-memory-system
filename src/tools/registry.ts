@@ -66,7 +66,7 @@ export const memoryTools: ToolImplementation[] = [
 		},
 		handler: async (params) => {
 			const memory = getMnemosyneMemoryInstance();
-			const claimId = memory.logClaim(params.claim, {
+			const claimId = await memory.logClaim(params.claim, {
 				confidence: params.confidence || "medium",
 				source: params.source || "ai-agent",
 				context: params.context || {},
@@ -93,7 +93,7 @@ export const memoryTools: ToolImplementation[] = [
 		},
 		handler: async (params) => {
 			const memory = getMnemosyneMemoryInstance();
-			memory.verifyClaim(params.claimId, params.evidence, params.success);
+			await memory.verifyClaim(params.claimId, params.success, params.evidence);
 
 			return {
 				content: [{
@@ -180,7 +180,7 @@ export const memoryTools: ToolImplementation[] = [
 			const memory = getMnemosyneMemoryInstance();
 			
 			try {
-				const result = memory.updateFoundation(params.migration, params.options || {});
+				const result = await memory.updateFoundation(params.migration, params.options || {});
 				return {
 					content: [{
 						type: "text" as const,

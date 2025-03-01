@@ -12,11 +12,11 @@ describe('Memory System', () => {
   });
 
   describe('Claim Management', () => {
-    it('should log and track claims', () => {
+    it('should log and track claims', async () => {
       const claim = "Territory coverage tool is working correctly";
       const context = { test: "After fixing API response handling" };
       
-      const claimId = memorySystem.logClaim(claim, context);
+      const claimId = await memorySystem.logClaim(claim, context);
       
       const unverifiedClaims = memorySystem.getUnverifiedClaims();
       expect(unverifiedClaims).toHaveLength(1);
@@ -24,11 +24,11 @@ describe('Memory System', () => {
       expect(unverifiedClaims[0].id).toBe(claimId);
     });
 
-    it('should verify claims and update status', () => {
+    it('should verify claims and update status', async () => {
       const claim = "API returns expected response format";
       
-      const claimId = memorySystem.logClaim(claim, { test: "context" });
-      memorySystem.verifyClaim(claimId, "Confirmed by test results", true);
+      const claimId = await memorySystem.logClaim(claim, { test: "context" });
+      await memorySystem.verifyClaim(claimId, true, "Confirmed by test results");
       
       const unverifiedClaims = memorySystem.getUnverifiedClaims();
       expect(unverifiedClaims).toHaveLength(0);
@@ -108,17 +108,17 @@ describe('Memory System', () => {
   });
 
   describe('Behavioral Rule Enforcement', () => {
-    it('should enforce claim verification workflow', () => {
+    it('should enforce claim verification workflow', async () => {
       const initialStatus = memorySystem.getBehavioralStatus();
       expect(initialStatus.unverifiedClaims).toBe(0);
       
       // Log a claim
-      const claimId = memorySystem.logClaim("New claim", { test: "Context" });
+      const claimId = await memorySystem.logClaim("New claim", { test: "Context" });
       let status = memorySystem.getBehavioralStatus();
       expect(status.unverifiedClaims).toBe(1);
       
       // Verify the claim
-      memorySystem.verifyClaim(claimId, "Evidence", true);
+      await memorySystem.verifyClaim(claimId, true, "Evidence");
       status = memorySystem.getBehavioralStatus();
       expect(status.unverifiedClaims).toBe(0);
     });

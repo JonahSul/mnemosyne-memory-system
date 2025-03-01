@@ -4,7 +4,23 @@
  * Estab		{
 			id: 'verify-before-claim',
 			rule: 'Never claim something is "fixed" or "working" without verification',
-			description: 'Must verify functionality through testing, observation, or user feedback before claiming success',
+			description: 'Must verify functionality through testing, observation, or user feed	// Log migration completion
+	const migrationId = await memory.logClaim(
+		`Foundation migration ${migration.version} applied successfully`,
+		{
+			migration: migration.version,
+			rulesInitialized: migration.coreRules.length,
+			patternsConfigured: migration.essentialPatterns.length,
+			constraintsEstablished: migration.safetyConstraints.length
+		}
+	);
+
+	// Immediately verify the migration
+	await memory.verifyClaim(
+		migrationId,
+		true,
+		`Migration applied: ${migration.coreRules.length} rules, ${migration.essentialPatterns.length} patterns, ${migration.safetyConstraints.length} constraints`
+	);ing success',
 			priority: 'critical',
 			enforcement: 'strict',
 			examples: [
@@ -246,7 +262,7 @@ export const foundationMigrationV1: FoundationMigration = {
  * This function demonstrates how to apply a foundation migration.
  * Use this pattern to create your own custom migrations.
  */
-export function applyFoundationMigration(memory: MnemosyneMemorySystem, migration: FoundationMigration): void {
+export async function applyFoundationMigration(memory: MnemosyneMemorySystem, migration: FoundationMigration): Promise<void> {
 	// Initialize core behavioral rules
 	migration.coreRules.forEach(rule => {
 		memory.initializeBehavioralRule({
@@ -277,8 +293,8 @@ export function applyFoundationMigration(memory: MnemosyneMemorySystem, migratio
 
 	// Immediately verify the migration
 	memory.verifyClaim(
-		migrationId,
-		`Migration applied: ${migration.coreRules.length} rules, ${migration.essentialPatterns.length} patterns, ${migration.safetyConstraints.length} constraints`,
-		true
+		await migrationId,
+		true,
+		`Migration applied: ${migration.coreRules.length} rules, ${migration.essentialPatterns.length} patterns, ${migration.safetyConstraints.length} constraints`
 	);
 }
