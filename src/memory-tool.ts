@@ -467,4 +467,49 @@ export class MnemosyneMemorySystem {
 			}
 		];
 	}
+
+	// =============================================================================
+	// MISSING WORKFLOW INTEGRATION METHODS (TDD Implementation)
+	// =============================================================================
+
+	analyzeQueryForVectorPrewarming(query: string): { semanticConcepts: string[]; priority: number; vectorSearchAreas: string[]; estimatedRelevantVectors: number } {
+		// Extract semantic concepts using VectorPrewarming logic
+		const words = query.toLowerCase().split(' ');
+		const semanticConcepts = words.filter(word => 
+			word.length > 3 && 
+			!['help', 'with', 'this', 'that', 'they', 'them', 'have', 'been', 'will', 'would', 'could', 'should'].includes(word)
+		);
+		
+		// Identify vector search areas
+		const vectorSearchAreas: string[] = [];
+		if (query.toLowerCase().includes('typescript') || query.toLowerCase().includes('compilation')) {
+			vectorSearchAreas.push('typescript', 'compilation');
+		}
+		if (query.toLowerCase().includes('debug') || query.toLowerCase().includes('error')) {
+			vectorSearchAreas.push('debugging');
+		}
+		if (query.toLowerCase().includes('react')) {
+			vectorSearchAreas.push('react', 'frontend');
+		}
+		if (query.toLowerCase().includes('performance')) {
+			vectorSearchAreas.push('performance', 'optimization');
+		}
+		
+		// Calculate priority
+		const technicalTerms = ['react', 'component', 'performance', 'optimize', 'debug', 'error', 'typescript', 'javascript'];
+		const technicalMatches = semanticConcepts.filter(concept => 
+			technicalTerms.some(term => concept.includes(term) || term.includes(concept))
+		);
+		const priority = Math.min(10, Math.max(1, technicalMatches.length + semanticConcepts.length / 2));
+		
+		// Estimate relevant vectors (50 vectors per search area)
+		const estimatedRelevantVectors = vectorSearchAreas.length * 50;
+		
+		return {
+			semanticConcepts,
+			priority,
+			vectorSearchAreas,
+			estimatedRelevantVectors
+		};
+	}
 }

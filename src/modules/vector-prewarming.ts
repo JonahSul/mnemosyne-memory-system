@@ -167,17 +167,42 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 
 	// Private helper methods
 	private extractSemanticConcepts(query: string): string[] {
-		// Simple concept extraction - would be more sophisticated in practice
-		const words = query.toLowerCase().split(/\s+/);
-		return words.filter(word => word.length > 3);
+		// Extract meaningful semantic concepts from the query
+		const words = query.toLowerCase().split(' ');
+		return words.filter(word => 
+			word.length > 3 && 
+			!['help', 'with', 'this', 'that', 'they', 'them', 'have', 'been', 'will', 'would', 'could', 'should'].includes(word)
+		);
 	}
 
 	private identifyVectorSearchAreas(concepts: string[]): string[] {
-		return concepts.map(concept => `vector_${concept}`);
+		const vectorSearchAreas: string[] = [];
+		const conceptText = concepts.join(' ');
+		
+		// Identify areas based on semantic concepts
+		if (conceptText.includes('typescript') || conceptText.includes('compilation')) {
+			vectorSearchAreas.push('typescript', 'compilation');
+		}
+		if (conceptText.includes('debug') || conceptText.includes('error')) {
+			vectorSearchAreas.push('debugging');
+		}
+		if (conceptText.includes('react')) {
+			vectorSearchAreas.push('react', 'frontend');
+		}
+		if (conceptText.includes('performance')) {
+			vectorSearchAreas.push('performance', 'optimization');
+		}
+		
+		return vectorSearchAreas;
 	}
 
 	private calculatePriority(concepts: string[], areas: string[]): number {
-		return Math.min(concepts.length * areas.length * 0.1, 10);
+		const technicalTerms = ['react', 'component', 'performance', 'optimize', 'debug', 'error', 'typescript', 'javascript'];
+		const technicalMatches = concepts.filter(concept => 
+			technicalTerms.some(term => concept.includes(term) || term.includes(concept))
+		);
+		
+		return Math.min(10, Math.max(1, technicalMatches.length + concepts.length / 2));
 	}
 
 	private estimateVectorCount(areas: string[]): number {
