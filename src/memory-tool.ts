@@ -512,4 +512,19 @@ export class MnemosyneMemorySystem {
 			estimatedRelevantVectors
 		};
 	}
+
+	generateVectorPrewarmingStrategy(query: string): { priorityVectors: string[]; semanticRadius: number; estimatedLatency: number } {
+		// Delegate to VectorPrewarming module
+		return this.vectorPrewarming.generateStrategySync(query);
+	}
+
+	startVectorPrewarming(query: string): void {
+		// Delegate to VectorPrewarming module
+		this.vectorPrewarming.startPrewarmingSync(query);
+	}
+
+	getVectorPrewarmingStatus(): { isActive: boolean; targetConcepts: string[]; startTime: string } {
+		// Delegate to VectorPrewarming module
+		return this.vectorPrewarming.getPrewarmingStatusSync();
+	}
 }

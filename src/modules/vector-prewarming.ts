@@ -26,6 +26,11 @@ export interface VectorPrewarmingOperations {
 	createSessionPrewarmingStrategy(prediction: PrewarmingPrediction): Promise<SessionPrewarmingStrategy>;
 	evaluatePrewarmingEffectiveness(strategy: SessionPrewarmingStrategy): Promise<PrewarmingEffectiveness>;
 	adaptPrewarmingStrategy(effectiveness: PrewarmingEffectiveness): Promise<AdaptedPrewarmingStrategy>;
+	
+	// Synchronous workflow integration methods
+	generateStrategySync(query: string): { priorityVectors: string[]; semanticRadius: number; estimatedLatency: number };
+	startPrewarmingSync(query: string): void;
+	getPrewarmingStatusSync(): { isActive: boolean; targetConcepts: string[]; startTime: string };
 }
 
 export class VectorPrewarmingManager implements VectorPrewarmingOperations {
@@ -306,5 +311,57 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 
 	getAdaptedStrategies(): AdaptedPrewarmingStrategy[] {
 		return [...this.adaptedStrategies];
+	}
+
+	// =============================================================================
+	// SYNCHRONOUS WORKFLOW INTEGRATION METHODS
+	// =============================================================================
+
+	generateStrategySync(query: string): { priorityVectors: string[]; semanticRadius: number; estimatedLatency: number } {
+		const concepts = this.extractSemanticConcepts(query);
+		const vectorSearchAreas = this.identifyVectorSearchAreas(concepts);
+		const priority = this.calculatePriority(concepts, vectorSearchAreas);
+		
+		// Generate priority vectors based on analysis
+		const priorityVectors = [...concepts, ...vectorSearchAreas];
+		
+		// Calculate semantic radius based on concept complexity
+		const semanticRadius = Math.min(priority * 0.5, 3.0);
+		
+		// Estimate latency based on vector count and complexity
+		const estimatedLatency = Math.max(100, vectorSearchAreas.length * 50 * 2);
+		
+		return {
+			priorityVectors,
+			semanticRadius,
+			estimatedLatency
+		};
+	}
+
+	private currentPrewarming: { isActive: boolean; targetConcepts: string[]; startTime: string } | null = null;
+
+	startPrewarmingSync(query: string): void {
+		const concepts = this.extractSemanticConcepts(query);
+		
+		this.currentPrewarming = {
+			isActive: true,
+			targetConcepts: concepts,
+			startTime: new Date().toISOString()
+		};
+		
+		// Simulate async pre-warming completion
+		setTimeout(() => {
+			if (this.currentPrewarming) {
+				this.currentPrewarming.isActive = false;
+			}
+		}, 1000);
+	}
+
+	getPrewarmingStatusSync(): { isActive: boolean; targetConcepts: string[]; startTime: string } {
+		return this.currentPrewarming || {
+			isActive: false,
+			targetConcepts: [],
+			startTime: ''
+		};
 	}
 }
