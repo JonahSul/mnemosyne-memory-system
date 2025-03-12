@@ -527,4 +527,24 @@ export class MnemosyneMemorySystem {
 		// Delegate to VectorPrewarming module
 		return this.vectorPrewarming.getPrewarmingStatusSync();
 	}
+
+	recordQueryPattern(query: string, concepts: string[]): void {
+		// Delegate to VectorPrewarming module for adaptive learning
+		this.vectorPrewarming.recordQueryPatternSync(query, concepts);
+	}
+
+	recordUserBehaviorPattern(pattern: { domain: string; frequency: number; recentQueries: string[] }): void {
+		// Delegate to VectorPrewarming module for adaptive learning
+		this.vectorPrewarming.recordUserBehaviorPatternSync(pattern);
+	}
+
+	generateAdaptivePrewarmingStrategy(query: string): { learnedConcepts: string[]; confidence: number; relatedPatterns: string[] } {
+		// Delegate to VectorPrewarming module for adaptive strategy generation
+		return this.vectorPrewarming.generateAdaptivePrewarmingStrategySync(query);
+	}
+
+	prioritizeVectorPrewarming(query: string): { domainMatch: string; priority: number; suggestedVectors: string[] } {
+		// Delegate to VectorPrewarming module for behavior-based prioritization
+		return this.vectorPrewarming.prioritizeVectorPrewarmingSync(query);
+	}
 }

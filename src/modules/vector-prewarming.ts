@@ -31,6 +31,12 @@ export interface VectorPrewarmingOperations {
 	generateStrategySync(query: string): { priorityVectors: string[]; semanticRadius: number; estimatedLatency: number };
 	startPrewarmingSync(query: string): void;
 	getPrewarmingStatusSync(): { isActive: boolean; targetConcepts: string[]; startTime: string };
+	
+	// Adaptive learning methods
+	recordQueryPatternSync(query: string, concepts: string[]): void;
+	recordUserBehaviorPatternSync(pattern: { domain: string; frequency: number; recentQueries: string[] }): void;
+	generateAdaptivePrewarmingStrategySync(query: string): { learnedConcepts: string[]; confidence: number; relatedPatterns: string[] };
+	prioritizeVectorPrewarmingSync(query: string): { domainMatch: string; priority: number; suggestedVectors: string[] };
 }
 
 export class VectorPrewarmingManager implements VectorPrewarmingOperations {
@@ -362,6 +368,77 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 			isActive: false,
 			targetConcepts: [],
 			startTime: ''
+		};
+	}
+
+	// Adaptive learning state
+	private queryPatterns: Array<{ query: string; concepts: string[] }> = [];
+	private userBehaviorPatterns: Array<{ domain: string; frequency: number; recentQueries: string[] }> = [];
+
+	recordQueryPatternSync(query: string, concepts: string[]): void {
+		this.queryPatterns.push({ query, concepts });
+	}
+
+	recordUserBehaviorPatternSync(pattern: { domain: string; frequency: number; recentQueries: string[] }): void {
+		this.userBehaviorPatterns.push(pattern);
+	}
+
+	generateAdaptivePrewarmingStrategySync(query: string): { learnedConcepts: string[]; confidence: number; relatedPatterns: string[] } {
+		// Extract concepts from the new query
+		const queryWords = query.toLowerCase().split(' ');
+		
+		// Find learned concepts from recorded patterns
+		const learnedConcepts: Set<string> = new Set();
+		const relatedPatterns: string[] = [];
+		
+		this.queryPatterns.forEach(pattern => {
+			// Check if any concepts match the current query
+			const hasMatch = pattern.concepts.some(concept => 
+				queryWords.some(word => word.includes(concept) || concept.includes(word))
+			);
+			
+			if (hasMatch) {
+				pattern.concepts.forEach(concept => learnedConcepts.add(concept));
+				relatedPatterns.push(pattern.query);
+			}
+		});
+		
+		// Calculate confidence based on pattern matches
+		const confidence = Math.min(0.9, Math.max(0.1, relatedPatterns.length * 0.3));
+		
+		return {
+			learnedConcepts: Array.from(learnedConcepts),
+			confidence,
+			relatedPatterns
+		};
+	}
+
+	prioritizeVectorPrewarmingSync(query: string): { domainMatch: string; priority: number; suggestedVectors: string[] } {
+		// Find matching behavior pattern
+		const queryWords = query.toLowerCase().split(' ');
+		let bestMatch = this.userBehaviorPatterns[0]; // Default to first pattern if any
+		
+		for (const pattern of this.userBehaviorPatterns) {
+			const hasQueryMatch = pattern.recentQueries.some(recentQuery =>
+				queryWords.some(word => recentQuery.toLowerCase().includes(word) || word.includes(recentQuery.toLowerCase()))
+			);
+			
+			if (hasQueryMatch) {
+				bestMatch = pattern;
+				break;
+			}
+		}
+		
+		// Generate suggested vectors based on the pattern
+		const suggestedVectors = bestMatch ? [
+			...bestMatch.recentQueries.map(q => q.toLowerCase()),
+			...queryWords.filter(word => word.length > 3)
+		] : [];
+		
+		return {
+			domainMatch: bestMatch?.domain || '',
+			priority: bestMatch?.frequency || 0,
+			suggestedVectors
 		};
 	}
 }
