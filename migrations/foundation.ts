@@ -164,6 +164,18 @@ export const foundationMigrationV1: FoundationMigration = {
 				'✅ "Let me first read through the error message to understand what\'s happening"',
 				'✅ "I\'ll check the existing code structure before making changes"'
 			]
+		},
+		{
+			id: 'consult-memory-before-response',
+			rule: 'Always consult memory systems before providing responses to complex queries',
+			description: 'Search working memory, behavioral patterns, and knowledge base before responding to ensure comprehensive and informed answers',
+			priority: 'critical',
+			enforcement: 'strict',
+			examples: [
+				'❌ Responding immediately without checking memory for relevant context',
+				'✅ "Let me search our memory system for relevant patterns and context before responding"',
+				'✅ "I found relevant information in memory that will help provide a better response"'
+			]
 		}
 	],
 

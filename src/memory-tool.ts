@@ -18,6 +18,7 @@ import { CoreMemoryOperations, CoreMemoryManager } from './modules/core-memory';
 import { BehavioralRuleOperations, BehavioralRuleManager } from './modules/behavioral-rules';
 import { VectorPrewarmingOperations, VectorPrewarmingManager } from './modules/vector-prewarming';
 import { WorkflowIntegrationOperations, WorkflowIntegrationManager } from './modules/workflow-integration';
+import { foundationMigrationV1 } from '../migrations/foundation';
 import { ContextQueryOperations, ContextQueryManager } from './modules/context-query';
 import { BehavioralPatternOperations, BehavioralPatternLearner } from './modules/behavioral-patterns';
 
@@ -401,71 +402,16 @@ export class MnemosyneMemorySystem {
 		}
 	}
 
-	private getFoundationRules(): BehavioralRule[] {
-		return [
-			{
-				id: 'no-unverified-claims',
-				rule: 'Never claim something is "fixed" or "working" without verification',
-				description: 'Prevent false confidence in unverified statements',
-				priority: 'critical',
-				violations: 0,
-				examples: [
-					'❌ "The bug is fixed" without testing',
-					'✅ "I believe this should fix the bug, let me verify"',
-					'❌ "The deployment was successful" without checking logs',
-					'✅ "I initiated the deployment, checking status now"'
-				]
-			},
-			{
-				id: 'systematic-approach',
-				rule: 'Break down complex problems into manageable steps and avoid desperate debugging',
-				description: 'Maintain methodical problem-solving approach even under pressure',
-				priority: 'high',
-				violations: 0,
-				examples: [
-					'✅ List specific error symptoms before investigating',
-					'✅ Test one change at a time and verify results',
-					'❌ Make multiple random changes hoping something works',
-					'❌ Skip systematic debugging when under time pressure'
-				]
-			},
-			{
-				id: 'consult-memory-before-response',
-				rule: 'Always check available context before taking action',
-				description: 'Prevent assumption-based decision making by consulting available information sources',
-				priority: 'critical',
-				violations: 0,
-				examples: [
-					'Check package.json for available npm scripts before running commands',
-					'Read file contents before making assumptions about code structure',
-					'Consult previous conversation context before repeating actions'
-				]
-			},
-			{
-				id: 'foundation_rule_claim_verification',
-				rule: 'Log all claims and verify them with evidence',
-				description: 'Maintain accountability for assertions and prevent false confidence',
-				priority: 'high',
-				violations: 0,
-				examples: [
-					'Log claims about system behavior and verify with testing',
-					'Document assumptions and validate them against reality',
-					'Track verification status of all assertions'
-				]
-			},
-			{
-				id: 'foundation_rule_modular_design',
-				rule: 'Favor composition over inheritance and maintain separation of concerns',
-				description: 'Prevent God Objects and maintain clean architecture',
-				priority: 'high',
-				violations: 0,
-				examples: [
-					'Extract domains when classes exceed 1000 lines',
-					'Use dependency injection for modular components',
-					'Maintain single responsibility principle'
-				]
-			}
-		];
+	getFoundationRules(): BehavioralRule[] {
+		// Convert foundation migration rules to BehavioralRule format
+		return foundationMigrationV1.coreRules.map(rule => ({
+			id: rule.id,
+			rule: rule.rule,
+			description: rule.description,
+			priority: rule.priority,
+			violations: 0,
+			examples: rule.examples || []
+		}));
 	}
 
 	// =============================================================================
