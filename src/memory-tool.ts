@@ -242,10 +242,6 @@ export class MnemosyneMemorySystem {
 		return this.workflowIntegration.triggerMemorySearchFromCheckpoint(checkpoint);
 	}
 
-	async analyzeWorkflowEfficiency(workflowData: Record<string, unknown>): Promise<WorkflowEfficiencyAnalysis> {
-		return this.workflowIntegration.analyzeWorkflowEfficiency(workflowData);
-	}
-
 	async learnFromUserFeedback(feedback: string, behaviorContext: string): Promise<FeedbackPattern> {
 		return this.workflowIntegration.learnFromUserFeedback(feedback, behaviorContext);
 	}
@@ -297,6 +293,10 @@ export class MnemosyneMemorySystem {
 
 	generatePrewarmingPredictions(userContext: Record<string, unknown>): Array<{ query: string; confidence: number }> {
 		return this.workflowIntegration.generatePrewarmingPredictions(userContext);
+	}
+
+	analyzeWorkflowEfficiency(workflowId: string): WorkflowEfficiencyAnalysis {
+		return this.workflowIntegration.analyzeWorkflowEfficiencySync(workflowId);
 	}
 
 	// =============================================================================
