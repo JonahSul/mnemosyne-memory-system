@@ -30,6 +30,13 @@ export interface WorkflowIntegrationOperations {
 	balanceSpeedVsThoroughness(performanceMetrics: Record<string, number>): Promise<SpeedThoroughnessBalance>;
 	measureConsultationValue(consultationData: Array<Record<string, unknown>>): Promise<ConsultationValue>;
 	optimizeConsultationFrequency(valueData: ConsultationValue[]): Promise<OptimizedConsultationFrequency>;
+	
+	// Additional methods for test compatibility
+	createWorkflowCheckpoint(stage: string, context: Record<string, unknown>, priority?: 'low' | 'medium' | 'high' | 'critical'): WorkflowCheckpoint;
+	getTriggeredMemorySearches(checkpointId?: string): TriggeredMemorySearch[];
+	trackWorkflowExecution(workflowEvents: Array<Record<string, unknown>>): string;
+	recordUserInteraction(query: string, context: Record<string, unknown>): void;
+	generatePrewarmingPredictions(userContext: Record<string, unknown>): Array<{ query: string; confidence: number }>;
 }
 
 export class WorkflowIntegrationManager implements WorkflowIntegrationOperations {
@@ -353,6 +360,80 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 		const timeComponent = Math.max(1, 10 - (averageResponseTime / 1000));
 		
 		return Math.round((valueComponent + timeComponent) / 2);
+	}
+
+	// Additional methods for test compatibility
+	createWorkflowCheckpoint(stage: string, context: Record<string, unknown>, priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'): WorkflowCheckpoint {
+		const checkpoint: WorkflowCheckpoint = {
+			id: `checkpoint_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+			stage,
+			context,
+			priority,
+			timestamp: new Date().toISOString(),
+			requiresMemoryConsultation: this.shouldTriggerMemoryConsultation(priority, context)
+		};
+
+		this.checkpoints.set(checkpoint.id, checkpoint);
+		return checkpoint;
+	}
+
+	getTriggeredMemorySearches(checkpointId?: string): TriggeredMemorySearch[] {
+		if (checkpointId) {
+			return this.triggeredSearches.filter(search => search.checkpointId === checkpointId);
+		}
+		return [...this.triggeredSearches];
+	}
+
+	trackWorkflowExecution(workflowEvents: Array<Record<string, unknown>>): string {
+		const workflowId = `workflow_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+		
+		// Track workflow execution internally
+		for (const event of workflowEvents) {
+			if (event.type === 'checkpoint') {
+				this.createWorkflowCheckpoint(event.stage as string, event.context as Record<string, unknown>);
+			}
+		}
+		
+		return workflowId;
+	}
+
+	recordUserInteraction(query: string, context: Record<string, unknown>): void {
+		const interaction = {
+			id: `interaction_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+			query,
+			context,
+			timestamp: new Date().toISOString()
+		};
+		
+		// Store interaction for pattern analysis
+		this.behaviorPatterns.push({
+			id: `pattern_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+			type: `user_query`,
+			successRate: 1.0,
+			frequency: 1,
+			context: { query, ...context }
+		});
+	}
+
+	generatePrewarmingPredictions(userContext: Record<string, unknown>): Array<{ query: string; confidence: number }> {
+		const predictions: Array<{ query: string; confidence: number }> = [];
+		
+		// Generate predictions based on context
+		if (userContext.projectType) {
+			predictions.push({
+				query: `${userContext.projectType} development patterns`,
+				confidence: 0.8
+			});
+		}
+		
+		if (userContext.currentTask) {
+			predictions.push({
+				query: `${userContext.currentTask} best practices`,
+				confidence: 0.7
+			});
+		}
+		
+		return predictions;
 	}
 
 	// Utility methods

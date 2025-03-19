@@ -278,6 +278,27 @@ export class MnemosyneMemorySystem {
 		return this.workflowIntegration.optimizeConsultationFrequency(valueData);
 	}
 
+	// Additional workflow methods for test compatibility
+	createWorkflowCheckpoint(stage: string, context: Record<string, unknown>, priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'): WorkflowCheckpoint {
+		return this.workflowIntegration.createWorkflowCheckpoint(stage, context, priority);
+	}
+
+	getTriggeredMemorySearches(checkpointId?: string): TriggeredMemorySearch[] {
+		return this.workflowIntegration.getTriggeredMemorySearches(checkpointId);
+	}
+
+	trackWorkflowExecution(workflowEvents: Array<Record<string, unknown>>): string {
+		return this.workflowIntegration.trackWorkflowExecution(workflowEvents);
+	}
+
+	recordUserInteraction(query: string, context: Record<string, unknown>): void {
+		return this.workflowIntegration.recordUserInteraction(query, context);
+	}
+
+	generatePrewarmingPredictions(userContext: Record<string, unknown>): Array<{ query: string; confidence: number }> {
+		return this.workflowIntegration.generatePrewarmingPredictions(userContext);
+	}
+
 	// =============================================================================
 	// CONTEXT & QUERY OPERATIONS (Delegated to ContextQueryManager)
 	// =============================================================================
