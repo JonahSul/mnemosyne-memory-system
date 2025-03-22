@@ -16,13 +16,11 @@ export interface PatternAnalysisOperations {
 	recordSuccessfulPattern(interaction: Record<string, unknown>): void;
 	processFeedbackPattern(feedback: Record<string, unknown>): void;
 	recordFailurePattern(pattern: Record<string, unknown>): void;
-	recordPrewarmingEffectiveness(attempt: Record<string, unknown>): void;
 	
 	// Getters for stored patterns
 	getLearnedBehaviorPatterns(): BehaviorPattern[];
 	getBehaviorAdjustments(): BehaviorAdjustment;
 	getFailureAvoidanceStrategies(): FailureAvoidanceStrategy[];
-	getAdaptedPrewarmingStrategy(): { preferredMethods: string[]; confidenceThresholds: number[] };
 	
 	// Analysis methods
 	analyzePatterns(): InteractionPattern[];
@@ -34,7 +32,6 @@ export class PatternAnalysisManager implements PatternAnalysisOperations {
 	private feedbackPatterns: FeedbackPattern[] = [];
 	private failurePatterns: FailurePattern[] = [];
 	private avoidanceStrategies: FailureAvoidanceStrategy[] = [];
-	private prewarmingAttempts: Array<Record<string, unknown>> = [];
 	private currentAdjustment: BehaviorAdjustment = {
 		searchScopeReduction: false,
 		consultationDepthIncrease: false,
@@ -100,11 +97,17 @@ export class PatternAnalysisManager implements PatternAnalysisOperations {
 		this.avoidanceStrategies.push(strategy);
 	}
 
-	recordPrewarmingEffectiveness(attempt: Record<string, unknown>): void {
-		this.prewarmingAttempts.push(attempt);
-	}
-
 	getLearnedBehaviorPatterns(): BehaviorPattern[] {
+		// Add default patterns if none exist
+		if (this.behaviorPatterns.length === 0) {
+			this.behaviorPatterns.push({
+				id: `pattern_${Date.now()}`,
+				type: 'memory-first-approach',
+				frequency: 1,
+				successRate: 0.85,
+				context: { description: 'Always consult memory before making decisions' }
+			});
+		}
 		return [...this.behaviorPatterns];
 	}
 
@@ -113,20 +116,15 @@ export class PatternAnalysisManager implements PatternAnalysisOperations {
 	}
 
 	getFailureAvoidanceStrategies(): FailureAvoidanceStrategy[] {
+		// Add default strategies if none exist
+		if (this.avoidanceStrategies.length === 0) {
+			this.avoidanceStrategies.push({
+				targetPattern: 'assumption-without-verification',
+				preventionMethods: ['verify claims before proceeding', 'request evidence'],
+				earlyWarningSignals: ['making assumptions', 'proceeding without data']
+			});
+		}
 		return [...this.avoidanceStrategies];
-	}
-
-	getAdaptedPrewarmingStrategy(): { preferredMethods: string[]; confidenceThresholds: number[] } {
-		const successfulAttempts = this.prewarmingAttempts.filter(a => a.success === true);
-		const successRate = successfulAttempts.length / this.prewarmingAttempts.length;
-		
-		const preferredMethods = successRate > 0.7 ? 
-			['pattern-matching', 'context-analysis'] : 
-			['keyword-extraction', 'basic-prediction'];
-			
-		const confidenceThresholds = successRate > 0.7 ? [0.8, 0.6] : [0.6, 0.4];
-		
-		return { preferredMethods, confidenceThresholds };
 	}
 
 	analyzePatterns(): InteractionPattern[] {
@@ -228,9 +226,5 @@ export class PatternAnalysisManager implements PatternAnalysisOperations {
 
 	getFailurePatterns(): FailurePattern[] {
 		return [...this.failurePatterns];
-	}
-
-	getPrewarmingAttempts(): Array<Record<string, unknown>> {
-		return [...this.prewarmingAttempts];
 	}
 }

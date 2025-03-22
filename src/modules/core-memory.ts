@@ -12,6 +12,10 @@ export interface CoreMemoryOperations {
 	verifyClaim(claimId: string, success: boolean, evidence: string, notes?: string): Promise<boolean>;
 	getUnverifiedClaims(): MemoryEntry[];
 	getMemories(): Map<string, MemoryEntry>;
+	storeMemory(entry: MemoryEntry): Promise<string>;
+	searchMemory(query: string): Promise<MemoryEntry[]>;
+	getMemoryStats(): any;
+	exportMemory(): Promise<any>;
 }
 
 export class CoreMemoryManager implements CoreMemoryOperations {
@@ -81,5 +85,38 @@ export class CoreMemoryManager implements CoreMemoryOperations {
 
 	getMemories(): Map<string, MemoryEntry> {
 		return this.memories;
+	}
+
+	async storeMemory(entry: MemoryEntry): Promise<string> {
+		this.memories.set(entry.id, entry);
+		return entry.id;
+	}
+
+	async searchMemory(query: string): Promise<MemoryEntry[]> {
+		const lowerQuery = query.toLowerCase();
+		return Array.from(this.memories.values()).filter(memory =>
+			memory.content.toLowerCase().includes(lowerQuery) ||
+			(memory.context && JSON.stringify(memory.context).toLowerCase().includes(lowerQuery))
+		);
+	}
+
+	getMemoryStats(): any {
+		const memories = Array.from(this.memories.values());
+		return {
+			totalMemories: memories.length,
+			claims: memories.filter(m => m.type === 'claim').length,
+			assumptions: memories.filter(m => m.type === 'assumption').length,
+			verified: memories.filter(m => m.status === 'verified').length,
+			pending: memories.filter(m => m.status === 'pending').length,
+			failed: memories.filter(m => m.status === 'failed').length
+		};
+	}
+
+	async exportMemory(): Promise<any> {
+		return {
+			memories: Array.from(this.memories.entries()),
+			stats: this.getMemoryStats(),
+			exportTime: new Date().toISOString()
+		};
 	}
 }

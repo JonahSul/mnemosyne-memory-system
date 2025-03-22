@@ -17,13 +17,13 @@ import type {
  * Handles intelligent vector pre-warming for improved query performance
  */
 export interface VectorPrewarmingOperations {
-	analyzeQueryForVectorNeeds(query: string): Promise<VectorAnalysis>;
-	createPrewarmingStrategy(analysis: VectorAnalysis): Promise<VectorPrewarmingStrategy>;
+	analyzeQueryForVectorNeeds(query: string): VectorAnalysis;
+	createPrewarmingStrategy(analysis: VectorAnalysis): VectorPrewarmingStrategy;
 	executeVectorPrewarming(strategy: VectorPrewarmingStrategy): Promise<VectorPrewarmingStatus>;
 	adaptPrewarmingBasedOnUsage(usagePatterns: UserBehaviorPattern[]): Promise<AdaptivePrewarmingStrategy>;
 	prioritizeVectorsByDomain(domain: string): Promise<VectorPrioritization>;
 	predictNextQueries(sessionContext: Record<string, unknown>): Promise<PrewarmingPrediction>;
-	createSessionPrewarmingStrategy(prediction: PrewarmingPrediction): Promise<SessionPrewarmingStrategy>;
+	createVectorSessionPrewarmingStrategy(prediction: PrewarmingPrediction): Promise<SessionPrewarmingStrategy>;
 	evaluatePrewarmingEffectiveness(strategy: SessionPrewarmingStrategy): Promise<PrewarmingEffectiveness>;
 	adaptPrewarmingStrategy(effectiveness: PrewarmingEffectiveness): Promise<AdaptedPrewarmingStrategy>;
 	
@@ -45,7 +45,7 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 	private effectivenessHistory: PrewarmingEffectiveness[] = [];
 	private adaptedStrategies: AdaptedPrewarmingStrategy[] = [];
 
-	async analyzeQueryForVectorNeeds(query: string): Promise<VectorAnalysis> {
+	analyzeQueryForVectorNeeds(query: string): VectorAnalysis {
 		// Extract semantic concepts from the query
 		const semanticConcepts = this.extractSemanticConcepts(query);
 		const vectorSearchAreas = this.identifyVectorSearchAreas(semanticConcepts);
@@ -60,7 +60,7 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 		return analysis;
 	}
 
-	async createPrewarmingStrategy(analysis: VectorAnalysis): Promise<VectorPrewarmingStrategy> {
+	createPrewarmingStrategy(analysis: VectorAnalysis): VectorPrewarmingStrategy {
 		const priorityVectors = this.selectPriorityVectors(analysis);
 		const semanticRadius = this.calculateSemanticRadius(analysis);
 		const estimatedLatency = this.estimateLatency(analysis);
@@ -133,7 +133,7 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 		};
 	}
 
-	async createSessionPrewarmingStrategy(prediction: PrewarmingPrediction): Promise<SessionPrewarmingStrategy> {
+	async createVectorSessionPrewarmingStrategy(prediction: PrewarmingPrediction): Promise<SessionPrewarmingStrategy> {
 		const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 		
 		return {
@@ -177,9 +177,21 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 	}
 
 	// Private helper methods
-	private extractSemanticConcepts(query: string): string[] {
+	private extractSemanticConcepts(query: string | any): string[] {
+		// Handle type safety - extract string from object if needed
+		let queryStr: string;
+		if (typeof query === 'string') {
+			queryStr = query;
+		} else if (query && typeof query === 'object' && query.query) {
+			queryStr = query.query;
+		} else if (query && typeof query === 'object' && query.content) {
+			queryStr = query.content;
+		} else {
+			queryStr = String(query || '');
+		}
+
 		// Extract meaningful semantic concepts from the query
-		const words = query.toLowerCase().split(' ');
+		const words = queryStr.toLowerCase().split(' ');
 		return words.filter(word => 
 			word.length > 3 && 
 			!['help', 'with', 'this', 'that', 'they', 'them', 'have', 'been', 'will', 'would', 'could', 'should'].includes(word)
@@ -200,8 +212,17 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 		if (conceptText.includes('react')) {
 			vectorSearchAreas.push('react', 'frontend');
 		}
-		if (conceptText.includes('performance')) {
+		if (conceptText.includes('performance') || conceptText.includes('optimize')) {
 			vectorSearchAreas.push('performance', 'optimization');
+		}
+		if (conceptText.includes('authentication') || conceptText.includes('auth') || conceptText.includes('token')) {
+			vectorSearchAreas.push('authentication', 'security');
+		}
+		if (conceptText.includes('database') || conceptText.includes('query') || conceptText.includes('sql')) {
+			vectorSearchAreas.push('database', 'queries');
+		}
+		if (conceptText.includes('implement') || conceptText.includes('develop')) {
+			vectorSearchAreas.push('development', 'implementation');
 		}
 		
 		return vectorSearchAreas;
@@ -383,9 +404,21 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 		this.userBehaviorPatterns.push(pattern);
 	}
 
-	generateAdaptivePrewarmingStrategySync(query: string): { learnedConcepts: string[]; confidence: number; relatedPatterns: string[] } {
+	generateAdaptivePrewarmingStrategySync(query: string | any): { learnedConcepts: string[]; confidence: number; relatedPatterns: string[] } {
+		// Handle type safety - extract string from object if needed
+		let queryStr: string;
+		if (typeof query === 'string') {
+			queryStr = query;
+		} else if (query && typeof query === 'object' && query.query) {
+			queryStr = query.query;
+		} else if (query && typeof query === 'object' && query.content) {
+			queryStr = query.content;
+		} else {
+			queryStr = String(query || '');
+		}
+
 		// Extract concepts from the new query
-		const queryWords = query.toLowerCase().split(' ');
+		const queryWords = queryStr.toLowerCase().split(' ');
 		
 		// Find learned concepts from recorded patterns
 		const learnedConcepts: Set<string> = new Set();
@@ -413,9 +446,21 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 		};
 	}
 
-	prioritizeVectorPrewarmingSync(query: string): { domainMatch: string; priority: number; suggestedVectors: string[] } {
+	prioritizeVectorPrewarmingSync(query: string | any): { domainMatch: string; priority: number; suggestedVectors: string[] } {
+		// Handle type safety - extract string from object if needed
+		let queryStr: string;
+		if (typeof query === 'string') {
+			queryStr = query;
+		} else if (query && typeof query === 'object' && query.query) {
+			queryStr = query.query;
+		} else if (query && typeof query === 'object' && query.content) {
+			queryStr = query.content;
+		} else {
+			queryStr = String(query || '');
+		}
+
 		// Find matching behavior pattern
-		const queryWords = query.toLowerCase().split(' ');
+		const queryWords = queryStr.toLowerCase().split(' ');
 		let bestMatch = this.userBehaviorPatterns[0]; // Default to first pattern if any
 		
 		for (const pattern of this.userBehaviorPatterns) {

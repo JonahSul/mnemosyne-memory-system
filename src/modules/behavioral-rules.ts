@@ -7,8 +7,12 @@ import type { BehavioralRule, MemoryEntry, InteractionPattern } from './memory-i
  * violation tracking, and pattern analysis
  */
 export interface BehavioralRuleOperations {
+	addBehavioralRule(rule: BehavioralRule): void;
 	recordViolation(ruleId: string, context: string, correctionPlan?: string, severity?: 'minor' | 'moderate' | 'major' | 'critical'): Promise<void>;
 	getBehavioralRules(): Promise<BehavioralRule[]>;
+	getFoundationRules(): BehavioralRule[];
+	checkRuleCompliance(ruleId: string, action: string): boolean;
+	recordRuleViolation(ruleId: string, context: string): void;
 	getBehavioralStatus(): any;
 	updateFoundation(migration: Record<string, unknown>, options?: Record<string, unknown>): Promise<void>;
 	viewFoundation(ruleId?: string, checkCompliance?: string, includeExamples?: string): Promise<any>;
@@ -19,6 +23,57 @@ export class BehavioralRuleManager implements BehavioralRuleOperations {
 	private rules: Map<string, BehavioralRule> = new Map();
 	private violations: MemoryEntry[] = [];
 	private patterns: InteractionPattern[] = [];
+
+	addBehavioralRule(rule: BehavioralRule): void {
+		// Initialize violations count if not set
+		if (rule.violations === undefined) {
+			rule.violations = 0;
+		}
+		
+		this.rules.set(rule.id, rule);
+	}
+
+	getFoundationRules(): BehavioralRule[] {
+		// Return all rules that are marked as foundation rules
+		return Array.from(this.rules.values()).filter(rule => 
+			['no-unverified-claims', 'systematic-approach', 'consult-memory-before-response'].includes(rule.id)
+		);
+	}
+
+	checkRuleCompliance(ruleId: string, action: string): boolean {
+		const rule = this.rules.get(ruleId);
+		if (!rule) return true; // No rule means no violation
+		
+		// Basic compliance checking - extensible
+		if (ruleId === 'no-unverified-claims' && action.includes('claim without verification')) {
+			return false;
+		}
+		if (ruleId === 'systematic-approach' && action.includes('desperate debugging')) {
+			return false;
+		}
+		return true;
+	}
+
+	recordRuleViolation(ruleId: string, context: string): void {
+		// Synchronous version for immediate violation recording
+		const violation: MemoryEntry = {
+			id: `violation_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+			timestamp: new Date().toISOString(),
+			type: 'rule',
+			content: `Rule ${ruleId} violated: ${context}`,
+			status: 'violated',
+			context: { ruleId, originalContext: context }
+		};
+
+		this.violations.push(violation);
+
+		// Update rule violation count
+		const rule = this.rules.get(ruleId);
+		if (rule) {
+			rule.violations = (rule.violations || 0) + 1;
+			rule.lastViolation = violation.timestamp;
+		}
+	}
 
 	async recordViolation(
 		ruleId: string, 

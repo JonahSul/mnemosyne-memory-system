@@ -12,6 +12,7 @@
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.17.3",
+		"reflect-metadata": "^0.2.2",
 		"zod": "^3.22.4"
 	},
 	"devDependencies": {

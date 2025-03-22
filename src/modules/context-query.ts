@@ -25,7 +25,7 @@ export class ContextQueryManager implements ContextQueryOperations {
 	private tieredKnowledge: Map<string, any> = new Map();
 
 	logContextQuery(query: string, context?: Record<string, unknown>): string {
-		const queryId = `query_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+		const queryId = `mem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 		
 		const contextQuery: ContextQuery = {
 			id: queryId,
@@ -67,6 +67,36 @@ export class ContextQueryManager implements ContextQueryOperations {
 		if (queryLower.includes('performance') || queryLower.includes('optimize')) {
 			recommendations.push('Search performance optimization memories');
 			recommendations.push('Review profiling and analysis patterns');
+		}
+		
+		if (queryLower.includes('authentication') || queryLower.includes('auth') || queryLower.includes('secure') || queryLower.includes('jwt') || queryLower.includes('api')) {
+			recommendations.push('Search authentication implementation memories');
+			recommendations.push('Review security pattern documentation');
+			recommendations.push('Look for JWT and API security examples');
+		}
+		
+		if (queryLower.includes('react') || queryLower.includes('component') || queryLower.includes('frontend') || queryLower.includes('ui')) {
+			recommendations.push('Search react component patterns');
+			recommendations.push('Review frontend development memories');
+			recommendations.push('Look for react optimization examples');
+		}
+		
+		if (queryLower.includes('compliance') || queryLower.includes('no-unverified-claims') || queryLower.includes('behavioral')) {
+			recommendations.push('Search compliance verification memories');
+			recommendations.push('Review no-unverified-claims patterns');
+			recommendations.push('Look for behavioral rule examples');
+		}
+		
+		if ((queryLower.includes('test') && queryLower.includes('fail')) || queryLower.includes('violation') || queryLower.includes('rule')) {
+			recommendations.push('Review compliance and behavioral patterns');
+			recommendations.push('Search no-unverified-claims guidance');
+			recommendations.push('Look for testing and verification patterns');
+		}
+		
+		if (queryLower.includes('session') || queryLower.includes('management') || queryLower.includes('user')) {
+			recommendations.push('Search session management patterns');
+			recommendations.push('Review user interaction memories');
+			recommendations.push('Look for management strategy examples');
 		}
 		
 		// Add context-based recommendations from recent queries
