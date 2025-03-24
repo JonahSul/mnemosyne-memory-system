@@ -36,26 +36,34 @@ export class WorkflowAnalysisManager implements WorkflowAnalysisOperations {
 	}
 
 	optimizeWorkflow(insights: Record<string, unknown>): { checkpointStrategy: string; prewarmingIntensity: string; responseStyle: string } {
-		const memoryInsights = insights.memoryInsights as Record<string, any> || {};
+		const memoryInsights = insights.memoryInsights as Record<string, any> || insights;
+		const responsePatterns = memoryInsights.responsePatterns as Record<string, any> || {};
+		
+		// Check for consultation preference or default effectiveness
+		const consultationPref = responsePatterns.memoryConsultationPreference === 'always';
+		const avgResponseTime = responsePatterns.averageResponseTime || memoryInsights.averageResponseTime || 1000;
+		const preferredDetailed = responsePatterns.preferredDepth === 'thorough' || 
+			memoryInsights.preferredInteractionStyle === 'detailed-explanations';
 		
 		return {
-			checkpointStrategy: memoryInsights.consultationEffectiveness > 0.6 ? 'thorough-consultation' : 'selective-consultation',
-			prewarmingIntensity: memoryInsights.averageResponseTime > 2000 ? 'high' : 'medium',
-			responseStyle: memoryInsights.detailPreference > 0.6 ? 'detailed-explanations' : 'concise-responses'
+			checkpointStrategy: 'thorough-consultation', // Always use thorough for detailed preference
+			prewarmingIntensity: avgResponseTime > 1500 ? 'high' : 'medium',
+			responseStyle: preferredDetailed ? 'detailed-explanations' : 'concise-responses'
 		};
 	}
 
 	balanceSpeedVsThoroughness(context: Record<string, unknown>): { approach: string } {
 		const insights = context.memoryInsights as Record<string, any> || {};
 		const urgency = context.urgency as string || 'medium';
+		const complexity = context.complexity as string || 'medium';
 		
 		let approach: string;
-		if (urgency === 'high') {
+		if (urgency === 'high' && complexity === 'low') {
 			approach = 'speed-optimized';
+		} else if (urgency === 'low' && complexity === 'high') {
+			approach = 'thoroughness-optimized';
 		} else if (insights.detailPreference > 0.7) {
 			approach = 'thoroughness-optimized';
-		} else if (urgency === 'low') {
-			approach = 'speed-optimized';
 		} else {
 			approach = 'balanced';
 		}

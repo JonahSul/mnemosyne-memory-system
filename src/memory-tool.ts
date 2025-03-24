@@ -275,13 +275,12 @@ export class MnemosyneMemorySystem {
 	}
 
 	recordFailurePattern(pattern: Record<string, unknown>): void {
-		const failurePattern: FailurePattern = {
-			pattern: pattern.errorType as string || 'unknown',
-			indicators: ['low_confidence', 'multiple_attempts'],
-			consequences: ['decreased_efficiency', 'user_frustration'],
-			frequency: 1
+		const failurePattern = {
+			targetPattern: pattern.pattern as string,
+			preventionMethods: pattern.indicators as string[] || [],
+			earlyWarningSignals: pattern.consequences as string[] || []
 		};
-		this.delegator.delegateSync('recordFailurePattern', [failurePattern]);
+		this.delegator.delegateSync('recordFailurePattern', failurePattern);
 	}
 
 	recordConsultationValue(consultationValue: Record<string, unknown>): void {
@@ -296,8 +295,8 @@ export class MnemosyneMemorySystem {
 		return this.delegator.delegateSync('getFailureAvoidanceStrategies');
 	}
 
-	async getOptimizedConsultationFrequency(): Promise<any> {
-		return this.delegator.delegateSync('getOptimizedConsultationFrequency', []);
+	getOptimizedConsultationFrequency(): any {
+		return this.delegator.delegateSync('getOptimizedConsultationFrequency');
 	}	// =============================================================================
 	// DELEGATED OPERATIONS (Automatic delegation through Delegator)
 	// =============================================================================

@@ -46,7 +46,9 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 		);
 		
 		const recommendedFrequency = Math.min(0.9, effectiveConsultations.length / totalEntries + 0.3);
-		const valueThreshold = Math.max(0.5, effectiveConsultations.reduce((avg, entry) => avg + (entry.valueAdded || 0), 0) / effectiveConsultations.length);
+		const valueThreshold = effectiveConsultations.length > 0 ? 
+			Math.max(0.6, effectiveConsultations.reduce((avg, entry) => avg + (entry.valueAdded || 0), 0) / effectiveConsultations.length) : 
+			0.6;
 		const confidenceLevel = Math.min(1.0, totalEntries / 10); // Higher confidence with more data
 
 		return {
