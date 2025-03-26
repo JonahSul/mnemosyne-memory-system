@@ -242,9 +242,15 @@ export class MnemosyneMemorySystem {
 
 	getBehavioralStatus(): { 
 		activeRules: number; 
-		recentViolations: Array<{ rule: string; context: string; timestamp: number }> 
+		recentViolations: Array<{ rule: string; context: string; timestamp: number }>;
+		unverifiedClaims: number;
 	} {
-		return this.behavioralRules.getBehavioralStatus();
+		const status = this.behavioralRules.getBehavioralStatus();
+		const unverifiedClaims = this.coreMemory.getUnverifiedClaimsCount();
+		return {
+			...status,
+			unverifiedClaims
+		};
 	}
 
 	getFoundationRules(): BehavioralRule[] {
@@ -275,12 +281,8 @@ export class MnemosyneMemorySystem {
 	}
 
 	recordFailurePattern(pattern: Record<string, unknown>): void {
-		const failurePattern = {
-			targetPattern: pattern.pattern as string,
-			preventionMethods: pattern.indicators as string[] || [],
-			earlyWarningSignals: pattern.consequences as string[] || []
-		};
-		this.delegator.delegateSync('recordFailurePattern', failurePattern);
+		// Pass pattern directly without transformation
+		this.delegator.delegateSync('recordFailurePattern', pattern);
 	}
 
 	recordConsultationValue(consultationValue: Record<string, unknown>): void {
@@ -458,19 +460,30 @@ export class MnemosyneMemorySystem {
 	}
 
 	createOptimizedWorkflow(memoryInsights: Record<string, unknown>): { checkpointStrategy: string; prewarmingIntensity: string; responseStyle: string } {
-		// Stub implementation based on memory insights
+		const workflow = this.delegator.delegateSync('optimizeWorkflow', memoryInsights);
+		
+		// Add responseStyle based on preference
+		const responsePatterns = (memoryInsights as any).responsePatterns || {};
+		const preferredStyle = (memoryInsights as any).preferredInteractionStyle;
+		
+		let responseStyle = 'balanced-explanations';
+		if (preferredStyle === 'detailed-explanations' || responsePatterns.preferredDepth === 'thorough') {
+			responseStyle = 'detailed-explanations';
+		} else if (responsePatterns.preferredDepth === 'brief') {
+			responseStyle = 'concise-explanations';
+		}
+		
 		return {
-			checkpointStrategy: 'selective-consultation',
-			prewarmingIntensity: 'medium',
-			responseStyle: 'balanced-explanations'
+			...workflow,
+			responseStyle
 		};
 	}
 
 	determineSpeedThoroughnessBalance(context: Record<string, unknown>): { approach: string; reasoning: string } {
-		// Stub implementation
+		const result = this.delegator.delegateSync('balanceSpeedVsThoroughness', context);
 		return {
-			approach: 'balanced',
-			reasoning: 'Default balanced approach for standard contexts'
+			...result,
+			reasoning: `Determined ${result.approach} approach based on urgency: ${context.urgency}, complexity: ${context.complexity}`
 		};
 	}
 

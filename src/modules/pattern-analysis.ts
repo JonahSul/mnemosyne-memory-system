@@ -73,16 +73,16 @@ export class PatternAnalysisManager implements PatternAnalysisOperations {
 
 	recordFailurePattern(pattern: Record<string, unknown>): void {
 		const failurePattern: FailurePattern = {
-			pattern: pattern.type as string || 'unknown_failure',
+			pattern: (pattern.pattern as string) || (pattern.targetPattern as string) || (pattern.type as string) || 'unknown_failure',
 			indicators: this.extractIndicators(pattern),
 			consequences: this.extractConsequences(pattern),
-			frequency: 1
+			frequency: (pattern.frequency as number) || 1
 		};
 		
 		// Merge with existing or add new
 		const existing = this.failurePatterns.find(p => p.pattern === failurePattern.pattern);
 		if (existing) {
-			existing.frequency++;
+			existing.frequency += failurePattern.frequency;
 		} else {
 			this.failurePatterns.push(failurePattern);
 		}
@@ -124,6 +124,7 @@ export class PatternAnalysisManager implements PatternAnalysisOperations {
 				earlyWarningSignals: ['making assumptions', 'proceeding without data']
 			});
 		}
+		
 		return [...this.avoidanceStrategies];
 	}
 

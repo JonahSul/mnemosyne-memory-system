@@ -11,6 +11,7 @@ export interface CoreMemoryOperations {
 	logAssumption(assumption: string, reasoning: string, context?: Record<string, unknown>): Promise<string>;
 	verifyClaim(claimId: string, success: boolean, evidence: string, notes?: string): Promise<boolean>;
 	getUnverifiedClaims(): MemoryEntry[];
+	getUnverifiedClaimsCount(): number;
 	getMemories(): Map<string, MemoryEntry>;
 	storeMemory(entry: MemoryEntry): Promise<string>;
 	searchMemory(query: string): Promise<MemoryEntry[]>;
@@ -81,6 +82,10 @@ export class CoreMemoryManager implements CoreMemoryOperations {
 			(memory.type === 'claim' || memory.type === 'assumption') && 
 			memory.status === 'pending'
 		);
+	}
+
+	getUnverifiedClaimsCount(): number {
+		return this.getUnverifiedClaims().length;
 	}
 
 	getMemories(): Map<string, MemoryEntry> {

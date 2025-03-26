@@ -1,5 +1,6 @@
 {
-	"name": "mnemosyne-memory-system",
+	// Default development environment
+	"name": "mnemosyne-memory-system-dev",
 	"main": "src/index.ts",
 	"compatibility_date": "2024-11-27",
 	"compatibility_flags": ["nodejs_compat"],
@@ -15,29 +16,78 @@
 		"bindings": [
 			{
 				"class_name": "MnemosyneMemoryMCP",
-				"name": "MNEMOSYNE_MCP_OBJECT"
+				"name": "MNEMOSYNE_MCP_OBJECT_DEV"
 			}
 		]
-	},
-	"define": {
-		"__WRANGLER_ENV__": "\"development\""
-	},
-	"env": {
-		"production": {
-			"define": {
-				"__WRANGLER_ENV__": "\"production\""
-			}
-		}
 	},
 	"vectorize": [
 		{
 			"binding": "VECTORIZE_INDEX",
-			"index_name": "mnemosyne-memory-index"
+			"index_name": "mnemosyne-memory-index-dev"
 		}
 	],
+	"define": {
+		"__WRANGLER_ENV__": "\"development\""
+	},
 	"observability": {
 		"logs": {
 			"enabled": true
+		}
+	},
+	
+	// Environment-specific configurations
+	"env": {
+		"staging": {
+			"name": "mnemosyne-memory-system-stage",
+			"durable_objects": {
+				"bindings": [
+					{
+						"class_name": "MnemosyneMemoryMCP",
+						"name": "MNEMOSYNE_MCP_OBJECT_STAGE"
+					}
+				]
+			},
+			"vectorize": [
+				{
+					"binding": "VECTORIZE_INDEX",
+					"index_name": "mnemosyne-memory-index-stage"
+				}
+			],
+			"define": {
+				"__WRANGLER_ENV__": "\"staging\""
+			},
+			"observability": {
+				"logs": {
+					"enabled": true
+				}
+			}
+		},
+		
+		"production": {
+			"name": "mnemosyne-memory-system",
+			"durable_objects": {
+				"bindings": [
+					{
+						"class_name": "MnemosyneMemoryMCP",
+						"name": "MNEMOSYNE_MCP_OBJECT"
+					}
+				]
+			},
+			"vectorize": [
+				{
+					"binding": "VECTORIZE_INDEX",
+					"index_name": "mnemosyne-memory-index"
+				}
+			],
+			"define": {
+				"__WRANGLER_ENV__": "\"production\""
+			},
+			"observability": {
+				"logs": {
+					"enabled": true,
+					"exception": true
+				}
+			}
 		}
 	}
 }
