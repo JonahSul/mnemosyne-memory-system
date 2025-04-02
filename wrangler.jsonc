@@ -39,6 +39,14 @@
 	"env": {
 		"staging": {
 			"name": "mnemosyne-memory-system-stage",
+			"migrations": [
+				{
+					"new_sqlite_classes": [
+						"MnemosyneMemoryMCP"
+					],
+					"tag": "v1"
+				}
+			],
 			"durable_objects": {
 				"bindings": [
 					{

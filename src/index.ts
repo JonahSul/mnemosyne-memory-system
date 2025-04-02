@@ -10,16 +10,27 @@ import { MnemosyneMemoryMCP } from "./agent.js";
 // Interface for environment variables
 interface Env {
 	MEMORY_API_KEY?: string;
-	MNEMOSYNE_MCP_OBJECT: DurableObjectNamespace;
+	MNEMOSYNE_MCP_OBJECT?: DurableObjectNamespace;
+	MNEMOSYNE_MCP_OBJECT_DEV?: DurableObjectNamespace;
+	MNEMOSYNE_MCP_OBJECT_STAGE?: DurableObjectNamespace;
 }
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
 
+		// Determine which Durable Object binding to use based on environment
+		const durableObject = env.MNEMOSYNE_MCP_OBJECT_STAGE || 
+							  env.MNEMOSYNE_MCP_OBJECT_DEV || 
+							  env.MNEMOSYNE_MCP_OBJECT;
+
+		if (!durableObject) {
+			return new Response("Durable Object binding not found", { status: 500 });
+		}
+
 		// Get or create Durable Object instance
-		const id = env.MNEMOSYNE_MCP_OBJECT.idFromName("default");
-		const stub = env.MNEMOSYNE_MCP_OBJECT.get(id);
+		const id = durableObject.idFromName("default");
+		const stub = durableObject.get(id);
 
 		// Handle SSE endpoint for MCP communication
 		if (url.pathname === "/sse" || url.pathname === "/sse/message") {
