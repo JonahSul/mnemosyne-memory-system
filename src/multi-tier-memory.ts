@@ -210,12 +210,16 @@ export class MultiTierMemorySystem {
 	}
 
 	/**
-	 * Prune items from tier if capacity is exceeded
+	 * Prune items from tier based on time expiration and capacity limits
 	 */
 	private async pruneIfNecessary(tier: 'short' | 'intermediate' | 'long'): Promise<void> {
 		const tierMap = this.getTierMap(tier);
 		const config = this.config[tier];
 		
+		// First, remove expired items based on retentionHours
+		await this.pruneExpiredItems(tier);
+		
+		// Then, if still over capacity, remove items based on pruning strategy
 		if (tierMap.size <= config.maxItems) {
 			return;
 		}
@@ -243,6 +247,160 @@ export class MultiTierMemorySystem {
 				tierMap.delete(item.id);
 			}
 		}
+	}
+
+	/**
+	 * Remove items that have exceeded their retention time (used during regular operations)
+	 */
+	private async pruneExpiredItems(tier: 'short' | 'intermediate' | 'long'): Promise<void> {
+		const tierMap = this.getTierMap(tier);
+		const config = this.config[tier];
+		const now = new Date().getTime();
+		const retentionMs = config.retentionHours * 60 * 60 * 1000;
+		
+		// Only remove items that have exceeded hard retention time
+		const expiredItems: string[] = [];
+		
+		for (const [id, item] of tierMap.entries()) {
+			const itemAge = now - new Date(item.timestamp).getTime();
+			
+			if (itemAge > retentionMs) {
+				const shouldSpare = this.shouldSpareFromExpiration(item, tier);
+				if (!shouldSpare) {
+					expiredItems.push(id);
+				}
+			}
+		}
+		
+		// Remove expired items
+		for (const id of expiredItems) {
+			tierMap.delete(id);
+		}
+	}
+
+	/**
+	 * Apply forgetting curves during garbage collection (includes probabilistic forgetting)
+	 */
+	private async pruneWithForgettingCurves(tier: 'short' | 'intermediate' | 'long'): Promise<void> {
+		const tierMap = this.getTierMap(tier);
+		const config = this.config[tier];
+		const now = new Date().getTime();
+		const retentionMs = config.retentionHours * 60 * 60 * 1000;
+		
+		// Collect items to be removed
+		const itemsToRemove: string[] = [];
+		
+		for (const [id, item] of tierMap.entries()) {
+			const itemAge = now - new Date(item.timestamp).getTime();
+			
+			let shouldRemove = false;
+			
+			// Hard expiration: Items beyond retention time
+			if (itemAge > retentionMs) {
+				const shouldSpare = this.shouldSpareFromExpiration(item, tier);
+				if (!shouldSpare) {
+					shouldRemove = true;
+				}
+			}
+			// Probabilistic forgetting: Apply forgetting curve for all items
+			else {
+				const shouldForget = this.shouldForgetItem(item, tier);
+				if (shouldForget) {
+					shouldRemove = true;
+				}
+			}
+			
+			if (shouldRemove) {
+				itemsToRemove.push(id);
+			}
+		}
+		
+		// Remove selected items
+		for (const id of itemsToRemove) {
+			tierMap.delete(id);
+		}
+	}
+
+	/**
+	 * Determine if an item should be spared from time-based expiration
+	 * based on importance and access patterns
+	 */
+	private shouldSpareFromExpiration(item: TieredKnowledgeItem, tier: 'short' | 'intermediate' | 'long'): boolean {
+		// High importance items are more likely to be spared
+		const importanceThreshold = tier === 'long' ? 0.7 : tier === 'intermediate' ? 0.8 : 0.9;
+		
+		if (item.importance >= importanceThreshold) {
+			return true;
+		}
+		
+		// Frequently accessed items are more likely to be spared (more lenient thresholds)
+		const accessThreshold = tier === 'long' ? 2 : tier === 'intermediate' ? 3 : 5;
+		
+		if (item.accessCount >= accessThreshold) {
+			return true;
+		}
+		
+		// Recently accessed items get a slight reprieve
+		const recentAccessMs = 24 * 60 * 60 * 1000; // 24 hours
+		const timeSinceAccess = new Date().getTime() - new Date(item.lastAccessed).getTime();
+		
+		if (timeSinceAccess < recentAccessMs && item.importance >= 0.5) {
+			return true;
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Calculate retention probability based on Ebbinghaus forgetting curve
+	 * Uses probabilistic decay with importance and access modifiers
+	 */
+	private calculateRetentionProbability(item: TieredKnowledgeItem, tier: 'short' | 'intermediate' | 'long'): number {
+		const now = new Date().getTime();
+		const itemAge = now - new Date(item.timestamp).getTime();
+		
+		// Convert age to hours for curve calculation
+		const ageInHours = itemAge / (60 * 60 * 1000);
+		
+		// Base retention probability based on Ebbinghaus curve
+		// Exponential decay: P(retention) = e^(-ageInHours / decayConstant)
+		const decayConstant = tier === 'long' ? 2000 : tier === 'intermediate' ? 50 : 5; // Tier-specific decay rates
+		let baseProbability = Math.exp(-ageInHours / decayConstant);
+		
+		// Apply importance modifier (importance boosts retention)
+		const importanceModifier = 0.5 + (item.importance * 0.5); // Range: 0.5 to 1.0
+		baseProbability *= importanceModifier;
+		
+		// Apply access frequency modifier
+		const accessModifier = Math.min(1.0 + (item.accessCount * 0.1), 2.0); // Cap at 2x boost
+		baseProbability *= accessModifier;
+		
+		// Apply recency bonus (recently accessed items get retention boost)
+		const timeSinceAccess = now - new Date(item.lastAccessed).getTime();
+		const recencyHours = timeSinceAccess / (60 * 60 * 1000);
+		const recencyModifier = recencyHours < 24 ? 1.2 : 1.0; // 20% boost if accessed within 24h
+		baseProbability *= recencyModifier;
+		
+		// Apply semantic reinforcement bonus
+		const semanticModifier = 0.8 + (item.semanticWeight * 0.4); // Range: 0.8 to 1.2
+		baseProbability *= semanticModifier;
+		
+		// Ensure probability stays within bounds
+		return Math.min(Math.max(baseProbability, 0.0), 1.0);
+	}
+
+	/**
+	 * Apply probabilistic forgetting curve to determine if item should be forgotten
+	 */
+	private shouldForgetItem(item: TieredKnowledgeItem, tier: 'short' | 'intermediate' | 'long'): boolean {
+		const retentionProbability = this.calculateRetentionProbability(item, tier);
+		
+		// Generate deterministic "random" number based on item ID for consistent behavior
+		const seed = this.simpleHash(item.id);
+		const random = this.seededRandom(seed)();
+		
+		// Item is forgotten if random value exceeds retention probability
+		return random > retentionProbability;
 	}
 
 	/**
@@ -499,5 +657,183 @@ export class MultiTierMemorySystem {
 				capacityUsed: short.utilizationPercent + intermediate.utilizationPercent + long.utilizationPercent
 			}
 		};
+	}
+
+	/**
+	 * Get forgetting curve analytics for all items
+	 */
+	getForgettingCurveAnalytics(): {
+		retentionProbabilities: { short: number[]; intermediate: number[]; long: number[] };
+		averageRetention: { short: number; intermediate: number; long: number };
+		itemsAtRisk: { short: number; intermediate: number; long: number };
+	} {
+		const analytics = {
+			retentionProbabilities: { short: [] as number[], intermediate: [] as number[], long: [] as number[] },
+			averageRetention: { short: 0, intermediate: 0, long: 0 },
+			itemsAtRisk: { short: 0, intermediate: 0, long: 0 }
+		};
+		
+		// Analyze each tier
+		for (const [tierName, tierMap] of [
+			['short', this.shortTerm] as const,
+			['intermediate', this.intermediateTerm] as const,
+			['long', this.longTerm] as const
+		]) {
+			const probabilities: number[] = [];
+			let atRiskCount = 0;
+			
+			for (const item of tierMap.values()) {
+				const retentionProb = this.calculateRetentionProbability(item, tierName);
+				probabilities.push(retentionProb);
+				
+				if (retentionProb < 0.5) {
+					atRiskCount++;
+				}
+			}
+			
+			analytics.retentionProbabilities[tierName] = probabilities;
+			analytics.averageRetention[tierName] = probabilities.length > 0 
+				? probabilities.reduce((sum, p) => sum + p, 0) / probabilities.length 
+				: 0;
+			analytics.itemsAtRisk[tierName] = atRiskCount;
+		}
+		
+		return analytics;
+	}
+
+	/**
+	 * Manually trigger garbage collection across all tiers
+	 */
+	async runGarbageCollection(): Promise<{
+		expiredItemsRemoved: { short: number; intermediate: number; long: number; total: number };
+		itemsSpared: { short: number; intermediate: number; long: number; total: number };
+		forgettingCurveStats: {
+			retentionProbabilities: { short: number[]; intermediate: number[]; long: number[] };
+			averageRetention: { short: number; intermediate: number; long: number };
+			itemsAtRisk: { short: number; intermediate: number; long: number };
+		};
+	}> {
+		const beforeStats = this.getMemoryStats();
+		const beforeCurveStats = this.getForgettingCurveAnalytics();
+		
+		// Run forgetting curve pruning on all tiers (includes probabilistic forgetting)
+		await this.pruneWithForgettingCurves('short');
+		await this.pruneWithForgettingCurves('intermediate');
+		await this.pruneWithForgettingCurves('long');
+		
+		const afterStats = this.getMemoryStats();
+		
+		// Calculate items removed
+		const expiredItemsRemoved = {
+			short: beforeStats.short.count - afterStats.short.count,
+			intermediate: beforeStats.intermediate.count - afterStats.intermediate.count,
+			long: beforeStats.long.count - afterStats.long.count,
+			total: beforeStats.total.count - afterStats.total.count
+		};
+
+		// Calculate spared items (approximation based on what should have expired)
+		const itemsSpared = this.getSparedItemsCount();
+		
+		return {
+			expiredItemsRemoved,
+			itemsSpared,
+			forgettingCurveStats: beforeCurveStats
+		};
+	}
+
+	/**
+	 * Get count of items that were spared from expiration
+	 */
+	private getSparedItemsCount(): { short: number; intermediate: number; long: number; total: number } {
+		const now = new Date().getTime();
+		let sparedCounts = { short: 0, intermediate: 0, long: 0, total: 0 };
+		
+		// Check each tier for items that should have expired but were spared
+		for (const [tierName, tierMap] of [
+			['short', this.shortTerm] as const,
+			['intermediate', this.intermediateTerm] as const,
+			['long', this.longTerm] as const
+		]) {
+			const config = this.config[tierName];
+			const retentionMs = config.retentionHours * 60 * 60 * 1000;
+			
+			for (const item of tierMap.values()) {
+				const itemAge = now - new Date(item.timestamp).getTime();
+				if (itemAge > retentionMs && this.shouldSpareFromExpiration(item, tierName)) {
+					sparedCounts[tierName]++;
+					sparedCounts.total++;
+				}
+			}
+		}
+		
+		return sparedCounts;
+	}
+
+	/**
+	 * Get memory health statistics including expiration data
+	 */
+	getMemoryHealth(): {
+		tiersHealth: { short: string; intermediate: string; long: string };
+		expirationStats: { itemsNearExpiration: number; itemsSpared: number };
+		recommendations: string[];
+	} {
+		const stats = this.getMemoryStats();
+		const sparedItems = this.getSparedItemsCount();
+		const nearExpiration = this.getItemsNearExpiration();
+		
+		// Assess tier health
+		const tiersHealth = {
+			short: stats.short.utilizationPercent > 80 ? 'overloaded' : stats.short.utilizationPercent > 60 ? 'healthy' : 'underutilized',
+			intermediate: stats.intermediate.utilizationPercent > 80 ? 'overloaded' : stats.intermediate.utilizationPercent > 60 ? 'healthy' : 'underutilized',
+			long: stats.long.utilizationPercent > 80 ? 'overloaded' : stats.long.utilizationPercent > 60 ? 'healthy' : 'underutilized'
+		};
+		
+		// Generate recommendations
+		const recommendations: string[] = [];
+		if (sparedItems.total > stats.total.count * 0.3) {
+			recommendations.push('Consider adjusting importance thresholds - many expired items are being spared');
+		}
+		if (nearExpiration > stats.total.count * 0.2) {
+			recommendations.push('High number of items approaching expiration - consider garbage collection');
+		}
+		if (stats.total.count === 0) {
+			recommendations.push('Memory system is empty - consider storing some baseline knowledge');
+		}
+		
+		return {
+			tiersHealth,
+			expirationStats: {
+				itemsNearExpiration: nearExpiration,
+				itemsSpared: sparedItems.total
+			},
+			recommendations
+		};
+	}
+
+	/**
+	 * Count items that are approaching expiration (within 10% of retention time)
+	 */
+	private getItemsNearExpiration(): number {
+		const now = new Date().getTime();
+		let nearExpirationCount = 0;
+		
+		for (const [tierName, tierMap] of [
+			['short', this.shortTerm] as const,
+			['intermediate', this.intermediateTerm] as const,
+			['long', this.longTerm] as const
+		]) {
+			const config = this.config[tierName];
+			const retentionMs = config.retentionHours * 60 * 60 * 1000;
+			const nearExpirationThreshold = retentionMs * 0.9; // 90% of retention time
+			
+			for (const item of tierMap.values()) {
+				const itemAge = now - new Date(item.timestamp).getTime();
+				if (itemAge > nearExpirationThreshold && itemAge < retentionMs) {
+					nearExpirationCount++;
+				}
+			}
+		}
+		
+		return nearExpirationCount;
 	}
 }
