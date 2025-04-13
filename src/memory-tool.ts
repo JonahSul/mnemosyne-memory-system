@@ -257,6 +257,15 @@ export class MnemosyneMemorySystem {
 		return this.behavioralRules.getFoundationRules();
 	}
 
+	getFoundationInfo(): { version?: string; timestamp?: string; rulesCount: number } {
+		const foundationRules = this.behavioralRules.getFoundationRules();
+		
+		// TODO: Add foundation version/timestamp tracking in behavioral rules manager
+		return {
+			rulesCount: foundationRules.length
+		};
+	}
+
 	updateFoundation(migration: Record<string, unknown>, options?: Record<string, unknown>): void {
 		this.behavioralRules.updateFoundation(migration, options);
 	}
