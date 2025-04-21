@@ -26,7 +26,7 @@ export interface TieredKnowledgeItem {
 	timestamp: string;
 	
 	// Tier-specific properties
-	tier: 'short' | 'intermediate' | 'long';
+	tier: 'axiom' | 'long' | 'intermediate' | 'short';
 	accessCount: number;
 	lastAccessed: string;
 	importance: number; // 0-1 scale
@@ -46,21 +46,29 @@ export interface TieredKnowledgeItem {
 }
 
 export interface TierConfig {
-	short: MemoryTier;
-	intermediate: MemoryTier;
+	axiom?: MemoryTier;
 	long: MemoryTier;
+	intermediate: MemoryTier;
+	short: MemoryTier;
 }
 
 /**
  * Default tier configuration based on established cognitive memory patterns
  */
 export const DEFAULT_TIER_CONFIG: TierConfig = {
-	short: {
-		name: 'short-term',
-		maxItems: 50,           // Small for token conservation
-		retentionHours: 2,      // Very aggressive pruning
-		accessThreshold: 3,     // Promote after 3 accesses
-		pruningStrategy: 'lru'  // Least recently used
+	axiom: {
+		name: 'axiom-tier',
+		maxItems: 100,          // Reasonable limit for key axioms
+		retentionHours: Infinity, // Never expire
+		accessThreshold: 0,     // No promotion needed
+		pruningStrategy: 'importance' // Only remove least important if at capacity
+	},
+	long: {
+		name: 'long-term',
+		maxItems: 1000,         // Large capacity
+		retentionHours: 8760,   // 1 year retention
+		accessThreshold: 0,     // No promotion (axiom is top tier)
+		pruningStrategy: 'importance' // Importance-based pruning
 	},
 	intermediate: {
 		name: 'intermediate-term', 
@@ -69,19 +77,20 @@ export const DEFAULT_TIER_CONFIG: TierConfig = {
 		accessThreshold: 5,     // Promote after 5 accesses
 		pruningStrategy: 'frequency' // Frequency-based retention
 	},
-	long: {
-		name: 'long-term',
-		maxItems: 1000,         // Large capacity
-		retentionHours: 8760,   // 1 year retention
-		accessThreshold: 0,     // No promotion (top tier)
-		pruningStrategy: 'importance' // Importance-based pruning
+	short: {
+		name: 'short-term',
+		maxItems: 50,           // Small for token conservation
+		retentionHours: 2,      // Very aggressive pruning
+		accessThreshold: 3,     // Promote after 3 accesses
+		pruningStrategy: 'lru'  // Least recently used
 	}
 };
 
 export class MultiTierMemorySystem {
-	private shortTerm: Map<string, TieredKnowledgeItem> = new Map();
-	private intermediateTerm: Map<string, TieredKnowledgeItem> = new Map();
+	private axiomTier: Map<string, TieredKnowledgeItem> = new Map();
 	private longTerm: Map<string, TieredKnowledgeItem> = new Map();
+	private intermediateTerm: Map<string, TieredKnowledgeItem> = new Map();
+	private shortTerm: Map<string, TieredKnowledgeItem> = new Map();
 	private config: TierConfig;
 
 	constructor(config: TierConfig = DEFAULT_TIER_CONFIG) {
@@ -96,7 +105,7 @@ export class MultiTierMemorySystem {
 		metadata?: Record<string, unknown>;
 		tags?: string[];
 		importance?: number; // 0-1 scale, defaults to 0.5
-		targetTier?: 'short' | 'intermediate' | 'long';
+		targetTier?: 'axiom' | 'long' | 'intermediate' | 'short';
 	}): Promise<TieredKnowledgeItem> {
 		const id = `tier_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 		const timestamp = new Date().toISOString();
@@ -150,7 +159,7 @@ export class MultiTierMemorySystem {
 	async searchSimilar(query: string, options: {
 		limit?: number;
 		threshold?: number;
-		tierPreference?: 'short' | 'intermediate' | 'long' | 'all';
+		tierPreference?: 'axiom' | 'long' | 'intermediate' | 'short' | 'all';
 	} = {}): Promise<Array<TieredKnowledgeItem & { similarity: number }>> {
 		const { limit = 10, threshold = 0.7, tierPreference = 'all' } = options;
 		const queryEmbedding = this.generateMockEmbedding(query);
@@ -212,12 +221,23 @@ export class MultiTierMemorySystem {
 	/**
 	 * Prune items from tier based on time expiration and capacity limits
 	 */
-	private async pruneIfNecessary(tier: 'short' | 'intermediate' | 'long'): Promise<void> {
+	private async pruneIfNecessary(tier: 'axiom' | 'long' | 'intermediate' | 'short'): Promise<void> {
 		const tierMap = this.getTierMap(tier);
 		const config = this.config[tier];
 		
-		// First, remove expired items based on retentionHours
-		await this.pruneExpiredItems(tier);
+		// Skip if tier is not configured
+		if (!config) return;
+		
+		// Axioms with infinite retention hours need special handling
+		if (config.retentionHours === Infinity) {
+			// For axioms, only prune if over capacity (no time-based expiration)
+			if (tierMap.size <= config.maxItems) {
+				return;
+			}
+		} else {
+			// First, remove expired items based on retentionHours
+			await this.pruneExpiredItems(tier);
+		}
 		
 		// Then, if still over capacity, remove items based on pruning strategy
 		if (tierMap.size <= config.maxItems) {
@@ -252,11 +272,20 @@ export class MultiTierMemorySystem {
 	/**
 	 * Remove items that have exceeded their retention time (used during regular operations)
 	 */
-	private async pruneExpiredItems(tier: 'short' | 'intermediate' | 'long'): Promise<void> {
+	private async pruneExpiredItems(tier: 'axiom' | 'long' | 'intermediate' | 'short'): Promise<void> {
 		const tierMap = this.getTierMap(tier);
 		const config = this.config[tier];
-		const now = new Date().getTime();
+		const now = Date.now(); // Use Date.now() for better compatibility with fake timers
+		
+		// Skip if tier is not configured
+		if (!config) return;
+		
 		const retentionMs = config.retentionHours * 60 * 60 * 1000;
+		
+		// Skip expiration for axioms (infinite retention)
+		if (config.retentionHours === Infinity) {
+			return;
+		}
 		
 		// Only remove items that have exceeded hard retention time
 		const expiredItems: string[] = [];
@@ -281,11 +310,20 @@ export class MultiTierMemorySystem {
 	/**
 	 * Apply forgetting curves during garbage collection (includes probabilistic forgetting)
 	 */
-	private async pruneWithForgettingCurves(tier: 'short' | 'intermediate' | 'long'): Promise<void> {
+	private async pruneWithForgettingCurves(tier: 'axiom' | 'long' | 'intermediate' | 'short'): Promise<void> {
 		const tierMap = this.getTierMap(tier);
 		const config = this.config[tier];
-		const now = new Date().getTime();
+		const now = Date.now(); // Use Date.now() for better compatibility with fake timers
+		
+		// Skip if tier is not configured
+		if (!config) return;
+		
 		const retentionMs = config.retentionHours * 60 * 60 * 1000;
+		
+		// Skip forgetting curves for axioms (infinite retention)
+		if (config.retentionHours === Infinity) {
+			return;
+		}
 		
 		// Collect items to be removed
 		const itemsToRemove: string[] = [];
@@ -325,7 +363,10 @@ export class MultiTierMemorySystem {
 	 * Determine if an item should be spared from time-based expiration
 	 * based on importance and access patterns
 	 */
-	private shouldSpareFromExpiration(item: TieredKnowledgeItem, tier: 'short' | 'intermediate' | 'long'): boolean {
+	private shouldSpareFromExpiration(item: TieredKnowledgeItem, tier: 'axiom' | 'long' | 'intermediate' | 'short'): boolean {
+		// Axioms are always spared (infinite retention)
+		if (tier === 'axiom') return true;
+		
 		// High importance items are more likely to be spared
 		const importanceThreshold = tier === 'long' ? 0.7 : tier === 'intermediate' ? 0.8 : 0.9;
 		
@@ -342,7 +383,7 @@ export class MultiTierMemorySystem {
 		
 		// Recently accessed items get a slight reprieve
 		const recentAccessMs = 24 * 60 * 60 * 1000; // 24 hours
-		const timeSinceAccess = new Date().getTime() - new Date(item.lastAccessed).getTime();
+		const timeSinceAccess = Date.now() - new Date(item.lastAccessed).getTime();
 		
 		if (timeSinceAccess < recentAccessMs && item.importance >= 0.5) {
 			return true;
@@ -355,8 +396,11 @@ export class MultiTierMemorySystem {
 	 * Calculate retention probability based on Ebbinghaus forgetting curve
 	 * Uses probabilistic decay with importance and access modifiers
 	 */
-	private calculateRetentionProbability(item: TieredKnowledgeItem, tier: 'short' | 'intermediate' | 'long'): number {
-		const now = new Date().getTime();
+	private calculateRetentionProbability(item: TieredKnowledgeItem, tier: 'axiom' | 'long' | 'intermediate' | 'short'): number {
+		// Axioms always have 100% retention probability
+		if (tier === 'axiom') return 1.0;
+		
+		const now = Date.now(); // Use Date.now() for better compatibility with fake timers
 		const itemAge = now - new Date(item.timestamp).getTime();
 		
 		// Convert age to hours for curve calculation
@@ -392,7 +436,10 @@ export class MultiTierMemorySystem {
 	/**
 	 * Apply probabilistic forgetting curve to determine if item should be forgotten
 	 */
-	private shouldForgetItem(item: TieredKnowledgeItem, tier: 'short' | 'intermediate' | 'long'): boolean {
+	private shouldForgetItem(item: TieredKnowledgeItem, tier: 'axiom' | 'long' | 'intermediate' | 'short'): boolean {
+		// Axioms are never forgotten
+		if (tier === 'axiom') return false;
+		
 		const retentionProbability = this.calculateRetentionProbability(item, tier);
 		
 		// Generate deterministic "random" number based on item ID for consistent behavior
@@ -406,7 +453,8 @@ export class MultiTierMemorySystem {
 	/**
 	 * Helper methods
 	 */
-	private selectInitialTier(importance: number): 'short' | 'intermediate' | 'long' {
+	private selectInitialTier(importance: number): 'axiom' | 'long' | 'intermediate' | 'short' {
+		// Axioms are explicitly set via targetTier, not auto-selected
 		if (importance >= 0.8) return 'long';
 		if (importance >= 0.6) return 'intermediate'; 
 		return 'short';
@@ -504,43 +552,47 @@ export class MultiTierMemorySystem {
 		return denominator === 0 ? 0 : dotProduct / denominator;
 	}
 
-	private storeInTier(item: TieredKnowledgeItem, tier: 'short' | 'intermediate' | 'long'): void {
+	private storeInTier(item: TieredKnowledgeItem, tier: 'axiom' | 'long' | 'intermediate' | 'short'): void {
 		const tierMap = this.getTierMap(tier);
 		tierMap.set(item.id, item);
 	}
 
-	private promoteItem(item: TieredKnowledgeItem, newTier: 'intermediate' | 'long'): void {
+	private promoteItem(item: TieredKnowledgeItem, newTier: 'axiom' | 'long' | 'intermediate'): void {
 		item.tier = newTier;
 		item.promotionEligible = false;
 		this.storeInTier(item, newTier);
 	}
 
-	private getTierMap(tier: 'short' | 'intermediate' | 'long'): Map<string, TieredKnowledgeItem> {
+	private getTierMap(tier: 'axiom' | 'long' | 'intermediate' | 'short'): Map<string, TieredKnowledgeItem> {
 		switch (tier) {
-			case 'short': return this.shortTerm;
-			case 'intermediate': return this.intermediateTerm;
+			case 'axiom': return this.axiomTier;
 			case 'long': return this.longTerm;
+			case 'intermediate': return this.intermediateTerm;
+			case 'short': return this.shortTerm;
 		}
 	}
 
-	private getTiersToSearch(preference: 'short' | 'intermediate' | 'long' | 'all'): Array<[string, Map<string, TieredKnowledgeItem>]> {
+	private getTiersToSearch(preference: 'axiom' | 'long' | 'intermediate' | 'short' | 'all'): Array<[string, Map<string, TieredKnowledgeItem>]> {
 		switch (preference) {
-			case 'short': return [['short', this.shortTerm]];
-			case 'intermediate': return [['intermediate', this.intermediateTerm]];
+			case 'axiom': return [['axiom', this.axiomTier]];
 			case 'long': return [['long', this.longTerm]];
+			case 'intermediate': return [['intermediate', this.intermediateTerm]];
+			case 'short': return [['short', this.shortTerm]];
 			case 'all': 
 			default:
 				return [
-					['long', this.longTerm],          // Search highest tier first
+					['axiom', this.axiomTier],        // Search axioms first (highest priority)
+					['long', this.longTerm],          // Then highest tier
 					['intermediate', this.intermediateTerm],
 					['short', this.shortTerm]
 				];
 		}
 	}
 
-	private getTierBoost(tier: 'short' | 'intermediate' | 'long'): number {
+	private getTierBoost(tier: 'axiom' | 'long' | 'intermediate' | 'short'): number {
 		// Boost scores for higher tiers
 		switch (tier) {
+			case 'axiom': return 100.0;      // Massive boost - axioms always surface first
 			case 'long': return 1.2;
 			case 'intermediate': return 1.1;
 			case 'short': return 1.0;
@@ -625,15 +677,27 @@ export class MultiTierMemorySystem {
 	 * Get memory statistics across all tiers
 	 */
 	getMemoryStats(): {
-		short: { count: number; capacity: number; utilizationPercent: number };
-		intermediate: { count: number; capacity: number; utilizationPercent: number };
+		axiom?: { count: number; capacity: number; utilizationPercent: number };
 		long: { count: number; capacity: number; utilizationPercent: number };
+		intermediate: { count: number; capacity: number; utilizationPercent: number };
+		short: { count: number; capacity: number; utilizationPercent: number };
 		total: { count: number; capacityUsed: number };
 	} {
-		const short = {
-			count: this.shortTerm.size,
-			capacity: this.config.short.maxItems,
-			utilizationPercent: (this.shortTerm.size / this.config.short.maxItems) * 100
+		const result: any = {};
+		
+		// Add axiom tier stats if configured
+		if (this.config.axiom) {
+			result.axiom = {
+				count: this.axiomTier.size,
+				capacity: this.config.axiom.maxItems,
+				utilizationPercent: (this.axiomTier.size / this.config.axiom.maxItems) * 100
+			};
+		}
+
+		const long = {
+			count: this.longTerm.size,
+			capacity: this.config.long.maxItems,
+			utilizationPercent: (this.longTerm.size / this.config.long.maxItems) * 100
 		};
 
 		const intermediate = {
@@ -642,48 +706,58 @@ export class MultiTierMemorySystem {
 			utilizationPercent: (this.intermediateTerm.size / this.config.intermediate.maxItems) * 100
 		};
 
-		const long = {
-			count: this.longTerm.size,
-			capacity: this.config.long.maxItems,
-			utilizationPercent: (this.longTerm.size / this.config.long.maxItems) * 100
+		const short = {
+			count: this.shortTerm.size,
+			capacity: this.config.short.maxItems,
+			utilizationPercent: (this.shortTerm.size / this.config.short.maxItems) * 100
 		};
 
-		return {
-			short,
-			intermediate,
-			long,
-			total: {
-				count: short.count + intermediate.count + long.count,
-				capacityUsed: short.utilizationPercent + intermediate.utilizationPercent + long.utilizationPercent
-			}
+		result.long = long;
+		result.intermediate = intermediate;
+		result.short = short;
+		result.total = {
+			count: (result.axiom?.count || 0) + long.count + intermediate.count + short.count,
+			capacityUsed: (result.axiom?.utilizationPercent || 0) + long.utilizationPercent + intermediate.utilizationPercent + short.utilizationPercent
 		};
+
+		return result;
 	}
 
 	/**
 	 * Get forgetting curve analytics for all items
 	 */
 	getForgettingCurveAnalytics(): {
-		retentionProbabilities: { short: number[]; intermediate: number[]; long: number[] };
-		averageRetention: { short: number; intermediate: number; long: number };
-		itemsAtRisk: { short: number; intermediate: number; long: number };
+		retentionProbabilities: { axiom?: number[]; long: number[]; intermediate: number[]; short: number[] };
+		averageRetention: { axiom?: number; long: number; intermediate: number; short: number };
+		itemsAtRisk: { axiom?: number; long: number; intermediate: number; short: number };
 	} {
-		const analytics = {
-			retentionProbabilities: { short: [] as number[], intermediate: [] as number[], long: [] as number[] },
-			averageRetention: { short: 0, intermediate: 0, long: 0 },
-			itemsAtRisk: { short: 0, intermediate: 0, long: 0 }
+		const analytics: any = {
+			retentionProbabilities: { long: [] as number[], intermediate: [] as number[], short: [] as number[] },
+			averageRetention: { long: 0, intermediate: 0, short: 0 },
+			itemsAtRisk: { long: 0, intermediate: 0, short: 0 }
 		};
 		
 		// Analyze each tier
-		for (const [tierName, tierMap] of [
-			['short', this.shortTerm] as const,
-			['intermediate', this.intermediateTerm] as const,
-			['long', this.longTerm] as const
-		]) {
+		const tiersToAnalyze: Array<[string, Map<string, TieredKnowledgeItem>]> = [
+			['long', this.longTerm],
+			['intermediate', this.intermediateTerm],
+			['short', this.shortTerm]
+		];
+		
+		// Add axiom tier if configured
+		if (this.config.axiom) {
+			tiersToAnalyze.unshift(['axiom', this.axiomTier]);
+			analytics.retentionProbabilities.axiom = [];
+			analytics.averageRetention.axiom = 0;
+			analytics.itemsAtRisk.axiom = 0;
+		}
+		
+		for (const [tierName, tierMap] of tiersToAnalyze) {
 			const probabilities: number[] = [];
 			let atRiskCount = 0;
 			
 			for (const item of tierMap.values()) {
-				const retentionProb = this.calculateRetentionProbability(item, tierName);
+				const retentionProb = this.calculateRetentionProbability(item, tierName as 'axiom' | 'long' | 'intermediate' | 'short');
 				probabilities.push(retentionProb);
 				
 				if (retentionProb < 0.5) {
@@ -705,31 +779,37 @@ export class MultiTierMemorySystem {
 	 * Manually trigger garbage collection across all tiers
 	 */
 	async runGarbageCollection(): Promise<{
-		expiredItemsRemoved: { short: number; intermediate: number; long: number; total: number };
-		itemsSpared: { short: number; intermediate: number; long: number; total: number };
+		expiredItemsRemoved: { axiom?: number; long: number; intermediate: number; short: number; total: number };
+		itemsSpared: { axiom?: number; long: number; intermediate: number; short: number; total: number };
 		forgettingCurveStats: {
-			retentionProbabilities: { short: number[]; intermediate: number[]; long: number[] };
-			averageRetention: { short: number; intermediate: number; long: number };
-			itemsAtRisk: { short: number; intermediate: number; long: number };
+			retentionProbabilities: { axiom?: number[]; long: number[]; intermediate: number[]; short: number[] };
+			averageRetention: { axiom?: number; long: number; intermediate: number; short: number };
+			itemsAtRisk: { axiom?: number; long: number; intermediate: number; short: number };
 		};
 	}> {
 		const beforeStats = this.getMemoryStats();
 		const beforeCurveStats = this.getForgettingCurveAnalytics();
 		
 		// Run forgetting curve pruning on all tiers (includes probabilistic forgetting)
-		await this.pruneWithForgettingCurves('short');
-		await this.pruneWithForgettingCurves('intermediate');
+		// Note: axioms are automatically skipped due to infinite retention
+		await this.pruneWithForgettingCurves('axiom');
 		await this.pruneWithForgettingCurves('long');
+		await this.pruneWithForgettingCurves('intermediate');
+		await this.pruneWithForgettingCurves('short');
 		
 		const afterStats = this.getMemoryStats();
 		
 		// Calculate items removed
-		const expiredItemsRemoved = {
-			short: beforeStats.short.count - afterStats.short.count,
-			intermediate: beforeStats.intermediate.count - afterStats.intermediate.count,
+		const expiredItemsRemoved: any = {
 			long: beforeStats.long.count - afterStats.long.count,
+			intermediate: beforeStats.intermediate.count - afterStats.intermediate.count,
+			short: beforeStats.short.count - afterStats.short.count,
 			total: beforeStats.total.count - afterStats.total.count
 		};
+		
+		if (beforeStats.axiom && afterStats.axiom) {
+			expiredItemsRemoved.axiom = beforeStats.axiom.count - afterStats.axiom.count;
+		}
 
 		// Calculate spared items (approximation based on what should have expired)
 		const itemsSpared = this.getSparedItemsCount();
@@ -744,18 +824,28 @@ export class MultiTierMemorySystem {
 	/**
 	 * Get count of items that were spared from expiration
 	 */
-	private getSparedItemsCount(): { short: number; intermediate: number; long: number; total: number } {
-		const now = new Date().getTime();
-		let sparedCounts = { short: 0, intermediate: 0, long: 0, total: 0 };
+	private getSparedItemsCount(): { axiom: number; long: number; intermediate: number; short: number; total: number } {
+		const now = Date.now(); // Use Date.now() for better compatibility with fake timers
+		let sparedCounts = { axiom: 0, long: 0, intermediate: 0, short: 0, total: 0 };
 		
 		// Check each tier for items that should have expired but were spared
 		for (const [tierName, tierMap] of [
-			['short', this.shortTerm] as const,
+			['axiom', this.axiomTier] as const,
+			['long', this.longTerm] as const,
 			['intermediate', this.intermediateTerm] as const,
-			['long', this.longTerm] as const
+			['short', this.shortTerm] as const
 		]) {
 			const config = this.config[tierName];
+			
+			// Skip if tier is not configured
+			if (!config) continue;
+			
 			const retentionMs = config.retentionHours * 60 * 60 * 1000;
+			
+			// Skip infinite retention tiers
+			if (config.retentionHours === Infinity) {
+				continue;
+			}
 			
 			for (const item of tierMap.values()) {
 				const itemAge = now - new Date(item.timestamp).getTime();
@@ -781,12 +871,16 @@ export class MultiTierMemorySystem {
 		const sparedItems = this.getSparedItemsCount();
 		const nearExpiration = this.getItemsNearExpiration();
 		
-		// Assess tier health
-		const tiersHealth = {
-			short: stats.short.utilizationPercent > 80 ? 'overloaded' : stats.short.utilizationPercent > 60 ? 'healthy' : 'underutilized',
+		// Assess tier health  
+		const tiersHealth: any = {
+			long: stats.long.utilizationPercent > 80 ? 'overloaded' : stats.long.utilizationPercent > 60 ? 'healthy' : 'underutilized',
 			intermediate: stats.intermediate.utilizationPercent > 80 ? 'overloaded' : stats.intermediate.utilizationPercent > 60 ? 'healthy' : 'underutilized',
-			long: stats.long.utilizationPercent > 80 ? 'overloaded' : stats.long.utilizationPercent > 60 ? 'healthy' : 'underutilized'
+			short: stats.short.utilizationPercent > 80 ? 'overloaded' : stats.short.utilizationPercent > 60 ? 'healthy' : 'underutilized'
 		};
+		
+		if (stats.axiom) {
+			tiersHealth.axiom = stats.axiom.utilizationPercent > 80 ? 'overloaded' : stats.axiom.utilizationPercent > 60 ? 'healthy' : 'underutilized';
+		}
 		
 		// Generate recommendations
 		const recommendations: string[] = [];
@@ -814,16 +908,22 @@ export class MultiTierMemorySystem {
 	 * Count items that are approaching expiration (within 10% of retention time)
 	 */
 	private getItemsNearExpiration(): number {
-		const now = new Date().getTime();
+		const now = Date.now(); // Use Date.now() for better compatibility with fake timers
 		let nearExpirationCount = 0;
 		
 		for (const [tierName, tierMap] of [
-			['short', this.shortTerm] as const,
+			['long', this.longTerm] as const,
 			['intermediate', this.intermediateTerm] as const,
-			['long', this.longTerm] as const
+			['short', this.shortTerm] as const
 		]) {
 			const config = this.config[tierName];
 			const retentionMs = config.retentionHours * 60 * 60 * 1000;
+			
+			// Skip infinite retention tiers
+			if (config.retentionHours === Infinity) {
+				continue;
+			}
+			
 			const nearExpirationThreshold = retentionMs * 0.9; // 90% of retention time
 			
 			for (const item of tierMap.values()) {
@@ -835,5 +935,18 @@ export class MultiTierMemorySystem {
 		}
 		
 		return nearExpirationCount;
+	}
+
+	/**
+	 * Convenience method for storing axioms - user-provided principles that should always surface first
+	 */
+	async storeAxiom(content: string, metadata?: Record<string, unknown>, tags?: string[]): Promise<TieredKnowledgeItem> {
+		return this.storeKnowledge({
+			content,
+			metadata: { ...metadata, isAxiom: true, priority: 'maximum' },
+			tags: [...(tags || []), 'axiom', 'user_principle'],
+			importance: 1.0, // Maximum importance
+			targetTier: 'axiom'
+		});
 	}
 }
