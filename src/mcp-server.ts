@@ -846,7 +846,7 @@ ${status.recommendations.map((rec: any) => `• ${rec}`).join('\n')}
 		},
 		handler: async (params) => {
 			const memory = (globalThis as any).getMemoryInstance();
-			const state = memory.exportState();
+			const state = await memory.exportState();
 			
 			const foundationRules = state.rules.filter((rule: any) => 
 				foundationMigrationV1.coreRules.some(coreRule => coreRule.id === rule.id)
@@ -978,7 +978,7 @@ ${params.correctionPlan ? `**Correction Plan**: ${params.correctionPlan}` : ''}
 		},
 		handler: async (params) => {
 			const memory = (globalThis as any).getMemoryInstance();
-			const state = memory.exportState();
+			const state = await memory.exportState();
 			
 			if (params.format === 'summary') {
 				const foundationRuleCount = state.rules.filter((rule: any) => 

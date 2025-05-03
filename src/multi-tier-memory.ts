@@ -161,7 +161,7 @@ export class MultiTierMemorySystem {
 		threshold?: number;
 		tierPreference?: 'axiom' | 'long' | 'intermediate' | 'short' | 'all';
 	} = {}): Promise<Array<TieredKnowledgeItem & { similarity: number }>> {
-		const { limit = 10, threshold = 0.7, tierPreference = 'all' } = options;
+		const { limit = 10, threshold = 0.05, tierPreference = 'all' } = options;
 		const queryEmbedding = this.generateMockEmbedding(query);
 		const results: Array<TieredKnowledgeItem & { similarity: number }> = [];
 
@@ -195,6 +195,115 @@ export class MultiTierMemorySystem {
 		await this.checkPromotions();
 		
 		return sortedResults;
+	}
+
+	/**
+	 * Calculate adaptive threshold based on workload characteristics and search context
+	 */
+	calculateAdaptiveThreshold(options: {
+		workloadType?: 'exploration' | 'precision' | 'recall' | 'balanced' | 'debugging';
+		contextComplexity?: 'simple' | 'moderate' | 'complex';
+		tierPreference?: 'axiom' | 'long' | 'intermediate' | 'short' | 'all';
+		expectedResultCount?: number;
+		currentMemoryLoad?: number; // 0-1 scale of how full the memory system is
+	} = {}): number {
+		const {
+			workloadType = 'balanced',
+			contextComplexity = 'moderate',
+			tierPreference = 'all',
+			expectedResultCount,
+			currentMemoryLoad
+		} = options;
+
+		// Base threshold by workload type
+		let baseThreshold: number;
+		switch (workloadType) {
+			case 'exploration':
+				baseThreshold = 0.02;
+				break;
+			case 'precision':
+				baseThreshold = 0.25;
+				break;
+			case 'recall':
+				baseThreshold = 0.05;
+				break;
+			case 'debugging':
+				baseThreshold = 0.08;
+				break;
+			default: // 'balanced'
+				baseThreshold = 0.1;
+		}
+
+		// Adjust for context complexity
+		const complexityMultiplier = {
+			'simple': 1.2,
+			'moderate': 1.0,
+			'complex': 0.8
+		}[contextComplexity];
+
+		// Adjust for tier preference (higher tiers need more precision)
+		const tierMultiplier = tierPreference === 'long' || tierPreference === 'axiom' ? 1.1 : 
+							tierPreference === 'short' ? 0.9 : 1.0;
+
+		// Adjust for expected result count
+		let resultCountMultiplier = 1.0;
+		if (expectedResultCount) {
+			if (expectedResultCount > 10) {
+				resultCountMultiplier = 0.9; // Lower threshold for broader search
+			} else if (expectedResultCount < 3) {
+				resultCountMultiplier = 1.1; // Higher threshold for focused search
+			}
+		}
+
+		// Adjust for current memory load (more selective when memory is full)
+		const memoryLoadMultiplier = currentMemoryLoad ? (1 + currentMemoryLoad * 0.3) : 1.0;
+
+		// Calculate final threshold
+		const adaptiveThreshold = baseThreshold * complexityMultiplier * tierMultiplier * 
+								resultCountMultiplier * memoryLoadMultiplier;
+
+		// Keep within reasonable bounds
+		return Math.max(0.01, Math.min(0.5, adaptiveThreshold));
+	}
+
+	/**
+	 * Search with adaptive threshold based on context
+	 */
+	async searchWithAdaptiveThreshold(query: string, options: {
+		workloadType?: 'exploration' | 'precision' | 'recall' | 'balanced' | 'debugging';
+		contextComplexity?: 'simple' | 'moderate' | 'complex';
+		tierPreference?: 'axiom' | 'long' | 'intermediate' | 'short' | 'all';
+		expectedResultCount?: number;
+		limit?: number;
+		overrideThreshold?: number;
+	} = {}): Promise<Array<TieredKnowledgeItem & { similarity: number; adaptiveThreshold: number }>> {
+		const currentMemoryLoad = this.calculateMemoryLoad();
+		
+		const adaptiveThreshold = options.overrideThreshold ?? this.calculateAdaptiveThreshold({
+			...options,
+			currentMemoryLoad
+		});
+
+		const results = await this.searchSimilar(query, {
+			threshold: adaptiveThreshold,
+			limit: options.limit || 10,
+			tierPreference: options.tierPreference || 'all'
+		});
+
+		// Add threshold information to results
+		return results.map(result => ({
+			...result,
+			adaptiveThreshold
+		}));
+	}
+
+	/**
+	 * Calculate current memory system load (0-1 scale)
+	 */
+	private calculateMemoryLoad(): number {
+		const totalUsed = this.shortTerm.size + this.intermediateTerm.size + this.longTerm.size;
+		const totalCapacity = this.config.short.maxItems + this.config.intermediate.maxItems + this.config.long.maxItems;
+		return totalUsed / totalCapacity;
 	}
 
 	/**

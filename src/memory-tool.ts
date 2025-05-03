@@ -548,4 +548,22 @@ export class MnemosyneMemorySystem {
 	getAvailableMethods(): string[] {
 		return this.delegator.getAvailableMethods();
 	}
+
+	/**
+	 * Export complete memory system state for analysis, debugging, or persistence
+	 */
+	async exportState(): Promise<any> {
+		const memoryData = await this.coreMemory.exportMemory();
+		const rules = await this.behavioralRules.getBehavioralRules();
+		const patterns = await this.behavioralRules.analyzePatterns();
+		
+		return {
+			entries: memoryData.entries || memoryData || [],
+			rules: rules || [],
+			patterns: patterns || [],
+			timestamp: new Date().toISOString(),
+			delegationStats: this.delegator.getDelegationStats(),
+			availableMethods: this.delegator.getAvailableMethods()
+		};
+	}
 }

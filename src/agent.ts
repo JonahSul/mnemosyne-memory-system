@@ -9,6 +9,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MnemosyneMemorySystem } from "./memory-tool.js";
+import { MemoryNotFoundError } from "./modules/core-memory.js";
 import { foundationMigrationV1, applyFoundationMigration } from "../migrations/foundation.js";
 import { registerMemoryTools } from "./tools/registry.js";
 
@@ -307,16 +308,27 @@ export class MnemosyneMemoryMCP {
 					});
 					
 				} catch (error) {
+					// Handle specific error types with appropriate status codes
+					let statusCode = 500;
+					let errorCode = -32603;
+					let errorMessage = "Tool execution error";
+					
+					if (error instanceof MemoryNotFoundError) {
+						statusCode = 404;
+						errorCode = -32602; // Invalid params (the claim ID doesn't exist)
+						errorMessage = "Resource not found";
+					}
+					
 					return new Response(JSON.stringify({
 						jsonrpc: "2.0",
 						id: body.id,
 						error: {
-							code: -32603,
-							message: "Tool execution error",
+							code: errorCode,
+							message: errorMessage,
 							data: error instanceof Error ? error.message : 'Unknown error'
 						}
 					}), {
-						status: 500,
+						status: statusCode,
 						headers: { 
 							'Content-Type': 'application/json',
 							...corsHeaders

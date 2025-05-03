@@ -11,6 +11,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import { MnemosyneMemorySystem } from "../memory-tool.js";
 import { VectorStore } from "../vector-store.js";
 import { MultiTierMemorySystem } from "../multi-tier-memory.js";
+import { MemoryNotFoundError } from "../modules/core-memory.js";
 import { foundationMigrationV1 } from "../../migrations/foundation.js";
 
 // Tool implementation interface
@@ -92,15 +93,29 @@ export const memoryTools: ToolImplementation[] = [
 			notes: z.string().optional().describe("Additional notes about the verification process, lessons learned, or implications")
 		},
 		handler: async (params) => {
-			const memory = getMnemosyneMemoryInstance();
-			await memory.verifyClaim(params.claimId, params.success, params.evidence);
+			try {
+				const memory = getMnemosyneMemoryInstance();
+				await memory.verifyClaim(params.claimId, params.success, params.evidence);
 
-			return {
-				content: [{
-					type: "text" as const,
-					text: `Claim ${params.claimId} verified as ${params.success ? "CONFIRMED" : "REFUTED"} with evidence: ${params.evidence}`
-				}]
-			};
+				return {
+					content: [{
+						type: "text" as const,
+						text: `Claim ${params.claimId} verified as ${params.success ? "CONFIRMED" : "REFUTED"} with evidence: ${params.evidence}`
+					}]
+				};
+			} catch (error) {
+				if (error instanceof MemoryNotFoundError) {
+					return {
+						content: [{
+							type: "text" as const,
+							text: `Error: Claim ${params.claimId} not found. Please verify the claim ID is correct.`
+						}],
+						isError: true
+					};
+				}
+				// Re-throw other errors as they should be 500s
+				throw error;
+			}
 		}
 	},
 
@@ -254,14 +269,14 @@ export const memoryTools: ToolImplementation[] = [
 		description: "search knowledge using semantic similarity. Performs RAG-based retrieval to find contextually relevant information from the working memory knowledge base.",
 		schema: {
 			query: z.string().describe("The search query or question to find related knowledge"),
-			limit: z.number().optional().describe("Maximum number of results to return (default: 5)"),
-			threshold: z.number().optional().describe("Minimum similarity threshold for results (0-1, default: 0.1)")
+			limit: z.number().optional().describe("Maximum number of results to return (default: 8)"),
+			threshold: z.number().optional().describe("Minimum similarity threshold for results (0-1, default: 0.05 for inclusive search)")
 		},
 		handler: async (params) => {
 			const vectorStore = getVectorStoreInstance();
 			const results = await vectorStore.searchSimilar(params.query, {
-				limit: params.limit || 5,
-				threshold: params.threshold || 0.1
+				limit: params.limit || 8,
+				threshold: params.threshold || 0.05
 			});
 
 			const summaryText = `Found ${results.length} knowledge items for query: "${params.query}"`;
@@ -314,15 +329,15 @@ export const memoryTools: ToolImplementation[] = [
 		schema: {
 			query: z.string().describe("The search query"),
 			tierPreference: z.enum(["short", "intermediate", "long", "all"]).optional().describe("Which tier(s) to search (default: all)"),
-			limit: z.number().optional().describe("Maximum results (default: 5)"),
-			threshold: z.number().optional().describe("Similarity threshold (default: 0.1)")
+			limit: z.number().optional().describe("Maximum results (default: 8)"),
+			threshold: z.number().optional().describe("Similarity threshold (default: 0.05 for inclusive search)")
 		},
 		handler: async (params) => {
 			const multiTierMemory = getMultiTierMemoryInstance();
 			const results = await multiTierMemory.searchSimilar(params.query, {
 				tierPreference: params.tierPreference || "all",
-				limit: params.limit || 5,
-				threshold: params.threshold || 0.1
+				limit: params.limit || 8,
+				threshold: params.threshold || 0.05
 			});
 
 			const summaryText = `Found ${results.length} items across memory tiers for: "${params.query}"`;
@@ -369,6 +384,92 @@ export const memoryTools: ToolImplementation[] = [
 				content: [{
 					type: "text" as const,
 					text: statsText
+				}]
+			};
+		}
+	},
+
+	{
+		name: "memory_tune_search_thresholds",
+		description: "Dynamically adjust semantic search thresholds based on workload characteristics and desired precision/recall balance. Use this tool to optimize search performance for specific tasks or contexts.",
+		schema: {
+			workloadType: z.enum(["exploration", "precision", "recall", "balanced", "debugging"]).describe("Type of workload: 'exploration' (very low threshold), 'precision' (high threshold), 'recall' (low threshold), 'balanced' (moderate), 'debugging' (adaptive)"),
+			contextComplexity: z.enum(["simple", "moderate", "complex"]).optional().describe("Complexity of the search context (affects threshold adjustment)"),
+			expectedResultCount: z.number().optional().describe("Expected number of relevant results (influences threshold tuning)"),
+			customThreshold: z.number().optional().describe("Override with specific threshold (0-1)")
+		},
+		handler: async (params) => {
+			// Calculate optimal threshold based on workload characteristics
+			let recommendedThreshold: number;
+			let description: string;
+
+			if (params.customThreshold !== undefined) {
+				recommendedThreshold = Math.max(0, Math.min(1, params.customThreshold));
+				description = `Custom threshold: ${recommendedThreshold}`;
+			} else {
+				switch (params.workloadType) {
+					case "exploration":
+						recommendedThreshold = 0.02; // Very inclusive for discovery
+						description = "Exploration mode: Very low threshold for maximum discovery";
+						break;
+					case "precision":
+						recommendedThreshold = 0.25; // High threshold for accuracy
+						description = "Precision mode: High threshold for accurate, focused results";
+						break;
+					case "recall":
+						recommendedThreshold = 0.05; // Low threshold for completeness
+						description = "Recall mode: Low threshold to capture all relevant results";
+						break;
+					case "debugging":
+						recommendedThreshold = 0.08; // Adaptive based on context
+						description = "Debugging mode: Moderate threshold with adaptive adjustment";
+						break;
+					default: // "balanced"
+						recommendedThreshold = 0.1;
+						description = "Balanced mode: Moderate threshold for good precision/recall balance";
+				}
+
+				// Adjust based on context complexity
+				if (params.contextComplexity === "complex") {
+					recommendedThreshold *= 0.8; // Lower threshold for complex contexts
+					description += " (adjusted down for complex context)";
+				} else if (params.contextComplexity === "simple") {
+					recommendedThreshold *= 1.2; // Higher threshold for simple contexts
+					description += " (adjusted up for simple context)";
+				}
+
+				// Adjust based on expected result count
+				if (params.expectedResultCount) {
+					if (params.expectedResultCount > 10) {
+						recommendedThreshold *= 0.9; // Lower for many expected results
+					} else if (params.expectedResultCount < 3) {
+						recommendedThreshold *= 1.1; // Higher for few expected results
+					}
+				}
+
+				// Keep within bounds
+				recommendedThreshold = Math.max(0.01, Math.min(0.5, recommendedThreshold));
+			}
+
+			return {
+				content: [{
+					type: "text" as const,
+					text: `🎯 **Search Threshold Tuning**
+
+**Workload**: ${params.workloadType}
+**Recommended Threshold**: ${recommendedThreshold.toFixed(3)}
+**Description**: ${description}
+
+**Usage Examples**:
+• Use \`threshold: ${recommendedThreshold.toFixed(3)}\` in your next search
+• For knowledge search: \`memory_search_knowledge\` with \`threshold: ${recommendedThreshold.toFixed(3)}\`
+• For tiered search: \`memory_search_tiered\` with \`threshold: ${recommendedThreshold.toFixed(3)}\`
+
+**Threshold Guide**:
+• 0.01-0.05: Very inclusive (exploration, brainstorming)
+• 0.05-0.15: Balanced (general use, recall-focused)
+• 0.15-0.30: Precise (accuracy-focused, specific queries)
+• 0.30+: Very selective (exact matches only)`
 				}]
 			};
 		}

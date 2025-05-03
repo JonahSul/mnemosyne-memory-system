@@ -6,6 +6,17 @@
 
 import type { MemoryEntry } from './memory-interfaces';
 
+/**
+ * Custom error for when memory entries are not found
+ * This should be handled as a 404 error, not a 500
+ */
+export class MemoryNotFoundError extends Error {
+	constructor(id: string, type: string = 'memory') {
+		super(`${type} ${id} not found`);
+		this.name = 'MemoryNotFoundError';
+	}
+}
+
 export interface CoreMemoryOperations {
 	logClaim(claim: string, context?: Record<string, unknown>, source?: string, confidence?: 'low' | 'medium' | 'high'): Promise<string>;
 	logAssumption(assumption: string, reasoning: string, context?: Record<string, unknown>): Promise<string>;
@@ -64,7 +75,7 @@ export class CoreMemoryManager implements CoreMemoryOperations {
 	async verifyClaim(claimId: string, success: boolean, evidence: string, notes?: string): Promise<boolean> {
 		const memory = this.memories.get(claimId);
 		if (!memory) {
-			throw new Error(`Claim ${claimId} not found`);
+			throw new MemoryNotFoundError(claimId, 'Claim');
 		}
 
 		memory.status = success ? 'verified' : 'failed';
