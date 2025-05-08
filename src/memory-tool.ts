@@ -195,12 +195,12 @@ export class MnemosyneMemorySystem {
 	}
 
 	recordPrewarmingEffectiveness(attempt: Record<string, unknown>): void {
-		this.delegator.delegate('evaluatePrewarmingEffectiveness', [attempt]);
+		this.delegator.delegate('evaluatePrewarmingEffectiveness', attempt);
 	}
 
 	// Memory Management Operations
 	async storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[]): Promise<string> {
-		return this.delegator.delegate('storeKnowledge', [content, metadata, tags]);
+		return this.delegator.delegate('storeKnowledge', content, metadata, tags);
 	}
 
 	storeMemory(entry: MemoryEntry): void {
@@ -277,7 +277,7 @@ export class MnemosyneMemorySystem {
 			behaviorContext: interaction.context as string || 'general',
 			adjustment: 'improve-accuracy'
 		};
-		this.delegator.delegateSync('processFeedbackPattern', [feedbackPattern]);
+		this.delegator.delegateSync('processFeedbackPattern', feedbackPattern);
 	}
 
 	processFeedbackPattern(feedback: Record<string, unknown>): void {
@@ -286,7 +286,7 @@ export class MnemosyneMemorySystem {
 			behaviorContext: feedback.context as string || 'general',
 			adjustment: feedback.adjustment as string || 'maintain-current'
 		};
-		this.delegator.delegateSync('processFeedbackPattern', [feedbackPattern]);
+		this.delegator.delegateSync('processFeedbackPattern', feedbackPattern);
 	}
 
 	recordFailurePattern(pattern: Record<string, unknown>): void {
@@ -295,11 +295,11 @@ export class MnemosyneMemorySystem {
 	}
 
 	recordConsultationValue(consultationValue: Record<string, unknown>): void {
-		this.delegator.delegateSync('recordConsultationValue', [consultationValue]);
+		this.delegator.delegateSync('recordConsultationValue', consultationValue);
 	}
 
 	getBehaviorAdjustments(): any {
-		return this.delegator.delegateSync('getBehaviorAdjustments', []);
+		return this.delegator.delegateSync('getBehaviorAdjustments');
 	}
 
 	getFailureAvoidanceStrategies(): any {

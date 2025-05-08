@@ -2,27 +2,30 @@
 
 *"Memory is the mother of all wisdom"* — Aeschylus
 
-A sophisticated cognitive enhancement and behavioral regulation system for AI agents, implementing persistent memory with **runtime behavioral rule deployment**. Named after the Greek goddess of memory, Mnemosyne provides AI agents with the ability to learn from past interactions, maintain behavioral integrity, and adapt their responses based on accumulated experience.
+A sophisticated cognitive enhancement and behavioral regulation system for AI agents, implementing **multi-tier memory architecture** with **semantic search**, **dynamic threshold optimization**, and **runtime behavioral rule deployment**. Named after the Greek goddess of memory, Mnemosyne provides AI agents with the ability to learn from past interactions, maintain behavioral integrity, and adapt their responses based on accumulated experience.
 
 ## 🧠 Core Concepts
 
 **Mnemosyne Memory System** enables AI agents to:
 
-- **Track and verify claims** to prevent false confidence
-- **Learn from violations** of behavioral rules
-- **Maintain persistent context** across interactions
-- **Deploy updated behavioral rules** during runtime ⭐ **New Feature**
-- **Ensure behavioral integrity** through systematic validation
+- **Track and verify claims** to prevent false confidence and maintain accountability
+- **Learn from violations** of behavioral rules with automatic correction strategies
+- **Store knowledge semantically** across hierarchical memory tiers (short/intermediate/long-term)
+- **Search adaptively** with workload-specific threshold optimization
+- **Deploy updated behavioral rules** during runtime without service interruption
+- **Ensure behavioral integrity** through systematic validation and self-monitoring
 
-This system addresses the core challenge of AI reliability by providing a framework for behavioral accountability and continuous improvement.
+This system addresses the core challenge of AI reliability by providing a framework for behavioral accountability, semantic knowledge retention, and continuous improvement through adaptive learning.
 
 ## Key Technologies
 
-- **Cloudflare Workers** - Serverless deployment with edge computing
+- **Multi-Tier Memory Architecture** - Hierarchical storage with intelligent retention policies
+- **Semantic Search & RAG** - Vector embeddings with cosine similarity and adaptive thresholds
+- **Dynamic Threshold Tuning** - Workload-aware optimization for precision/recall balance
+- **Cloudflare Workers & Durable Objects** - Serverless deployment with persistent edge storage
 - **Model Context Protocol (MCP)** - Standardized tool integration for AI agents  
-- **TypeScript** - Type-safe development with comprehensive validation
-- **Durable Objects** - Persistent memory storage with zero cold-start
-- **Runtime Foundation System** - Hot-deployment of behavioral rules ⭐ **New**
+- **TypeScript & Delegator Pattern** - Type-safe modular architecture with clean separation
+- **Runtime Foundation System** - Hot-deployment of behavioral rules with zero downtime
 
 ## 🚀 Quick Start
 
@@ -59,15 +62,24 @@ Add to your MCP client configuration:
 ### Core Memory Operations
 
 - `memory_log_claim` - Track claims and assertions for later verification
-- `memory_verify_claim` - Verify previously logged claims with evidence
+- `memory_verify_claim` - Verify previously logged claims with evidence  
 - `memory_record_violation` - Log behavioral rule violations for learning
 - `memory_check_behavioral_status` - Monitor behavioral performance and compliance
 - `memory_export_state` - Export complete memory system state for analysis
 
-### Foundation Management
+### Semantic Knowledge Management
+
+- `memory_store_knowledge` - Store information with semantic embeddings for RAG retrieval
+- `memory_search_knowledge` - Perform semantic similarity search across knowledge base
+- `memory_store_tiered` - Store knowledge in multi-tier system with automatic placement
+- `memory_search_tiered` - Search across memory tiers with tier-aware ranking
+- `memory_stats_tiered` - Get memory utilization statistics across all tiers
+- `memory_tune_search_thresholds` - **🎯 NEW:** Dynamically optimize search thresholds
+
+### Foundation Management  
 
 - `memory_view_foundation` - View foundational behavioral rules and compliance
-- `memory_update_foundation` - **⭐ NEW: Hot-deploy updated behavioral rules**
+- `memory_update_foundation` - **⭐ HOT-DEPLOY:** Runtime behavioral rule updates
 
 ## 🔄 Runtime Foundation Updates
 
