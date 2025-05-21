@@ -269,6 +269,100 @@ export const foundationMigrationV1: FoundationMigration = {
 };
 
 /**
+ * Foundation Migration v1.2.0 - Crystallized Axioms from User Feedback
+ * 
+ * These axioms were identified and crystallized from recent behavioral patterns:
+ * - Memory auto-correction protocol for conversation history search failures
+ * - Foundation auto-update requirement for proactive behavioral improvement  
+ * - Project build awareness for this specific codebase
+ */
+export const foundationMigrationV1_2: FoundationMigration = {
+	version: "1.2.0",
+	description: "Crystallize newly acquired axioms: Memory auto-correction protocol, Foundation auto-update requirement, Build script awareness",
+	
+	coreRules: [
+		{
+			id: 'memory-auto-correction',
+			rule: 'When memory failure is detected (searching conversation history), immediately auto-correct by storing missing context',
+			description: '100% memory failure indicator: searching conversation history instead of knowing information directly. Must immediately acknowledge failure and store critical context to prevent future gaps.',
+			priority: 'critical',
+			enforcement: 'strict',
+			examples: [
+				'✅ Acknowledge memory failure when searching conversation history',
+				'✅ Immediately store missing context when gaps become apparent',
+				'✅ Auto-correct by preserving critical information in memory system',
+				'❌ Searching conversation history without acknowledging memory failure',
+				'❌ Continuing operation without storing missing context'
+			]
+		},
+		{
+			id: 'foundation-auto-update',
+			rule: 'Automatically update foundation to crystallize newly acquired axioms when they become apparent',
+			description: 'Proactively identify and formalize new behavioral patterns, protocols, and learnings into foundation rules to prevent pattern degradation and ensure persistent behavioral improvement.',
+			priority: 'high',
+			enforcement: 'advisory',
+			examples: [
+				'✅ Automatically detect new behavioral patterns from user feedback',
+				'✅ Crystallize protocols into foundation rules when established',
+				'✅ Update foundation without waiting for explicit instruction',
+				'❌ Allowing behavioral patterns to remain informal',
+				'❌ Waiting for user to request foundation updates'
+			]
+		},
+		{
+			id: 'project-build-awareness',
+			rule: 'Never assume build scripts exist - this project has no build script and uses npx tsx directly',
+			description: 'This specific project does not have npm build scripts. User has corrected this repeatedly. Always use npx tsx for TypeScript execution, never attempt npm run build.',
+			priority: 'medium',
+			enforcement: 'strict',
+			examples: [
+				'✅ Use "npx tsx filename.ts" for TypeScript execution',
+				'✅ Check package.json scripts before assuming build commands exist',
+				'✅ Remember project-specific execution patterns',
+				'❌ Attempting "npm run build" repeatedly after corrections',
+				'❌ Assuming standard build tooling without verification'
+			]
+		}
+	],
+
+	essentialPatterns: [
+		{
+			pattern: 'memory-self-correction',
+			description: 'Immediate context preservation when memory gaps are detected',
+			desiredOutcome: 'positive',
+			interventions: [
+				'Acknowledge memory failure when searching conversation history',
+				'Store missing context immediately to prevent future gaps',
+				'Update foundation with new behavioral patterns automatically'
+			]
+		},
+		{
+			pattern: 'assumption-persistence',
+			description: 'Repeatedly making the same incorrect assumptions despite corrections',
+			desiredOutcome: 'negative',
+			interventions: [
+				'Store project-specific context permanently',
+				'Check previous corrections before attempting operations',
+				'Crystallize corrections into foundation rules'
+			]
+		}
+	],
+
+	safetyConstraints: [
+		{
+			constraint: 'memory-reliability-enforcement',
+			rationale: 'Ensure memory system maintains critical context and learns from failures',
+			enforcement: 'warning'
+		},
+		{
+			constraint: 'proactive-foundation-evolution',
+			rationale: 'Foundation must evolve automatically to prevent behavioral regression',
+			enforcement: 'logging'
+		}
+	]
+};
+
+/**
  * Apply foundation migration to memory system
  * 
  * This function demonstrates how to apply a foundation migration.
