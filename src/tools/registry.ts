@@ -391,7 +391,7 @@ ${params.includeRestorePlan && sanityResults.restorePlan.length > 0 ?
 		},
 		handler: async (params) => {
 			const memory = getMnemosyneMemoryInstance();
-			const exportData = memory.exportState();
+			const exportData = await memory.exportState();
 
 			return {
 				content: [{
