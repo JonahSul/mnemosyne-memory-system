@@ -57,6 +57,9 @@ export class MnemosyneMemorySystem {
 	// Core modules (direct access when needed)
 	private coreMemory: CoreMemoryOperations;
 	private behavioralRules: BehavioralRuleOperations;
+	
+	// Foundation tracking
+	private currentFoundation?: { version: string; timestamp: string };
 
 	constructor() {
 		// Initialize all modular components
@@ -199,24 +202,31 @@ export class MnemosyneMemorySystem {
 	}
 
 	// Memory Management Operations
-	async storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[]): Promise<string> {
-		return this.delegator.delegate('storeKnowledge', content, metadata, tags);
+	async storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[], testing?: boolean): Promise<string> {
+		const enhancedMetadata = {
+			...(metadata || {}),
+			...(testing && { testing: true })
+		};
+		return this.delegator.delegate('storeKnowledge', content, enhancedMetadata, tags, testing);
 	}
 
-	storeMemory(entry: MemoryEntry): void {
-		this.coreMemory.storeMemory(entry);
+	storeMemory(entry: MemoryEntry, testing?: boolean): void {
+		if (testing) {
+			entry.context = { ...(entry.context || {}), testing: true };
+		}
+		this.coreMemory.storeMemory(entry, testing);
 	}
 
-	searchMemory(query: string): MemoryEntry[] {
-		return this.coreMemory.searchMemory(query) as any;
+	searchMemory(query: string, includeTestingData: boolean = false): MemoryEntry[] {
+		return this.coreMemory.searchMemory(query, includeTestingData) as any;
 	}
 
 	getMemoryStats(): { total: number; recentEntries: number } {
 		return this.coreMemory.getMemoryStats();
 	}
 
-	exportMemory(): MemoryEntry[] {
-		return this.coreMemory.exportMemory() as any;
+	exportMemory(includeTestingData: boolean = false): MemoryEntry[] {
+		return this.coreMemory.exportMemory(includeTestingData) as any;
 	}
 
 	// =============================================================================
@@ -260,14 +270,31 @@ export class MnemosyneMemorySystem {
 	getFoundationInfo(): { version?: string; timestamp?: string; rulesCount: number } {
 		const foundationRules = this.behavioralRules.getFoundationRules();
 		
-		// TODO: Add foundation version/timestamp tracking in behavioral rules manager
-		return {
+		const result: { version?: string; timestamp?: string; rulesCount: number } = {
 			rulesCount: foundationRules.length
 		};
+		
+		if (this.currentFoundation?.version) {
+			result.version = this.currentFoundation.version;
+		}
+		
+		if (this.currentFoundation?.timestamp) {
+			result.timestamp = this.currentFoundation.timestamp;
+		}
+		
+		return result;
 	}
 
 	updateFoundation(migration: Record<string, unknown>, options?: Record<string, unknown>): void {
 		this.behavioralRules.updateFoundation(migration, options);
+		
+		// Set foundation metadata after successful update
+		if (migration.version && typeof migration.version === 'string') {
+			this.currentFoundation = {
+				version: migration.version,
+				timestamp: new Date().toISOString()
+			};
+		}
 	}
 
 	// Public API Methods for Tests
@@ -535,6 +562,12 @@ export class MnemosyneMemorySystem {
 		];
 
 		foundationRules.forEach(rule => this.behavioralRules.addBehavioralRule(rule));
+		
+		// Set initial foundation metadata
+		this.currentFoundation = {
+			version: '1.0.0',
+			timestamp: new Date().toISOString()
+		};
 	}
 
 	// =============================================================================
@@ -552,18 +585,38 @@ export class MnemosyneMemorySystem {
 	/**
 	 * Export complete memory system state for analysis, debugging, or persistence
 	 */
-	async exportState(): Promise<any> {
-		const memoryData = await this.coreMemory.exportMemory();
+	async exportState(includeTestingData: boolean = false): Promise<any> {
+		const memoryData = await this.coreMemory.exportMemory(includeTestingData);
 		const rules = await this.behavioralRules.getBehavioralRules();
 		const patterns = await this.behavioralRules.analyzePatterns();
 		
+		// Extract claims, violations, and patterns from the proper data structure
+		const memories = memoryData.memories || [];
+		const claims = Object.fromEntries(
+			memories.filter(([id, memory]: [string, any]) => memory.type === 'claim')
+		);
+		const violations = {}; // Would need to implement violation tracking
+		const behavioralPatterns = Object.fromEntries(
+			memories.filter(([id, memory]: [string, any]) => memory.type === 'pattern')
+		);
+		
 		return {
-			entries: memoryData.entries || memoryData || [],
+			// Original structure for backward compatibility
+			entries: memoryData.memories || [],
 			rules: rules || [],
 			patterns: patterns || [],
+			
+			// Proper structure that matches memory_export_state expectations
+			claims,
+			violations,
+			behavioralPatterns,
+			
+			// Metadata
 			timestamp: new Date().toISOString(),
+			testingDataIncluded: includeTestingData,
 			delegationStats: this.delegator.getDelegationStats(),
-			availableMethods: this.delegator.getAvailableMethods()
+			availableMethods: this.delegator.getAvailableMethods(),
+			memoryStats: memoryData.stats
 		};
 	}
 }

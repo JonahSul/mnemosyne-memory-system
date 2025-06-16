@@ -10,10 +10,10 @@ export interface ContextQueryOperations {
 	getContextLogs(): ContextQuery[];
 	getRecommendedMemorySearches(query: string): string[];
 	storeContext(context: Record<string, unknown>): Promise<string>;
-	searchKnowledge(query: string, limit?: number, threshold?: number): Promise<any[]>;
-	searchTiered(query: string, tierPreference?: 'short' | 'intermediate' | 'long' | 'all', limit?: number, threshold?: number): Promise<any[]>;
-	storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[]): Promise<string>;
-	storeTieredKnowledge(content: string, importance?: number, metadata?: Record<string, unknown>, tags?: string[], targetTier?: 'short' | 'intermediate' | 'long'): Promise<string>;
+	searchKnowledge(query: string, limit?: number, threshold?: number, includeTestingData?: boolean): Promise<any[]>;
+	searchTiered(query: string, tierPreference?: 'short' | 'intermediate' | 'long' | 'all', limit?: number, threshold?: number, includeTestingData?: boolean): Promise<any[]>;
+	storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[], testing?: boolean): Promise<string>;
+	storeTieredKnowledge(content: string, importance?: number, metadata?: Record<string, unknown>, tags?: string[], targetTier?: 'short' | 'intermediate' | 'long', testing?: boolean): Promise<string>;
 	getStats(): Promise<any>;
 	exportState(filterType?: 'claims' | 'violations' | 'rules' | 'all', format?: 'summary' | 'detailed' | 'raw', includeMetadata?: string): Promise<any>;
 }
@@ -116,20 +116,20 @@ export class ContextQueryManager implements ContextQueryOperations {
 		return contextId;
 	}
 
-	async searchKnowledge(query: string, limit: number = 5, threshold: number = 0.1): Promise<any[]> {
+	async searchKnowledge(query: string, limit: number = 5, threshold: number = 0.1, includeTestingData: boolean = false): Promise<any[]> {
 		const queryId = `query_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 		
 		const contextQuery: ContextQuery = {
 			id: queryId,
 			timestamp: new Date().toISOString(),
 			query,
-			context: { limit, threshold }
+			context: { limit, threshold, includeTestingData }
 		};
 		
 		this.queries.push(contextQuery);
 
-		// Simulate semantic search
-		const results = this.performSemanticSearch(query, limit, threshold);
+		// Simulate semantic search with testing data filtering
+		const results = this.performSemanticSearch(query, limit, threshold, includeTestingData);
 		return results;
 	}
 
@@ -137,7 +137,8 @@ export class ContextQueryManager implements ContextQueryOperations {
 		query: string, 
 		tierPreference: 'short' | 'intermediate' | 'long' | 'all' = 'all', 
 		limit: number = 5, 
-		threshold: number = 0.1
+		threshold: number = 0.1,
+		includeTestingData: boolean = false
 	): Promise<any[]> {
 		const queryId = `tiered_query_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 		
@@ -145,23 +146,26 @@ export class ContextQueryManager implements ContextQueryOperations {
 			id: queryId,
 			timestamp: new Date().toISOString(),
 			query,
-			context: { tierPreference, limit, threshold }
+			context: { tierPreference, limit, threshold, includeTestingData }
 		};
 		
 		this.queries.push(contextQuery);
 
 		// Simulate tiered search with tier-aware ranking
-		const results = this.performTieredSearch(query, tierPreference, limit, threshold);
+		const results = this.performTieredSearch(query, tierPreference, limit, threshold, includeTestingData);
 		return results;
 	}
 
-	async storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[]): Promise<string> {
+	async storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[], testing?: boolean): Promise<string> {
 		const knowledgeId = `knowledge_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 		
 		const knowledgeEntry = {
 			id: knowledgeId,
 			content,
-			metadata: metadata || {},
+			metadata: { 
+				...(metadata || {}),
+				...(testing && { testing: true })
+			},
 			tags: tags || [],
 			timestamp: new Date().toISOString(),
 			embeddings: this.generateEmbeddings(content)
@@ -176,7 +180,8 @@ export class ContextQueryManager implements ContextQueryOperations {
 		importance: number = 0.5, 
 		metadata?: Record<string, unknown>, 
 		tags?: string[], 
-		targetTier?: 'short' | 'intermediate' | 'long'
+		targetTier?: 'short' | 'intermediate' | 'long',
+		testing?: boolean
 	): Promise<string> {
 		const knowledgeId = `tiered_knowledge_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 		
@@ -191,7 +196,10 @@ export class ContextQueryManager implements ContextQueryOperations {
 		const knowledgeEntry = {
 			id: knowledgeId,
 			content,
-			metadata: metadata || {},
+			metadata: { 
+				...(metadata || {}),
+				...(testing && { testing: true })
+			},
 			tags: tags || [],
 			timestamp: new Date().toISOString(),
 			tier,
@@ -257,11 +265,16 @@ export class ContextQueryManager implements ContextQueryOperations {
 	}
 
 	// Private helper methods
-	private performSemanticSearch(query: string, limit: number, threshold: number): any[] {
+	private performSemanticSearch(query: string, limit: number, threshold: number, includeTestingData: boolean = false): any[] {
 		const queryEmbeddings = this.generateEmbeddings(query);
 		const results: any[] = [];
 
 		for (const [id, entry] of this.knowledgeStore) {
+			// Skip testing data unless explicitly requested
+			if (!includeTestingData && entry.metadata?.testing) {
+				continue;
+			}
+			
 			const similarity = this.calculateSimilarity(queryEmbeddings, entry.embeddings);
 			if (similarity >= threshold) {
 				results.push({
@@ -280,13 +293,18 @@ export class ContextQueryManager implements ContextQueryOperations {
 			.slice(0, limit);
 	}
 
-	private performTieredSearch(query: string, tierPreference: string, limit: number, threshold: number): any[] {
+	private performTieredSearch(query: string, tierPreference: string, limit: number, threshold: number, includeTestingData: boolean = false): any[] {
 		const queryEmbeddings = this.generateEmbeddings(query);
 		const results: any[] = [];
 
 		for (const [id, entry] of this.tieredKnowledge) {
 			// Skip if tier doesn't match preference (unless 'all')
 			if (tierPreference !== 'all' && entry.tier !== tierPreference) {
+				continue;
+			}
+
+			// Skip testing data unless explicitly requested
+			if (!includeTestingData && entry.metadata?.testing) {
 				continue;
 			}
 

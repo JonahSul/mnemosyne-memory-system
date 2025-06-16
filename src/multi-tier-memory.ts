@@ -106,6 +106,7 @@ export class MultiTierMemorySystem {
 		tags?: string[];
 		importance?: number; // 0-1 scale, defaults to 0.5
 		targetTier?: 'axiom' | 'long' | 'intermediate' | 'short';
+		testing?: boolean; // Flag to mark as testing data
 	}): Promise<TieredKnowledgeItem> {
 		const id = `tier_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 		const timestamp = new Date().toISOString();
@@ -124,7 +125,10 @@ export class MultiTierMemorySystem {
 			id,
 			content: knowledge.content,
 			embedding,
-			metadata: knowledge.metadata || {},
+			metadata: {
+				...knowledge.metadata || {},
+				testing: knowledge.testing || false // Add testing flag to metadata
+			},
 			tags: knowledge.tags || [],
 			timestamp,
 			tier: targetTier,
@@ -160,8 +164,9 @@ export class MultiTierMemorySystem {
 		limit?: number;
 		threshold?: number;
 		tierPreference?: 'axiom' | 'long' | 'intermediate' | 'short' | 'all';
+		includeTestingData?: boolean;
 	} = {}): Promise<Array<TieredKnowledgeItem & { similarity: number }>> {
-		const { limit = 10, threshold = 0.05, tierPreference = 'all' } = options;
+		const { limit = 10, threshold = 0.05, tierPreference = 'all', includeTestingData = false } = options;
 		const queryEmbedding = this.generateMockEmbedding(query);
 		const results: Array<TieredKnowledgeItem & { similarity: number }> = [];
 
@@ -170,6 +175,11 @@ export class MultiTierMemorySystem {
 		
 		for (const [tierName, tierMap] of tiersToSearch) {
 			for (const item of tierMap.values()) {
+				// Filter out testing data unless explicitly included
+				if (!includeTestingData && item.metadata?.testing) {
+					continue;
+				}
+				
 				const similarity = this.cosineSimilarity(queryEmbedding, item.embedding);
 				
 				if (similarity >= threshold) {
@@ -442,15 +452,15 @@ export class MultiTierMemorySystem {
 			
 			let shouldRemove = false;
 			
-			// Hard expiration: Items beyond retention time
+			// Apply unified forgetting logic: either probabilistic forgetting OR hard expiration, not both
 			if (itemAge > retentionMs) {
+				// Hard expiration: Items beyond retention time that aren't spared
 				const shouldSpare = this.shouldSpareFromExpiration(item, tier);
 				if (!shouldSpare) {
 					shouldRemove = true;
 				}
-			}
-			// Probabilistic forgetting: Apply forgetting curve for all items
-			else {
+			} else {
+				// Probabilistic forgetting: Apply forgetting curve for items within retention window
 				const shouldForget = this.shouldForgetItem(item, tier);
 				if (shouldForget) {
 					shouldRemove = true;
@@ -477,13 +487,15 @@ export class MultiTierMemorySystem {
 		if (tier === 'axiom') return true;
 		
 		// High importance items are more likely to be spared
-		const importanceThreshold = tier === 'long' ? 0.7 : tier === 'intermediate' ? 0.8 : 0.9;
+		// Lower tiers should be more lenient (easier to survive)
+		const importanceThreshold = tier === 'long' ? 0.8 : tier === 'intermediate' ? 0.6 : 0.4;
 		
 		if (item.importance >= importanceThreshold) {
 			return true;
 		}
 		
-		// Frequently accessed items are more likely to be spared (more lenient thresholds)
+		// Frequently accessed items are more likely to be spared 
+		// Use tier-appropriate access thresholds that align with promotion logic
 		const accessThreshold = tier === 'long' ? 2 : tier === 'intermediate' ? 3 : 5;
 		
 		if (item.accessCount >= accessThreshold) {
@@ -785,49 +797,83 @@ export class MultiTierMemorySystem {
 	/**
 	 * Get memory statistics across all tiers
 	 */
-	getMemoryStats(): {
-		axiom?: { count: number; capacity: number; utilizationPercent: number };
-		long: { count: number; capacity: number; utilizationPercent: number };
-		intermediate: { count: number; capacity: number; utilizationPercent: number };
-		short: { count: number; capacity: number; utilizationPercent: number };
-		total: { count: number; capacityUsed: number };
+	getMemoryStats(includeTestingData: boolean = false): {
+		axiom?: { count: number; capacity: number; utilizationPercent: number; testingItems?: number };
+		long: { count: number; capacity: number; utilizationPercent: number; testingItems?: number };
+		intermediate: { count: number; capacity: number; utilizationPercent: number; testingItems?: number };
+		short: { count: number; capacity: number; utilizationPercent: number; testingItems?: number };
+		total: { count: number; capacityUsed: number; testingItems?: number };
+		testingDataIncluded: boolean;
 	} {
-		const result: any = {};
+		const result: any = { testingDataIncluded: includeTestingData };
+		
+		// Helper function to count items (with optional testing filter)
+		const countItems = (tierMap: Map<string, any>): { count: number; testingCount: number } => {
+			if (includeTestingData) {
+				return { count: tierMap.size, testingCount: 0 };
+			}
+			let count = 0;
+			let testingCount = 0;
+			for (const item of tierMap.values()) {
+				if (item.metadata?.testing) {
+					testingCount++;
+				} else {
+					count++;
+				}
+			}
+			return { count, testingCount };
+		};
 		
 		// Add axiom tier stats if configured
 		if (this.config.axiom) {
-			result.axiom = {
-				count: this.axiomTier.size,
+			const { count, testingCount } = countItems(this.axiomTier);
+			const stats: any = {
+				count: includeTestingData ? this.axiomTier.size : count,
 				capacity: this.config.axiom.maxItems,
-				utilizationPercent: (this.axiomTier.size / this.config.axiom.maxItems) * 100
+				utilizationPercent: ((includeTestingData ? this.axiomTier.size : count) / this.config.axiom.maxItems) * 100
 			};
+			if (!includeTestingData) stats.testingItems = testingCount;
+			result.axiom = stats;
 		}
 
-		const long = {
-			count: this.longTerm.size,
+		const longCounts = countItems(this.longTerm);
+		const long: any = {
+			count: includeTestingData ? this.longTerm.size : longCounts.count,
 			capacity: this.config.long.maxItems,
-			utilizationPercent: (this.longTerm.size / this.config.long.maxItems) * 100
+			utilizationPercent: ((includeTestingData ? this.longTerm.size : longCounts.count) / this.config.long.maxItems) * 100
 		};
+		if (!includeTestingData) long.testingItems = longCounts.testingCount;
 
-		const intermediate = {
-			count: this.intermediateTerm.size,
+		const intermediateCounts = countItems(this.intermediateTerm);
+		const intermediate: any = {
+			count: includeTestingData ? this.intermediateTerm.size : intermediateCounts.count,
 			capacity: this.config.intermediate.maxItems,
-			utilizationPercent: (this.intermediateTerm.size / this.config.intermediate.maxItems) * 100
+			utilizationPercent: ((includeTestingData ? this.intermediateTerm.size : intermediateCounts.count) / this.config.intermediate.maxItems) * 100
 		};
+		if (!includeTestingData) intermediate.testingItems = intermediateCounts.testingCount;
 
-		const short = {
-			count: this.shortTerm.size,
+		const shortCounts = countItems(this.shortTerm);
+		const short: any = {
+			count: includeTestingData ? this.shortTerm.size : shortCounts.count,
 			capacity: this.config.short.maxItems,
-			utilizationPercent: (this.shortTerm.size / this.config.short.maxItems) * 100
+			utilizationPercent: ((includeTestingData ? this.shortTerm.size : shortCounts.count) / this.config.short.maxItems) * 100
 		};
+		if (!includeTestingData) short.testingItems = shortCounts.testingCount;
 
 		result.long = long;
 		result.intermediate = intermediate;
 		result.short = short;
+		
+		const totalCount = (result.axiom?.count || 0) + long.count + intermediate.count + short.count;
+		const totalTestingItems = includeTestingData 
+			? 0 
+			: (result.axiom?.testingItems || 0) + long.testingItems + intermediate.testingItems + short.testingItems;
+		
 		result.total = {
-			count: (result.axiom?.count || 0) + long.count + intermediate.count + short.count,
+			count: totalCount,
 			capacityUsed: (result.axiom?.utilizationPercent || 0) + long.utilizationPercent + intermediate.utilizationPercent + short.utilizationPercent
 		};
+		if (!includeTestingData) result.total.testingItems = totalTestingItems;
 
 		return result;
 	}

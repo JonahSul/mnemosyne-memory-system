@@ -194,7 +194,7 @@ export class BehavioralRuleManager implements BehavioralRuleOperations {
 			})
 			.map(v => {
 				const ruleId = v.context?.ruleId;
-				const rule = this.rules.get(ruleId);
+				const rule = typeof ruleId === 'string' ? this.rules.get(ruleId) : null;
 				return {
 					id: ruleId,
 					rule: rule ? rule.rule : v.content,
