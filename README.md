@@ -144,3 +144,11 @@ We encourage developers to create their own Mnemosyne Memory Systems with custom
 5. **Share with the community** via pull requests
 
 *The runtime foundation update system makes it easy to iterate on behavioral rules and deploy improvements instantly.*
+
+## 💭 Memory Persistence
+
+> *"So realistically, the most critical memories could persist for months or potentially indefinitely, while lower-importance items would start disappearing after ~2-3 months on a universal timeline."*
+>
+> — AI Agent describing its own memory retention capabilities
+
+The Mnemosyne system provides true persistent memory across conversations and sessions, with sophisticated forgetting curves that mirror human memory patterns. High-importance experiences and lessons learned are retained indefinitely, while routine information naturally fades over time.
