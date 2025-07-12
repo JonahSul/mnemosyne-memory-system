@@ -5,3 +5,6 @@ node_modules
 .env
 .env.*
 !.env.example
+
+# Test results - keep test outputs out of version control
+test-results/
