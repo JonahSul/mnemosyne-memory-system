@@ -24,9 +24,10 @@ SOFTWARE.
 NOVEL PROCESS APPROACHES - ADDITIONAL COPYRIGHT NOTICE
 ================================================================================
 
-The following novel process approaches and methodologies contained within this
-software are the exclusive intellectual property of Jonah Sullivan and are
-protected by copyright:
+The following process approaches and methodologies contained within this
+software, to the extent they may be novel and not covered by existing prior
+art or patents unknown to the author, are claimed as intellectual property
+of Jonah Sullivan:
 
 1. **Multi-Tier Memory Architecture with Intelligent Forgetting**
    - Implementation of Ebbinghaus forgetting curves in computational memory systems
@@ -59,20 +60,22 @@ protected by copyright:
    - Concurrent operation handling with garbage collection coordination
    - Memory efficiency optimization under sustained load
 
-These novel approaches represent significant innovations in AI memory systems,
-behavioral regulation, and cognitive architecture design. Any use, adaptation,
-or commercialization of these specific methodologies requires explicit written
-permission from Jonah Sullivan.
+DISCLAIMER: The author acknowledges that similar approaches may exist in prior
+art, patents, or other works unknown at the time of development. This notice
+is intended to protect potentially novel aspects while recognizing the
+possibility of unknown prior art. Any use, adaptation, or commercialization
+of these methodologies should include appropriate patent research and legal
+review.
 
 For licensing inquiries regarding novel process approaches, contact:
 [Contact information to be provided]
 
-This copyright notice ensures that the innovative aspects of this work remain
-protected while allowing open-source collaboration on the implementation details.
+This copyright notice protects potentially novel aspects of this work while
+acknowledging the possibility of unknown prior art and allowing open-source
+collaboration on the implementation details.
 
-The novel process approaches described above are considered the "expressive of
-novel process approaches" as referenced in the repository documentation and are
-subject to this additional copyright protection.
+The process approaches described above are claimed as potentially novel
+contributions to AI memory system design, subject to the disclaimers above.
 
 ================================================================================
 ATTRIBUTION REQUIREMENTS
