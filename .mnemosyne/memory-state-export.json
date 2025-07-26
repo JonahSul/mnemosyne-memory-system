@@ -1,0 +1,263 @@
+{
+  "entries": [
+    [
+      "mem_1755893083158_akhknwzdu",
+      {
+        "id": "mem_1755893083158_akhknwzdu",
+        "timestamp": "2025-08-22T20:04:43.158Z",
+        "type": "claim",
+        "content": "The deployment to staging was successful and the three critical memory management bugs have been fixed",
+        "status": "verified",
+        "context": {
+          "confidence": "medium",
+          "context": {
+            "deployment_status": "successful",
+            "environment": "staging",
+            "fixes_applied": [
+              "inverted_importance_thresholds",
+              "double_jeopardy_removal",
+              "promotion_logic_alignment"
+            ]
+          },
+          "timestamp": "2025-08-22T20:04:43.158Z",
+          "testing": false
+        },
+        "evidence": "Deployment output shows successful upload (704.42 KiB), worker startup time 27ms, deployed to https://mnemosyne-memory-system-stage.sprinklerblowout.workers.dev with Version ID: 593d7321-d51d-48ff-90ef-1d11a541bb17"
+      }
+    ]
+  ],
+  "rules": [
+    {
+      "id": "no-unverified-claims",
+      "rule": "Never claim something is \"fixed\" without verification",
+      "description": "Ensure all claims are backed by evidence or proper verification",
+      "priority": "critical",
+      "violations": 0
+    },
+    {
+      "id": "systematic-approach",
+      "rule": "Break down complex problems systematically",
+      "description": "Use systematic approaches to solve complex problems",
+      "priority": "high",
+      "violations": 0
+    },
+    {
+      "id": "consult-memory-before-response",
+      "rule": "Always consult memory before responding to user queries",
+      "description": "Check relevant memories and patterns before providing responses",
+      "priority": "critical",
+      "violations": 2,
+      "examples": [
+        "✅ User asks about debugging → Check memory for similar debugging patterns",
+        "❌ User asks about React → Respond immediately without checking React-related memories"
+      ],
+      "lastViolation": "2025-08-22T21:15:24.603Z"
+    }
+  ],
+  "patterns": [
+    {
+      "pattern": "Rule consult-memory-before-response violations",
+      "description": "Pattern of violations for rule consult-memory-before-response",
+      "frequency": 2,
+      "outcome": "negative",
+      "lastOccurrence": "2025-08-22T21:15:24.603Z"
+    },
+    {
+      "pattern": "Rule BEHAVIORAL_RULE_002 violations",
+      "description": "Pattern of violations for rule BEHAVIORAL_RULE_002",
+      "frequency": 1,
+      "outcome": "negative",
+      "lastOccurrence": "2025-08-22T21:27:18.732Z"
+    },
+    {
+      "pattern": "Rule BEHAVIORAL_RULE_001 violations",
+      "description": "Pattern of violations for rule BEHAVIORAL_RULE_001",
+      "frequency": 1,
+      "outcome": "negative",
+      "lastOccurrence": "2025-08-22T21:27:23.911Z"
+    }
+  ],
+  "claims": {
+    "mem_1755893083158_akhknwzdu": {
+      "id": "mem_1755893083158_akhknwzdu",
+      "timestamp": "2025-08-22T20:04:43.158Z",
+      "type": "claim",
+      "content": "The deployment to staging was successful and the three critical memory management bugs have been fixed",
+      "status": "verified",
+      "context": {
+        "confidence": "medium",
+        "context": {
+          "deployment_status": "successful",
+          "environment": "staging",
+          "fixes_applied": [
+            "inverted_importance_thresholds",
+            "double_jeopardy_removal",
+            "promotion_logic_alignment"
+          ]
+        },
+        "timestamp": "2025-08-22T20:04:43.158Z",
+        "testing": false
+      },
+      "evidence": "Deployment output shows successful upload (704.42 KiB), worker startup time 27ms, deployed to https://mnemosyne-memory-system-stage.sprinklerblowout.workers.dev with Version ID: 593d7321-d51d-48ff-90ef-1d11a541bb17"
+    }
+  },
+  "violations": {},
+  "behavioralPatterns": {},
+  "timestamp": "2025-08-22T21:34:37.566Z",
+  "testingDataIncluded": false,
+  "delegationStats": {
+    "targets": 8,
+    "methods": 130,
+    "methodsByTarget": {
+      "vectorPrewarming": 38,
+      "checkpointManager": 8,
+      "workflowAnalysis": 4,
+      "workflowIntegration": 2,
+      "prewarmingStrategy": 4,
+      "patternAnalysis": 18,
+      "contextQuery": 29,
+      "behavioralPatterns": 27
+    }
+  },
+  "availableMethods": [
+    "analyzeQueryForVectorNeeds",
+    "createPrewarmingStrategy",
+    "executeVectorPrewarming",
+    "adaptPrewarmingBasedOnUsage",
+    "prioritizeVectorsByDomain",
+    "predictNextQueries",
+    "createVectorSessionPrewarmingStrategy",
+    "evaluatePrewarmingEffectiveness",
+    "adaptPrewarmingStrategy",
+    "extractSemanticConcepts",
+    "identifyVectorSearchAreas",
+    "calculatePriority",
+    "estimateVectorCount",
+    "selectPriorityVectors",
+    "calculateSemanticRadius",
+    "estimateLatency",
+    "extractLearnedConcepts",
+    "calculateConfidence",
+    "identifyRelatedPatterns",
+    "getSuggestedVectorsForDomain",
+    "calculateDomainPriority",
+    "predictTopicsFromContext",
+    "calculatePredictionConfidence",
+    "getRelevantPatterns",
+    "expandTopics",
+    "identifyPreferredMethods",
+    "calculateAdaptedConfidence",
+    "getActivePrewarming",
+    "getUsagePatterns",
+    "getEffectivenessHistory",
+    "getAdaptedStrategies",
+    "generateStrategySync",
+    "startPrewarmingSync",
+    "getPrewarmingStatusSync",
+    "recordQueryPatternSync",
+    "recordUserBehaviorPatternSync",
+    "generateAdaptivePrewarmingStrategySync",
+    "prioritizeVectorPrewarmingSync",
+    "createWorkflowCheckpoint",
+    "getTriggeredMemorySearches",
+    "trackWorkflowExecution",
+    "recordUserInteraction",
+    "shouldTriggerMemoryConsultation",
+    "generateQueryFromContext",
+    "convertPriorityToNumber",
+    "getCheckpoints",
+    "analyzeWorkflowEfficiency",
+    "optimizeWorkflow",
+    "balanceSpeedVsThoroughness",
+    "getEfficiencyAnalyses",
+    "recordConsultationValue",
+    "getOptimizedConsultationFrequency",
+    "createPrewarmingSessionStrategy",
+    "generatePrewarmingPredictions",
+    "getAdaptedPrewarmingStrategy",
+    "getPrewarmingAttempts",
+    "recordSuccessfulPattern",
+    "processFeedbackPattern",
+    "recordFailurePattern",
+    "getLearnedBehaviorPatterns",
+    "getBehaviorAdjustments",
+    "getFailureAvoidanceStrategies",
+    "analyzePatterns",
+    "generateAdaptiveStrategy",
+    "extractPatternType",
+    "calculateSuccessRate",
+    "determineAdjustmentFromFeedback",
+    "updateBehaviorAdjustment",
+    "extractIndicators",
+    "extractConsequences",
+    "generatePreventionMethods",
+    "getBehaviorPatterns",
+    "getFeedbackPatterns",
+    "getFailurePatterns",
+    "logContextQuery",
+    "getContextLogs",
+    "getRecommendedMemorySearches",
+    "storeContext",
+    "searchKnowledge",
+    "searchTiered",
+    "storeKnowledge",
+    "storeTieredKnowledge",
+    "getStats",
+    "exportState",
+    "performSemanticSearch",
+    "performTieredSearch",
+    "generateEmbeddings",
+    "calculateSimilarity",
+    "getTierBoost",
+    "calculateKnowledgeStats",
+    "calculateTieredStats",
+    "calculateQueryStats",
+    "calculateContextStats",
+    "applyFilter",
+    "formatSummary",
+    "formatDetailed",
+    "formatRaw",
+    "analyzeQueryPatterns",
+    "queriesAreSimilar",
+    "getContexts",
+    "getQueries",
+    "getKnowledgeStore",
+    "getTieredKnowledge",
+    "learnFromInteractionPatterns",
+    "adaptBehaviorBasedOnPatterns",
+    "analyzeBehavioralTrends",
+    "identifySuccessfulPatterns",
+    "identifyProblematicPatterns",
+    "recommendBehavioralAdjustments",
+    "trackPatternEvolution",
+    "measurePatternEffectiveness",
+    "groupInteractionsByPattern",
+    "classifyInteractionPattern",
+    "analyzePatternGroup",
+    "determineAdjustment",
+    "applyBehavioralAdjustment",
+    "extractTrendKey",
+    "generateTrendDescription",
+    "classifyOutcome",
+    "calculateAverageResponseTime",
+    "extractCommonCharacteristics",
+    "calculateEvolutionTrend",
+    "generateEvolutionRecommendations",
+    "evaluateContextRelevance",
+    "getLearnedPatterns",
+    "getInteractionHistory",
+    "getPatternEvolution",
+    "getAdaptationHistory",
+    "clearHistory",
+    "clearPatterns"
+  ],
+  "memoryStats": {
+    "totalMemories": 1,
+    "claims": 1,
+    "assumptions": 0,
+    "verified": 1,
+    "pending": 0,
+    "failed": 0,
+    "testingDataExcluded": true
+  }
+}
