@@ -1,6 +1,6 @@
 # Mnemosyne Memory System Documentation
 
-Welcome to the comprehensive documentation for the Mnemosyne Memory System. This documentation covers the sophisticated architecture, advanced features, and implementation details of our multi-tier memory system with semantic search capabilities.
+Multi-tier memory system with semantic search capabilities and runtime behavioral rule deployment.
 
 ## 📚 Documentation Structure
 
@@ -29,30 +29,30 @@ Welcome to the comprehensive documentation for the Mnemosyne Memory System. This
 - **[MCP Integration](./mcp-integration.md)** - Model Context Protocol implementation
 - **[Production Monitoring](./production-monitoring.md)** - Observability and maintenance
 
-## 🏗️ Quick Architecture Overview
+## 🏗️ Architecture
 
-The Mnemosyne Memory System is built on several key architectural principles:
+Key principles:
 
-1. **Modularity**: Clean separation through the Delegator pattern
+1. **Modularity**: Delegator pattern with clean separation
 2. **Scalability**: Multi-tier memory with intelligent promotion/demotion
-3. **Adaptability**: Dynamic threshold tuning based on workload characteristics
-4. **Reliability**: Comprehensive error handling with proper HTTP status codes
-5. **Observability**: Built-in monitoring and autonomous testing capabilities
+3. **Adaptability**: Dynamic threshold tuning based on workload
+4. **Reliability**: Comprehensive error handling with HTTP status codes
+5. **Observability**: Built-in monitoring and autonomous testing
 
-## 🎯 Key Innovations
+## 🎯 Innovations
 
-- **Semantic Search with Adaptive Thresholds**: Workload-aware optimization for precision/recall balance
-- **Multi-Tier Memory Architecture**: Hierarchical storage mimicking human cognitive memory patterns  
-- **Runtime Foundation Updates**: Hot-deployment of behavioral rules without service interruption
-- **Autonomous Testing Framework**: Self-validating 8-hour forgetting performance tests
-- **Comprehensive Error Handling**: Proper HTTP status code mapping throughout the entire call stack
+- **Semantic Search with Adaptive Thresholds**: Workload-aware optimization
+- **Multi-Tier Memory Architecture**: Hierarchical storage mimicking cognitive patterns  
+- **Runtime Foundation Updates**: Hot-deployment without service interruption
+- **Autonomous Testing Framework**: Self-validating forgetting performance tests
+- **Comprehensive Error Handling**: Proper HTTP status mapping
 
 ## 🚀 Getting Started
 
-1. **Start with [Architecture Overview](./architecture-overview.md)** to understand the system design
-2. **Read [Multi-Tier Memory](./multi-tier-memory.md)** to understand storage hierarchies
-3. **Explore [Tools Registry](./tools-registry.md)** to see how MCP tools are organized
-4. **Check [Deployment Guide](./cloudflare-deployment.md)** for production setup
+1. [Architecture Overview](./architecture-overview.md)
+2. [Multi-Tier Memory](./multi-tier-memory.md)
+3. [Tools Registry](./tools-registry.md)
+4. [Deployment Guide](./cloudflare-deployment.md)
 
 ---
 

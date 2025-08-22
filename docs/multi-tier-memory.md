@@ -1,10 +1,10 @@
 # Multi-Tier Memory Architecture
 
-The Multi-Tier Memory Architecture is inspired by human cognitive memory patterns and implements a sophisticated hierarchical storage system with **intelligent retention policies**, **access-based promotion**, and **probabilistic forgetting curves**. This system represents a breakthrough in AI memory management.
+Hierarchical storage system with intelligent retention policies, access-based promotion, and probabilistic forgetting curves.
 
-## 🧠 Cognitive Memory Model
+## 🧠 Memory Tiers
 
-The architecture mimics human memory systems with four distinct tiers:
+Four-tier hierarchy mimicking cognitive memory systems:
 
 ### Memory Tier Hierarchy
 

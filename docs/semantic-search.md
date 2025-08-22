@@ -1,10 +1,10 @@
 # Semantic Search System
 
-The Semantic Search System in Mnemosyne implements **state-of-the-art vector similarity search** with **adaptive threshold optimization**, **workload-aware tuning**, and **context-sensitive ranking**. This system represents a breakthrough in making semantic search both **powerful and accessible** for AI memory applications.
+Vector similarity search with adaptive threshold optimization, workload-aware tuning, and context-sensitive ranking.
 
-## 🔍 Search Architecture Overview
+## 🔍 Search Architecture
 
-The semantic search system operates on multiple levels:
+Multi-level search system:
 
 ```
 Vector Store (Basic Semantic Search)
@@ -18,9 +18,9 @@ Adaptive Search Interface (Context-Aware Results)
 
 ## 🧠 Vector Embedding System
 
-### Mock Embedding Generation
+### Embedding Generation
 
-For development and testing, the system generates **semantically meaningful embeddings**:
+Development embeddings use semantic seeding:
 
 ```typescript
 private generateMockEmbedding(text: string): number[] {
