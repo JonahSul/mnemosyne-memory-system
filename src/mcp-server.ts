@@ -1157,10 +1157,149 @@ ${assessment.recommendations.map(r => `- ${r}`).join('\n')}
 				}]
 			};
 		}
-	}
-];
+	},
 
-// Fallback memory getter for standalone usage
+	// Phase 2 - File Operation Assessment
+	{
+		name: 'memory_assess_file_operation',
+		description: 'CRITICAL: Assess a file operation for violation risk before execution. Use this before creating, editing, deleting, moving, or copying files to prevent data loss and maintain project integrity.',
+		schema: {
+			operation: z.enum(['create', 'edit', 'delete', 'move', 'copy']).describe("The type of file operation to assess"),
+			filePath: z.string().describe("The path of the file being operated on"),
+			context: z.record(z.unknown()).optional().describe("Additional context about the file operation")
+		},
+		handler: async (params) => {
+			const memory = (globalThis as any).getMemoryInstance();
+			
+			// Import and use pre-violation assessment
+			const { PreViolationAssessment } = await import('./modules/pre-violation-assessment.js');
+			const assessor = new PreViolationAssessment(memory);
+			const assessment = await assessor.assessFileOperation(params.operation, params.filePath, params.context);
+
+			const shouldProceed = assessment.level === 'PROCEED' || 
+				(assessment.level === 'CAUTION' && assessment.confidence < 0.8);
+
+			let recommendation = '';
+			switch (assessment.level) {
+				case 'PROCEED':
+					recommendation = 'Safe to proceed - no file operation risk detected';
+					break;
+				case 'CAUTION':
+					recommendation = `Proceed with caution - ${assessment.reasoning}`;
+					break;
+				case 'STOP':
+					recommendation = `Do not proceed - ${assessment.reasoning}`;
+					break;
+				case 'ASK':
+					recommendation = `Ask user for guidance - ${assessment.reasoning}`;
+					break;
+			}
+
+			// Log this assessment
+			memory.logClaim(
+				`File operation assessment: ${params.operation} "${params.filePath}" assessed as ${assessment.level}`,
+				{
+					operation: params.operation,
+					filePath: params.filePath,
+					assessmentLevel: assessment.level,
+					confidence: assessment.confidence,
+					evidenceCount: assessment.evidence?.length || 0
+				},
+				'pre-violation file assessment',
+				'medium'
+			);
+
+			return {
+				content: [{
+					type: "text",
+					text: `## 📁 File Operation Assessment
+
+**Operation**: ${params.operation.toUpperCase()}
+**File**: \`${params.filePath}\`
+**Risk Level**: ${assessment.level} (${Math.round(assessment.confidence * 100)}% confidence)
+**Recommendation**: ${recommendation}
+**Should Proceed**: ${shouldProceed ? '✅ Yes' : '❌ No'}
+
+**Analysis**: ${assessment.reasoning}
+
+${assessment.evidence && assessment.evidence.length > 0 ? `
+**Evidence Found** (${assessment.evidence.length} items):
+${assessment.evidence.map(e => `- **${e.type}**: ${e.description} (${Math.round(e.relevance * 100)}% relevant)`).join('\n')}
+` : '**Evidence**: No file operation violation patterns found in memory'}
+
+${assessment.recommendations && assessment.recommendations.length > 0 ? `
+**Recommendations**:
+${assessment.recommendations.map(r => `- ${r}`).join('\n')}
+` : ''}
+
+⚠️ **Important**: File operations can be irreversible. Consider backups for critical files.`
+				}]
+			};
+		}
+	},
+
+	// Phase 2 - Real-time Guidance
+	{
+		name: 'memory_get_realtime_guidance',
+		description: 'Get real-time guidance for ongoing actions to prevent violations as they occur. Use this during complex operations that need continuous memory-informed guidance.',
+		schema: {
+			actionType: z.enum(['terminal_command', 'file_operation', 'user_interaction']).describe("The type of action currently being performed"),
+			actionDetails: z.string().describe("Details of the current action"),
+			currentContext: z.record(z.unknown()).optional().describe("Current context and state")
+		},
+		handler: async (params) => {
+			const memory = (globalThis as any).getMemoryInstance();
+			
+			// Import and use pre-violation assessment
+			const { PreViolationAssessment } = await import('./modules/pre-violation-assessment.js');
+			const assessor = new PreViolationAssessment(memory);
+			const guidance = await assessor.getRealtimeGuidance(params.actionType, params.actionDetails, params.currentContext);
+
+			let urgencyIcon = '';
+			switch (guidance.urgency) {
+				case 'low': urgencyIcon = '🟢'; break;
+				case 'medium': urgencyIcon = '🟡'; break;
+				case 'high': urgencyIcon = '🟠'; break;
+				case 'critical': urgencyIcon = '🔴'; break;
+			}
+
+			let guidanceIcon = '';
+			switch (guidance.guidance) {
+				case 'continue': guidanceIcon = '✅'; break;
+				case 'pause': guidanceIcon = '⏸️'; break;
+				case 'modify': guidanceIcon = '⚠️'; break;
+				case 'stop': guidanceIcon = '🛑'; break;
+			}
+
+			return {
+				content: [{
+					type: "text",
+					text: `## 🧭 Real-time Guidance
+
+**Action**: ${params.actionType} - ${params.actionDetails}
+**Guidance**: ${guidanceIcon} ${guidance.guidance.toUpperCase()}
+**Urgency**: ${urgencyIcon} ${guidance.urgency.toUpperCase()}
+
+**Reasoning**: ${guidance.reasoning}
+
+${guidance.suggestions && guidance.suggestions.length > 0 ? `
+**Suggestions**:
+${guidance.suggestions.map(s => `- ${s}`).join('\n')}
+` : ''}
+
+**Next Step**: ${
+	guidance.guidance === 'continue' ? 'Proceed with current action' :
+	guidance.guidance === 'pause' ? 'Pause and review before continuing' :
+	guidance.guidance === 'modify' ? 'Adjust approach based on memory patterns' :
+	'Stop current action and reconsider approach'
+}
+
+⏱️ **Real-time**: This guidance is based on current memory state and ongoing action analysis.`
+				}]
+			};
+		}
+	}
+];// Fallback memory getter for standalone usage
 function getMemoryInstance(): MnemosyneMemorySystem {
 	// This will be overridden during Durable Object execution
 	throw new Error("Memory instance not available outside Durable Object context");
