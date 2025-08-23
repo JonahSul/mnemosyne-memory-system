@@ -1,3 +1,7 @@
+/**
+ * Copyright © 2025, Jonah Sullivan
+ */
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MnemosyneMemorySystem } from '../src/memory-tool.js';
 import { memoryTools } from '../src/tools/registry.js';

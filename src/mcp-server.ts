@@ -355,7 +355,8 @@ export class MnemosyneMemorySystemMCP {
 							},
 							resources: {
 								subscribe: true,
-								listChanged: true
+								listChanged: true,
+								templates: true
 							},
 							prompts: {
 								listChanged: false
@@ -462,6 +463,22 @@ export class MnemosyneMemorySystemMCP {
 					id: body.id,
 					result: {
 						resources: []
+					}
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*'
+					}
+				});
+			}
+			
+			// Handle resource templates list - return empty list since we don't provide resource templates
+			if (body.method === 'resources/templates/list') {
+				return new Response(JSON.stringify({
+					jsonrpc: "2.0",
+					id: body.id,
+					result: {
+						resourceTemplates: []
 					}
 				}), {
 					headers: { 

@@ -1,4 +1,6 @@
 /**
+ * Copyright © 2025, Jonah Sullivan
+ * 
  * Mnemosyne Memory System MCP Agent
  * 
  * Implements MCP server using the standard MCP SDK for proper transport handling.
@@ -149,7 +151,7 @@ export class MnemosyneMemoryMCP {
 						protocolVersion: "2024-11-05",
 						capabilities: {
 							tools: { listChanged: true },
-							resources: { subscribe: true, listChanged: true },
+							resources: { subscribe: true, listChanged: true, templates: true },
 							prompts: { listChanged: false },
 							logging: { level: "info" }
 						},
@@ -214,6 +216,22 @@ export class MnemosyneMemoryMCP {
 					id: body.id,
 					result: {
 						resources: []
+					}
+				}), {
+					headers: { 
+						'Content-Type': 'application/json',
+						...corsHeaders
+					}
+				});
+			}
+			
+			// Handle resource templates list - return empty list since we don't provide resource templates
+			if (body.method === 'resources/templates/list') {
+				return new Response(JSON.stringify({
+					jsonrpc: "2.0",
+					id: body.id,
+					result: {
+						resourceTemplates: []
 					}
 				}), {
 					headers: { 

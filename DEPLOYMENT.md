@@ -79,8 +79,6 @@ The `__WRANGLER_ENV__` variable is automatically set for each environment:
 
 ## Testing Your Current Setup
 
-Since you've just completed the test suite (71/71 passing), you're ready to deploy:
-
 ### 1. Deploy to Staging First
 ```bash
 npx wrangler deploy --env staging
@@ -98,7 +96,5 @@ npx wrangler deploy --env production
 
 ## Resource Naming Convention
 - **Development**: `*-dev` suffix
-- **Staging**: `*-stage` suffix  
+- **Staging**: `*-stage` suffix
 - **Production**: Clean names (no suffix)
-
-This setup provides excellent isolation and follows Cloudflare Workers best practices for sustainable multi-environment deployments.

@@ -1,4 +1,6 @@
 /**
+ * Copyright © 2025, Jonah Sullivan
+ * 
  * Types for the Mnemosyne Memory System
  * 
  * Core data structures for cognitive enhancement and behavioral regulation

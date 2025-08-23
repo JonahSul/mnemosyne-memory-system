@@ -1,4 +1,6 @@
 /**
+ * Copyright © 2025, Jonah Sullivan
+ * 
  * Mnemosyne Memory System MCP Server
  * 
  * Cloudflare Worker providing cognitive enhancement and behavioral regulation for AI agents

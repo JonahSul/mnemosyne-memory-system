@@ -1,3 +1,7 @@
+/**
+ * Copyright © 2025, Jonah Sullivan
+ */
+
 import type { BehavioralRule, MemoryEntry, InteractionPattern } from './memory-interfaces';
 
 /**

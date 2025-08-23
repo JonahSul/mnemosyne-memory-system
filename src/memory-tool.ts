@@ -1,4 +1,6 @@
 /**
+ * Copyright © 2025, Jonah Sullivan
+ * 
  * Mnemosyne Memory System - Delegator-based Architecture
  * 
  * This tool provides external scaffolding for AI cognitive enhancement and behavioral consistency using
@@ -618,5 +620,334 @@ export class MnemosyneMemorySystem {
 			availableMethods: this.delegator.getAvailableMethods(),
 			memoryStats: memoryData.stats
 		};
+	}
+
+	/**
+	 * Restore memory state from encoded snapshots in vector store
+	 * 
+	 * This method searches for specific snapshot data in the vector store and
+	 * reconstructs the exact behavioral memory state including claims, rules, and verification status.
+	 * 
+	 * @returns Restoration results and statistics
+	 */
+	async restoreFromSnapshots(): Promise<{
+		success: boolean;
+		restored: { claims: number; rules: number; snapshots: number };
+		summary: string[];
+		errors: string[];
+	}> {
+		const restored = { claims: 0, rules: 0, snapshots: 0 };
+		const summary: string[] = [];
+		const errors: string[] = [];
+
+		try {
+			// Search for snapshot data
+			const snapshotResults = await this.delegator.delegate('searchKnowledge', 'MNEMOSYNE_STATE_SNAPSHOT MNEMOSYNE_BEHAVIORAL_RESTORATION_DATA', 10, 0.1);
+			const tieredSnapshots = await this.delegator.delegate('searchTiered', 'MNEMOSYNE_STATE_SNAPSHOT behavioral memory export', 10, 0.1, 'all');
+
+			// Process knowledge snapshots
+			for (const result of snapshotResults.results || []) {
+				if (result.content.includes('MNEMOSYNE_BEHAVIORAL_RESTORATION_DATA')) {
+					try {
+						// Extract JSON data from the content
+						const jsonMatch = result.content.match(/\[{.*}\]/s);
+						if (jsonMatch) {
+							const claimsData = JSON.parse(jsonMatch[0]);
+							
+							// Restore each claim with exact state
+							for (const claimData of claimsData) {
+								const restoredEntry: MemoryEntry = {
+									id: claimData.id,
+									timestamp: claimData.timestamp,
+									type: claimData.type,
+									content: claimData.content,
+									status: claimData.status,
+									context: claimData.context,
+									...(claimData.evidence && { evidence: claimData.evidence })
+								};
+								
+								this.storeMemory(restoredEntry, false);
+								restored.claims++;
+							}
+							
+							restored.snapshots++;
+							summary.push(`Restored ${claimsData.length} behavioral claims from snapshot`);
+						}
+					} catch (error) {
+						errors.push(`Failed to parse behavioral restoration data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+					}
+				}
+			}
+
+			// Process tiered snapshots for rule information
+			for (const result of tieredSnapshots.results || []) {
+				if (result.content.includes('MNEMOSYNE_STATE_SNAPSHOT')) {
+					restored.snapshots++;
+					
+					// Extract rule count from snapshot summary
+					const rulesMatch = result.content.match(/RULES: (\d+) foundation rules/);
+					if (rulesMatch) {
+						const expectedRules = parseInt(rulesMatch[1]);
+						const currentRules = await this.behavioralRules.getBehavioralRules();
+						
+						if (currentRules.length < expectedRules) {
+							// Restore foundation rules
+							try {
+								const { foundationMigrationV1_2 } = await import('../migrations/foundation.js');
+								if (foundationMigrationV1_2) {
+									foundationMigrationV1_2.coreRules.forEach(rule => {
+										this.addBehavioralRule({
+											id: rule.id,
+											rule: rule.rule,
+											description: rule.description,
+											priority: rule.priority,
+											violations: 0
+										});
+										restored.rules++;
+									});
+								}
+							} catch (error) {
+								errors.push(`Failed to restore foundation rules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+							}
+						}
+					}
+					
+					summary.push(`Processed snapshot: ${result.content.substring(0, 100)}...`);
+				}
+			}
+
+			return {
+				success: restored.snapshots > 0,
+				restored,
+				summary,
+				errors
+			};
+
+		} catch (error) {
+			errors.push(`Critical snapshot restoration error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			return {
+				success: false,
+				restored,
+				summary,
+				errors
+			};
+		}
+	}
+
+	/**
+	 * Backfill memory from vector store when behavioral memory appears empty
+	 * 
+	 * This method performs intelligent recovery by:
+	 * 1. Scanning vector store for existing embeddings
+	 * 2. Reconstructing memory entries from vector metadata
+	 * 3. Restoring behavioral rules and patterns
+	 * 4. Re-establishing memory consistency
+	 * 
+	 * @param options Configuration for backfill operation
+	 * @returns Recovery statistics and restored content summary
+	 */
+	async backfillFromVectorStore(options: {
+		maxItems?: number;
+		minSimilarity?: number;
+		preserveTimestamps?: boolean;
+		restoreFoundation?: boolean;
+	} = {}): Promise<{
+		success: boolean;
+		restored: {
+			knowledge: number;
+			claims: number;
+			rules: number;
+		};
+		summary: string[];
+		errors: string[];
+	}> {
+		const {
+			maxItems = 1000,
+			minSimilarity = 0.1,
+			preserveTimestamps = true,
+			restoreFoundation = true
+		} = options;
+
+		const restored = { knowledge: 0, claims: 0, rules: 0 };
+		const summary: string[] = [];
+		const errors: string[] = [];
+
+		try {
+			// 1. Check if we need backfill (empty behavioral memory)
+			const currentMemory = this.coreMemory.getMemories();
+			const currentRules = await this.behavioralRules.getBehavioralRules();
+			
+			const memoryCount = currentMemory.size;
+			const ruleCount = currentRules.length;
+			
+			summary.push(`Current state: ${memoryCount} memories, ${ruleCount} rules`);
+
+			// 2. PRIORITY: Try snapshot-based restoration first
+			if (memoryCount === 0 || ruleCount < 3) {
+				summary.push(`Attempting snapshot-based restoration...`);
+				const snapshotResult = await this.restoreFromSnapshots();
+				
+				if (snapshotResult.success) {
+					restored.claims += snapshotResult.restored.claims;
+					restored.rules += snapshotResult.restored.rules;
+					summary.push(`✅ Snapshot restoration: ${snapshotResult.restored.claims} claims, ${snapshotResult.restored.rules} rules`);
+					summary.push(...snapshotResult.summary);
+					
+					// If snapshot restoration was successful, we may not need general backfill
+					const updatedMemory = this.coreMemory.getMemories();
+					if (updatedMemory.size > 0) {
+						summary.push(`Snapshot restoration complete - skipping general backfill`);
+						return {
+							success: true,
+							restored,
+							summary,
+							errors: [...errors, ...snapshotResult.errors]
+						};
+					}
+				} else {
+					summary.push(`⚠️ No snapshots found - proceeding with general backfill`);
+					errors.push(...snapshotResult.errors);
+				}
+			}
+
+			// 3. Restore foundation rules if needed and requested (fallback)
+			if (restoreFoundation && ruleCount < 3) {
+				try {
+					const { foundationMigrationV1_2 } = await import('../migrations/foundation.js');
+					if (foundationMigrationV1_2) {
+						foundationMigrationV1_2.coreRules.forEach(rule => {
+							this.addBehavioralRule({
+								id: rule.id,
+								rule: rule.rule,
+								description: rule.description,
+								priority: rule.priority,
+								violations: 0
+							});
+							restored.rules++;
+						});
+						summary.push(`Restored ${foundationMigrationV1_2.coreRules.length} foundation rules`);
+					}
+				} catch (error) {
+					errors.push(`Failed to restore foundation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				}
+			}
+
+			// 3. Perform broad semantic search to find existing vector store content
+			const searchTerms = [
+				"memory knowledge information data",
+				"claims assumptions verification evidence", 
+				"behavioral rules patterns violations",
+				"context queries interactions workflow",
+				"technical implementation code debugging"
+			];
+
+			let totalRestored = 0;
+			for (const searchTerm of searchTerms) {
+				if (totalRestored >= maxItems) break;
+
+				try {
+					// Search both knowledge and tiered memory using delegated methods
+					const knowledgeResults = await this.delegator.delegate('searchKnowledge', searchTerm, Math.min(50, maxItems - totalRestored), minSimilarity);
+					const tieredResults = await this.delegator.delegate('searchTiered', searchTerm, Math.min(50, maxItems - totalRestored), minSimilarity, 'all');
+
+					// Process knowledge results
+					for (const result of knowledgeResults.results || []) {
+						if (totalRestored >= maxItems) break;
+						
+						// Check if this knowledge is already in behavioral memory
+						const alreadyExists = Array.from(currentMemory.values()).some((mem: MemoryEntry) => 
+							mem.content && mem.content.includes(result.content.substring(0, 100))
+						);
+
+						if (!alreadyExists) {
+							// Reconstruct as knowledge/context entry
+							const memoryId = `backfill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+							const reconstructedMemory: MemoryEntry = {
+								id: memoryId,
+								timestamp: preserveTimestamps && result.metadata?.timestamp 
+									? result.metadata.timestamp 
+									: new Date().toISOString(),
+								type: 'assumption', // Safe default type for recovered content
+								content: `[BACKFILLED] ${result.content}`,
+								status: 'pending',
+								context: {
+									backfilled: true,
+									originalScore: result.score,
+									backfillTimestamp: new Date().toISOString(),
+									...result.metadata
+								}
+							};
+
+							this.storeMemory(reconstructedMemory, false);
+							restored.knowledge++;
+							totalRestored++;
+						}
+					}
+
+					// Process tiered results similarly
+					for (const result of tieredResults.results || []) {
+						if (totalRestored >= maxItems) break;
+						
+						const alreadyExists = Array.from(currentMemory.values()).some((mem: MemoryEntry) => 
+							mem.content && mem.content.includes(result.content.substring(0, 100))
+						);
+
+						if (!alreadyExists) {
+							const memoryId = `backfill_tier_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+							const reconstructedMemory: MemoryEntry = {
+								id: memoryId,
+								timestamp: preserveTimestamps && result.metadata?.timestamp 
+									? result.metadata.timestamp 
+									: new Date().toISOString(),
+								type: 'assumption',
+								content: `[BACKFILLED FROM ${result.tier?.toUpperCase() || 'TIER'}] ${result.content}`,
+								status: 'pending',
+								context: {
+									backfilled: true,
+									tier: result.tier,
+									originalScore: result.score,
+									backfillTimestamp: new Date().toISOString(),
+									...result.metadata
+								}
+							};
+
+							this.storeMemory(reconstructedMemory, false);
+							restored.knowledge++;
+							totalRestored++;
+						}
+					}
+
+				} catch (error) {
+					errors.push(`Error searching for "${searchTerm}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+				}
+			}
+
+			summary.push(`Backfilled ${totalRestored} items from vector store`);
+			summary.push(`Total restored: ${restored.knowledge} knowledge, ${restored.claims} claims, ${restored.rules} rules`);
+
+			// 4. Log the backfill operation as a memory entry
+			const backfillSummary = `Memory backfill completed: restored ${totalRestored} items from vector store. Foundation rules: ${restored.rules}, Knowledge items: ${restored.knowledge}`;
+			await this.logClaim(backfillSummary, {
+				backfillOperation: true,
+				restoredCounts: restored,
+				timestamp: new Date().toISOString()
+			}, 'vector store recovery', 'medium');
+
+			return {
+				success: errors.length === 0 || totalRestored > 0,
+				restored,
+				summary,
+				errors
+			};
+
+		} catch (error) {
+			errors.push(`Critical backfill error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			return {
+				success: false,
+				restored,
+				summary,
+				errors
+			};
+		}
 	}
 }

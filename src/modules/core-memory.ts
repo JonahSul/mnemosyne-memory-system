@@ -1,4 +1,6 @@
 /**
+ * Copyright © 2025, Jonah Sullivan
+ * 
  * Core Memory Operations Module
  * 
  * Handles basic memory entry operations: claims, assumptions, verifications
