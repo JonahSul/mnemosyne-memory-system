@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { MnemosyneMemorySystem } from "./memory-tool.js";
 import { foundationMigrationV1, applyFoundationMigration } from "../migrations/foundation.js";
+import { foundationMigrationV12 } from "../migrations/foundation-v1.2.0.js";
 
 // Tool implementation interface
 interface ToolImplementation {
@@ -32,8 +33,34 @@ export class MnemosyneMemorySystemMCP {
 	
 	constructor(state: DurableObjectState, env: any) {
 		this.memory = new MnemosyneMemorySystem();
-		// Apply foundation migration to establish core behavioral rules
-		applyFoundationMigration(this.memory, foundationMigrationV1);
+		// Apply latest foundation migration to establish core behavioral rules
+		// This ensures we always start with the most current foundation
+		const latestFoundation = this.getLatestFoundationMigration();
+		applyFoundationMigration(this.memory, latestFoundation);
+		console.log(`MCP Server initialized with Foundation ${latestFoundation.version}`);
+	}
+
+	/**
+	 * Get the latest available foundation migration
+	 * Prioritizes the highest version available, ensuring latest features are always used
+	 */
+	private getLatestFoundationMigration() {
+		// Available foundation migrations in order of preference (latest first)
+		const availableFoundations = [
+			foundationMigrationV12, // v1.2.0 - Collaborative Intelligence Framework
+			foundationMigrationV1   // v1.0.0 - Base Foundation (fallback)
+		];
+
+		// Return the first available foundation (highest version)
+		for (const foundation of availableFoundations) {
+			if (foundation) {
+				return foundation;
+			}
+		}
+
+		// Fallback to v1.0.0 if somehow v1.2.0 is not available
+		console.warn('MCP Server using fallback Foundation v1.0.0 - latest foundation not available');
+		return foundationMigrationV1;
 	}
 
 	/**

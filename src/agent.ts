@@ -13,6 +13,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@mode
 import { MnemosyneMemorySystem } from "./memory-tool.js";
 import { MemoryNotFoundError } from "./modules/core-memory.js";
 import { foundationMigrationV1, applyFoundationMigration } from "../migrations/foundation.js";
+import { foundationMigrationV12 } from "../migrations/foundation-v1.2.0.js";
 import { registerMemoryTools } from "./tools/registry.js";
 
 /**
@@ -53,8 +54,12 @@ export class MnemosyneMemoryMCP {
 		if (this.initialized) return;
 		
 		try {
-			// Apply foundation migration to establish core behavioral rules
-			applyFoundationMigration(this.memory, foundationMigrationV1);
+			// Determine the latest foundation migration to use
+			const latestFoundation = this.getLatestFoundationMigration();
+			
+			// Apply latest foundation migration to establish core behavioral rules
+			// This ensures we always start with the most current foundation, regardless of version increment
+			applyFoundationMigration(this.memory, latestFoundation);
 			
 			// Set up global memory instance getter for tools
 			(globalThis as any).getMemoryInstance = () => this.memory;
@@ -63,11 +68,35 @@ export class MnemosyneMemoryMCP {
 			registerMemoryTools(this.server);
 			
 			this.initialized = true;
-			console.log('Mnemosyne Memory System initialized successfully');
+			console.log(`Mnemosyne Memory System initialized successfully with Foundation ${latestFoundation.version}`);
 		} catch (error) {
 			console.error('Failed to initialize Mnemosyne Memory System:', error);
 			throw error;
 		}
+	}
+
+	/**
+	 * Get the latest available foundation migration
+	 * Prioritizes the highest version available, ensuring latest features are always used
+	 */
+	private getLatestFoundationMigration() {
+		// Available foundation migrations in order of preference (latest first)
+		const availableFoundations = [
+			foundationMigrationV12, // v1.2.0 - Collaborative Intelligence Framework
+			foundationMigrationV1   // v1.0.0 - Base Foundation (fallback)
+		];
+
+		// Return the first available foundation (highest version)
+		for (const foundation of availableFoundations) {
+			if (foundation) {
+				console.log(`Selected Foundation ${foundation.version}: ${foundation.description}`);
+				return foundation;
+			}
+		}
+
+		// Fallback to v1.0.0 if somehow v1.2.0 is not available
+		console.warn('Using fallback Foundation v1.0.0 - latest foundation not available');
+		return foundationMigrationV1;
 	}
 
 	/**
