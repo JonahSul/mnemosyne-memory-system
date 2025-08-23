@@ -402,6 +402,112 @@ ${params.includeRestorePlan && sanityResults.restorePlan.length > 0 ?
 		}
 	},
 
+	{
+		name: "memory_restore_from_snapshots",
+		description: "Restore exact memory state from encoded snapshots in vector store. This tool searches for and reconstructs complete behavioral memory including claims, verification status, rules, and behavioral patterns from previously stored snapshots. Priority restoration method for maintaining exact session continuity.",
+		schema: {},
+		handler: async (params) => {
+			const memory = getMnemosyneMemoryInstance();
+			
+			try {
+				const result = await memory.restoreFromSnapshots();
+
+				const status = result.success ? "✅ SUCCESS" : "❌ FAILED";
+				let responseText = `**Snapshot Restoration ${status}**\n\n`;
+				
+				responseText += `**Restored:**\n`;
+				responseText += `- Claims: ${result.restored.claims}\n`;
+				responseText += `- Rules: ${result.restored.rules}\n`;
+				responseText += `- Snapshots Processed: ${result.restored.snapshots}\n\n`;
+				
+				if (result.summary.length > 0) {
+					responseText += `**Summary:**\n`;
+					result.summary.forEach(line => responseText += `- ${line}\n`);
+					responseText += `\n`;
+				}
+				
+				if (result.errors.length > 0) {
+					responseText += `**Errors:**\n`;
+					result.errors.forEach(error => responseText += `- ❌ ${error}\n`);
+				}
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: responseText
+					}],
+					isError: !result.success
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ **Snapshot Restoration Failed**\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`
+					}],
+					isError: true
+				};
+			}
+		}
+	},
+
+	{
+		name: "memory_backfill_from_vector_store",
+		description: "Comprehensive backfill from vector store with priority for snapshot data. Searches for and restores behavioral memory data, patterns, and previously stored knowledge from the vector store. Automatically prioritizes snapshot data over general knowledge when available.",
+		schema: {
+			maxItems: z.number().optional().describe("Maximum number of items to restore (default: 1000)"),
+			minSimilarity: z.number().optional().describe("Minimum similarity threshold for restoration (default: 0.1)"),
+			preserveTimestamps: z.boolean().optional().describe("Whether to preserve original timestamps (default: true)"),
+			restoreFoundation: z.boolean().optional().describe("Whether to restore foundation rules (default: true)")
+		},
+		handler: async (params) => {
+			const memory = getMnemosyneMemoryInstance();
+			
+			try {
+				const result = await memory.backfillFromVectorStore({
+					maxItems: params.maxItems || 1000,
+					minSimilarity: params.minSimilarity || 0.1,
+					preserveTimestamps: params.preserveTimestamps !== false,
+					restoreFoundation: params.restoreFoundation !== false
+				});
+
+				const status = result.success ? "✅ SUCCESS" : "❌ FAILED";
+				let responseText = `**Vector Store Backfill ${status}**\n\n`;
+				
+				responseText += `**Restored:**\n`;
+				responseText += `- Claims: ${result.restored.claims}\n`;
+				responseText += `- Rules: ${result.restored.rules}\n`;
+				responseText += `- Knowledge Items: ${result.restored.knowledge}\n\n`;
+				
+				if (result.summary.length > 0) {
+					responseText += `**Summary:**\n`;
+					result.summary.forEach(line => responseText += `- ${line}\n`);
+					responseText += `\n`;
+				}
+				
+				if (result.errors.length > 0) {
+					responseText += `**Errors:**\n`;
+					result.errors.forEach(error => responseText += `- ❌ ${error}\n`);
+				}
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: responseText
+					}],
+					isError: !result.success
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ **Vector Store Backfill Failed**\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`
+					}],
+					isError: true
+				};
+			}
+		}
+	},
+
 	// Vector Knowledge Tools for RAG-based working memory
 	{
 		name: "memory_store_knowledge",

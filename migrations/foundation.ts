@@ -1,41 +1,16 @@
 /**
+ * Copyright © 2025, Jonah Sullivan
+ * 
  * Foundation Migration for Mnemosyne Memory System
  * 
- * Estab		{
-			id: 'verify-before-claim',
-			rule: 'Never claim something is "fixed" or "working" without verification',
-			description: 'Must verify functionality through testing, observation, or user feed	// Log migration completion
-	const migrationId = await memory.logClaim(
-		`Foundation migration ${migration.version} applied successfully`,
-		{
-			migration: migration.version,
-			rulesInitialized: migration.coreRules.length,
-			patternsConfigured: migration.essentialPatterns.length,
-			constraintsEstablished: migration.safetyConstraints.length
-		}
-	);
-
-	// Immediately verify the migration
-	await memory.verifyClaim(
-		migrationId,
-		true,
-		`Migration applied: ${migration.coreRules.length} rules, ${migration.essentialPatterns.length} patterns, ${migration.safetyConstraints.length} constraints`
-	);ing success',
-			priority: 'critical',
-			enforcement: 'strict',
-			examples: [
-				'❌ "The bug is fixed" (without testing)',
-				'✅ "I\'ve made changes to address the bug. Let me run tests to verify..."',
-				'✅ "The tests are now passing, confirming the bug is fixed"'
-			]
-		},behavioral rules and patterns that should be active immediately
+ * Established behavioral rules and patterns that should be active immediately
  * when the memory system starts up. These form the foundation for AI cognitive enhancement
- * and behavioral regulation, inspired by the Greek goddess of memory.
+ * and behavioral regulation.
  * 
  * Note: This foundation can serve as a template for creating your own custom foundations.
  * Consider creating additional migration files for domain-specific behavioral patterns.
  * 
- * Runtime Updates: Foundations can now be updated during server operation using the
+ * Runtime Updates: Foundations can also be updated during server operation using the
  * memory_update_foundation tool for hot-deployment of behavioral changes.
  */
 
@@ -56,6 +31,8 @@ interface FoundationMetadata {
 	changelog?: string[];
 	compatibleWith?: string[];
 	replaces?: string;
+	notes?: string;
+	empiricalBasis?: string;
 }
 
 interface CoreBehavioralRule {
@@ -371,7 +348,7 @@ export const foundationMigrationV1_2: FoundationMigration = {
 export async function applyFoundationMigration(memory: MnemosyneMemorySystem, migration: FoundationMigration): Promise<void> {
 	// Initialize core behavioral rules
 	migration.coreRules.forEach(rule => {
-		memory.initializeBehavioralRule({
+		memory.addBehavioralRule({
 			id: rule.id,
 			rule: rule.rule,
 			description: rule.description,

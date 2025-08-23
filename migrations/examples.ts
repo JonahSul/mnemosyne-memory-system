@@ -1,4 +1,6 @@
 /**
+ * Copyright © 2025, Jonah Sullivan
+ * 
  * Example Foundation Migrations for Mnemosyne Memory System
  * 
  * This file demonstrates how to create custom foundation migrations
@@ -6,6 +8,10 @@
  */
 
 import type { FoundationMigration } from './foundation.js';
+
+// Import system and user axioms for availability
+export { systemAxiomsMigrationV1_0 } from './system-axioms.js';
+export { userAxiomsMigrationV1_1 } from './user-axioms.js';
 
 /**
  * Example: Enhanced Foundation v1.1.0
