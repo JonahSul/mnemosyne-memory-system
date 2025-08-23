@@ -950,4 +950,15 @@ export class MnemosyneMemorySystem {
 			};
 		}
 	}
+
+	// Search Methods for Pre-Violation Assessment
+	async searchTiered(query: string, options?: { threshold?: number; limit?: number; tierPreference?: 'short' | 'intermediate' | 'long' | 'all' }): Promise<any> {
+		const { threshold = 0.036, limit = 8, tierPreference = 'all' } = options || {};
+		return this.delegator.delegate('searchTiered', query, limit, threshold, tierPreference);
+	}
+
+	async searchKnowledge(query: string, options?: { threshold?: number; limit?: number }): Promise<any> {
+		const { threshold = 0.036, limit = 8 } = options || {};
+		return this.delegator.delegate('searchKnowledge', query, limit, threshold);
+	}
 }

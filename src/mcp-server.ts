@@ -1081,6 +1081,82 @@ ${JSON.stringify(params.format === 'raw' ? state : {
 				}]
 			};
 		}
+	},
+
+	// Pre-Violation Assessment Tools
+	{
+		name: 'memory_assess_terminal_command',
+		description: 'CRITICAL: Assess a terminal command for violation risk before execution. Use this before running any terminal command to prevent known violation patterns.',
+		schema: {
+			command: z.string().describe("The terminal command to assess for violation risk"),
+			context: z.record(z.unknown()).optional().describe("Additional context about the command execution")
+		},
+		handler: async (params) => {
+			const memory = (globalThis as any).getMemoryInstance();
+			
+			// Import and use pre-violation assessment
+			const { PreViolationAssessment } = await import('./modules/pre-violation-assessment.js');
+			const assessor = new PreViolationAssessment(memory);
+			const assessment = await assessor.assessTerminalCommand(params.command, params.context);
+
+			const shouldProceed = assessment.level === 'PROCEED' || 
+				(assessment.level === 'CAUTION' && assessment.confidence < 0.8);
+
+			let recommendation = '';
+			switch (assessment.level) {
+				case 'PROCEED':
+					recommendation = 'Safe to proceed - no violation risk detected';
+					break;
+				case 'CAUTION':
+					recommendation = `Proceed with caution - ${assessment.reasoning}`;
+					break;
+				case 'STOP':
+					recommendation = `Do not proceed - ${assessment.reasoning}`;
+					break;
+				case 'ASK':
+					recommendation = `Ask user for guidance - ${assessment.reasoning}`;
+					break;
+			}
+
+			// Log this assessment
+			memory.logClaim(
+				`Terminal command assessment: "${params.command}" assessed as ${assessment.level}`,
+				{
+					command: params.command,
+					assessmentLevel: assessment.level,
+					confidence: assessment.confidence,
+					evidenceCount: assessment.evidence?.length || 0
+				},
+				'pre-violation assessment',
+				'medium'
+			);
+
+			return {
+				content: [{
+					type: "text",
+					text: `## 🛡️ Pre-Violation Assessment
+
+**Command**: \`${params.command}\`
+**Risk Level**: ${assessment.level} (${Math.round(assessment.confidence * 100)}% confidence)
+**Recommendation**: ${recommendation}
+**Should Proceed**: ${shouldProceed ? '✅ Yes' : '❌ No'}
+
+**Analysis**: ${assessment.reasoning}
+
+${assessment.evidence && assessment.evidence.length > 0 ? `
+**Evidence Found** (${assessment.evidence.length} items):
+${assessment.evidence.map(e => `- **${e.type}**: ${e.description} (${Math.round(e.relevance * 100)}% relevant)`).join('\n')}
+` : '**Evidence**: No violation patterns found in memory'}
+
+${assessment.recommendations && assessment.recommendations.length > 0 ? `
+**Recommendations**:
+${assessment.recommendations.map(r => `- ${r}`).join('\n')}
+` : ''}
+
+⚠️ **Important**: This assessment is based on memory patterns. Use judgment and consider context.`
+				}]
+			};
+		}
 	}
 ];
 

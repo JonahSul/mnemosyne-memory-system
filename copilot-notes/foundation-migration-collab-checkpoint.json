@@ -1,0 +1,15 @@
+{
+  "rules": [
+    {
+      "id": "collaborative-checkpoint",
+      "rule": "All agents must periodically synchronize via explicit checkpoints during collaborative workflows, using memory search and peer discovery to verify mutual alignment and system state before proceeding after major changes.",
+      "description": "Prevents missed discoveries, redundant work, and misalignment in multi-agent projects by ensuring agents pause at checkpoints to validate shared goals, integrate cross-agent findings, and respond to urgent state changes.",
+      "priority": "critical",
+      "violations": 0,
+      "examples": [
+        "Agents synchronize after rule or codebase migrations to ensure no critical updates are missed.",
+        "An agent halts and triggers checkpointing if a peer logs a stop-the-world discovery."
+      ]
+    }
+  ]
+}
