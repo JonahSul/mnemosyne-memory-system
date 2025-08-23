@@ -8,3 +8,6 @@ node_modules
 
 # Test results - keep test outputs out of version control
 test-results/
+
+# Memory system exports - temporary state files
+.mnemosyne/*.tmp.json
