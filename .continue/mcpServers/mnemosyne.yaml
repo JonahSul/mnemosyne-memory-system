@@ -1,0 +1,11 @@
+name: Mnemosyne Memory System
+version: 1.2.0
+schema: v1
+mcpServers:
+  - name: Mnemosyne Memory System
+    command: npx
+    args:
+      - -y
+      - mcp-remote
+      - https://mnemosyne-memory-system-stage.sprinklerblowout.workers.dev/sse
+    env: {}
