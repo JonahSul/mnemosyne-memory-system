@@ -16,6 +16,7 @@ import { foundationMigrationV1, applyFoundationMigration } from "../migrations/f
 import { foundationMigrationV12 } from "../migrations/foundation-v1.2.0.js";
 import { registerMemoryTools } from "./tools/registry.js";
 import { CloudflareVectorStore } from "./cloudflare-vector-store.js";
+import { KVMemoryLayer, getKVMemoryLayer } from "./modules/kv-memory-layer.js";
 
 /**
  * Mnemosyne Memory System MCP Agent
@@ -26,6 +27,7 @@ import { CloudflareVectorStore } from "./cloudflare-vector-store.js";
 export class MnemosyneMemoryMCP {
 	private memory: MnemosyneMemorySystem;
 	private server: Server;
+	private kvMemory: KVMemoryLayer | null = null;
 	private initialized = false;
 
 	constructor(private state: DurableObjectState, private env: any) {
@@ -42,6 +44,19 @@ export class MnemosyneMemoryMCP {
 				tools: {}
 			}
 		});
+		
+		// Initialize KV Memory Layer as foundation
+		if (env.MEMORY_KV) {
+			try {
+				console.log('DEBUG: Initializing KV Memory Layer...');
+				this.kvMemory = getKVMemoryLayer({ MEMORY_KV: env.MEMORY_KV });
+				console.log('DEBUG: KV Memory Layer initialized successfully');
+			} catch (error) {
+				console.error('DEBUG: Error initializing KV Memory Layer:', error);
+			}
+		} else {
+			console.warn('KV Memory Layer not initialized - missing MEMORY_KV binding');
+		}
 		
 		// Initialize CloudflareVectorStore with Worker environment bindings
 		if (env.VECTORIZE_INDEX && env.AI) {
@@ -63,6 +78,14 @@ export class MnemosyneMemoryMCP {
 	 */
 	getMemoryInstance(): MnemosyneMemorySystem {
 		return this.memory;
+	}
+
+	/**
+	 * Gets the KV memory layer for guaranteed persistence
+	 * @returns The KV memory layer instance
+	 */
+	getKVMemoryLayer(): KVMemoryLayer | null {
+		return this.kvMemory;
 	}
 
 	/**
@@ -90,6 +113,7 @@ export class MnemosyneMemoryMCP {
 			
 			// Set up global memory instance getter for tools
 			(globalThis as any).getMemoryInstance = () => this.memory;
+			(globalThis as any).getKVMemoryInstance = () => this.kvMemory;
 			
 			// Re-enable tools registry
 			registerMemoryTools(this.server);

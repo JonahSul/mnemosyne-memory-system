@@ -13,6 +13,7 @@ import { VectorStore } from "../vector-store.js";
 import { MultiTierMemorySystem } from "../multi-tier-memory.js";
 import { MemoryNotFoundError } from "../modules/core-memory.js";
 import { foundationMigrationV1 } from "../../migrations/foundation.js";
+import { KVMemoryLayer } from "../modules/kv-memory-layer.js";
 
 // Tool implementation interface
 export interface ToolImplementation {
@@ -810,6 +811,234 @@ ${params.includeRestorePlan && sanityResults.restorePlan.length > 0 ?
 • 0.30+: Very selective (exact matches only)`
 				}]
 			};
+		}
+	},
+
+	// === KV MEMORY TOOLS (Foundation Layer) ===
+	{
+		name: "kv_memory_store",
+		description: "Store critical information in KV storage for guaranteed persistence. Use this for information that MUST survive deployment resets and system failures. KV provides the most reliable persistence layer.",
+		schema: {
+			content: z.string().describe("The content to store in KV memory"),
+			type: z.enum(["claim", "violation", "rule", "knowledge", "protocol", "session_state"]).describe("Type of memory item"),
+			tier: z.enum(["critical", "important", "working", "cache"]).describe("Importance tier - 'critical' for foundational information"),
+			metadata: z.record(z.unknown()).optional().describe("Additional metadata about the stored item")
+		},
+		handler: async (params) => {
+			const kvMemory = (globalThis as any).getKVMemoryInstance?.();
+			if (!kvMemory) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: "❌ KV Memory Layer not available - check MEMORY_KV binding configuration"
+					}],
+					isError: true
+				};
+			}
+
+			try {
+				const id = await kvMemory.store({
+					content: params.content,
+					type: params.type,
+					tier: params.tier,
+					metadata: params.metadata || {}
+				});
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: `✅ **KV Memory Stored Successfully**
+
+**ID**: ${id}
+**Type**: ${params.type}
+**Tier**: ${params.tier}
+**Content**: ${params.content.substring(0, 100)}${params.content.length > 100 ? '...' : ''}
+
+This information is now guaranteed persistent across deployments and system resets.`
+					}]
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ KV storage failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+					}],
+					isError: true
+				};
+			}
+		}
+	},
+
+	{
+		name: "kv_memory_search",
+		description: "Search KV storage for critical information. This searches the most reliable persistence layer for protocol violations, critical rules, and foundational knowledge.",
+		schema: {
+			query: z.string().describe("Search query - will match against content and metadata"),
+			type: z.enum(["claim", "violation", "rule", "knowledge", "protocol", "session_state", "all"]).optional().describe("Filter by type, or 'all' for everything"),
+			limit: z.number().optional().describe("Maximum number of results to return (default: 10)")
+		},
+		handler: async (params) => {
+			const kvMemory = (globalThis as any).getKVMemoryInstance?.();
+			if (!kvMemory) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: "❌ KV Memory Layer not available - check MEMORY_KV binding configuration"
+					}],
+					isError: true
+				};
+			}
+
+			try {
+				const results = params.type && params.type !== 'all' 
+					? await kvMemory.searchByType(params.type, params.limit || 10)
+					: await kvMemory.search(params.query, params.limit || 10);
+
+				if (results.length === 0) {
+					return {
+						content: [{
+							type: "text" as const,
+							text: `🔍 **KV Memory Search Results**
+
+No items found for query: "${params.query}"
+${params.type ? `Type filter: ${params.type}` : 'All types searched'}`
+						}]
+					};
+				}
+
+				const resultsText = results.map((item: any, index: number) => 
+					`${index + 1}. **${item.type.toUpperCase()}** [${item.tier}] (${item.timestamp})
+   ${item.content.substring(0, 200)}${item.content.length > 200 ? '...' : ''}
+   ID: ${item.id}`
+				).join('\n\n');
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: `🔍 **KV Memory Search Results**
+
+Found ${results.length} items for query: "${params.query}"
+${params.type ? `Type filter: ${params.type}` : 'All types searched'}
+
+${resultsText}`
+					}]
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ KV search failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+					}],
+					isError: true
+				};
+			}
+		}
+	},
+
+	{
+		name: "kv_memory_get_critical",
+		description: "Retrieve all critical items from KV storage. Use this to recover foundational protocols, rules, and violations after system failures or deployment resets.",
+		schema: {},
+		handler: async (params) => {
+			const kvMemory = (globalThis as any).getKVMemoryInstance?.();
+			if (!kvMemory) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: "❌ KV Memory Layer not available - check MEMORY_KV binding configuration"
+					}],
+					isError: true
+				};
+			}
+
+			try {
+				const criticalItems = await kvMemory.getCriticalItems();
+
+				if (criticalItems.length === 0) {
+					return {
+						content: [{
+							type: "text" as const,
+							text: `🔒 **Critical KV Memory Items**
+
+No critical items found in KV storage.`
+						}]
+					};
+				}
+
+				const itemsByType: Record<string, any[]> = {};
+				criticalItems.forEach((item: any) => {
+					if (!itemsByType[item.type]) itemsByType[item.type] = [];
+					itemsByType[item.type]!.push(item);
+				});
+
+				const sections = Object.entries(itemsByType).map(([type, items]) => 
+					`**${type.toUpperCase()}** (${items.length} items):
+${items.map((item: any) => `• ${item.content.substring(0, 100)}${item.content.length > 100 ? '...' : ''} [${item.timestamp}]`).join('\n')}`
+				).join('\n\n');
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: `🔒 **Critical KV Memory Items**
+
+Found ${criticalItems.length} critical items across ${Object.keys(itemsByType).length} types:
+
+${sections}`
+					}]
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ Critical items retrieval failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+					}],
+					isError: true
+				};
+			}
+		}
+	},
+
+	{
+		name: "kv_memory_health_check",
+		description: "Check KV memory layer health and verify store/retrieve operations work correctly. Use this to diagnose KV storage issues.",
+		schema: {},
+		handler: async (params) => {
+			const kvMemory = (globalThis as any).getKVMemoryInstance?.();
+			if (!kvMemory) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: "❌ KV Memory Layer not available - check MEMORY_KV binding configuration"
+					}],
+					isError: true
+				};
+			}
+
+			try {
+				const healthResult = await kvMemory.healthCheck();
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: `🏥 **KV Memory Health Check**
+
+**Status**: ${healthResult.status === 'healthy' ? '✅ HEALTHY' : '❌ FAILED'}
+**Details**: ${healthResult.details}
+
+${healthResult.status === 'healthy' 
+	? 'KV storage is operational and ready for use.' 
+	: 'KV storage has issues - check Cloudflare KV binding configuration.'}`
+					}]
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+					}],
+					isError: true
+				};
+			}
 		}
 	}
 ];

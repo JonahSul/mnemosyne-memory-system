@@ -20,10 +20,20 @@
 			}
 		]
 	},
+	"ai": {
+		"binding": "AI"
+	},
 	"vectorize": [
 		{
 			"binding": "VECTORIZE_INDEX",
 			"index_name": "mnemosyne-memory-index-dev"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "MEMORY_KV",
+			"id": "dev_memory_kv_namespace",
+			"preview_id": "dev_memory_kv_namespace"
 		}
 	],
 	"define": {
@@ -61,6 +71,22 @@
 					"index_name": "mnemosyne-memory-index-stage"
 				}
 			],
+			"ai": {
+				"binding": "AI"
+			},
+			"r2": [
+				{
+					"binding": "R2_BUCKET",
+					"bucket_name": "mnemosyne-autorag-stage"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "MEMORY_KV",
+					"id": "staging_memory_kv_namespace",
+					"preview_id": "staging_memory_kv_namespace"
+				}
+			],
 			"define": {
 				"__WRANGLER_ENV__": "\"staging\""
 			},
@@ -85,6 +111,22 @@
 				{
 					"binding": "VECTORIZE_INDEX",
 					"index_name": "mnemosyne-memory-index"
+				}
+			],
+			"ai": {
+				"binding": "AI"
+			},
+			"r2": [
+				{
+					"binding": "R2_BUCKET",
+					"bucket_name": "mnemosyne-autorag-prod"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "MEMORY_KV",
+					"id": "production_memory_kv_namespace",
+					"preview_id": "production_memory_kv_namespace"
 				}
 			],
 			"define": {
