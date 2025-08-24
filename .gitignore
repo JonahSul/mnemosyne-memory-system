@@ -1,3 +1,4 @@
+*.DS_Store*
 .vscode
 node_modules
 
@@ -12,4 +13,4 @@ test-results/
 # Memory system exports - temporary state files
 .mnemosyne/*.tmp.json
 staging.log
-.mnemosyne/.DS_Store
+
