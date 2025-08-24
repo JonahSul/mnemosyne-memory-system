@@ -15,6 +15,7 @@ import { MemoryNotFoundError } from "./modules/core-memory.js";
 import { foundationMigrationV1, applyFoundationMigration } from "../migrations/foundation.js";
 import { foundationMigrationV12 } from "../migrations/foundation-v1.2.0.js";
 import { registerMemoryTools } from "./tools/registry.js";
+import { CloudflareVectorStore } from "./cloudflare-vector-store.js";
 
 /**
  * Mnemosyne Memory System MCP Agent
@@ -28,6 +29,10 @@ export class MnemosyneMemoryMCP {
 	private initialized = false;
 
 	constructor(private state: DurableObjectState, private env: any) {
+		console.log('DEBUG: MnemosyneMemoryMCP constructor starting...');
+		console.log('DEBUG: env.VECTORIZE_INDEX available:', !!env.VECTORIZE_INDEX);
+		console.log('DEBUG: env.AI available:', !!env.AI);
+		
 		this.memory = new MnemosyneMemorySystem();
 		this.server = new Server({
 			name: "mnemosyne-memory-system",
@@ -37,6 +42,19 @@ export class MnemosyneMemoryMCP {
 				tools: {}
 			}
 		});
+		
+		// Initialize CloudflareVectorStore with Worker environment bindings
+		if (env.VECTORIZE_INDEX && env.AI) {
+			try {
+				console.log('DEBUG: Creating CloudflareVectorStore instance...');
+				const vectorStore = new CloudflareVectorStore({ env });
+				console.log('DEBUG: CloudflareVectorStore instance created successfully');
+			} catch (error) {
+				console.error('DEBUG: Error creating CloudflareVectorStore:', error);
+			}
+		} else {
+			console.warn('CloudflareVectorStore not initialized - missing VECTORIZE_INDEX or AI bindings');
+		}
 	}
 
 	/**
@@ -54,12 +72,21 @@ export class MnemosyneMemoryMCP {
 		if (this.initialized) return;
 		
 		try {
-			// Determine the latest foundation migration to use
-			const latestFoundation = this.getLatestFoundationMigration();
+			// Check if foundation already exists in memory to preserve deployed versions
+			const existingFoundation = this.memory.getFoundationInfo();
+			let appliedFoundation;
 			
-			// Apply latest foundation migration to establish core behavioral rules
-			// This ensures we always start with the most current foundation, regardless of version increment
-			applyFoundationMigration(this.memory, latestFoundation);
+			if (existingFoundation?.version) {
+				console.log(`Preserving existing Foundation ${existingFoundation.version} from memory`);
+				appliedFoundation = existingFoundation;
+			} else {
+				// No existing foundation - apply latest available
+				console.log('No existing foundation found - applying latest available');
+				const latestFoundation = this.getLatestFoundationMigration();
+				applyFoundationMigration(this.memory, latestFoundation);
+				appliedFoundation = latestFoundation;
+				console.log(`Applied Foundation ${latestFoundation.version}: ${latestFoundation.description}`);
+			}
 			
 			// Set up global memory instance getter for tools
 			(globalThis as any).getMemoryInstance = () => this.memory;
@@ -67,8 +94,26 @@ export class MnemosyneMemoryMCP {
 			// Re-enable tools registry
 			registerMemoryTools(this.server);
 			
+			// Initialize CloudflareVectorStore with Worker environment bindings
+			console.log('DEBUG: Checking CloudflareVectorStore initialization...');
+			console.log('DEBUG: env.VECTORIZE_INDEX available:', !!this.env.VECTORIZE_INDEX);
+			console.log('DEBUG: env.AI available:', !!this.env.AI);
+			
+			if (this.env.VECTORIZE_INDEX && this.env.AI) {
+				try {
+					console.log('DEBUG: Creating CloudflareVectorStore instance...');
+					const vectorStore = new CloudflareVectorStore({ env: this.env });
+					console.log('DEBUG: CloudflareVectorStore instance created successfully');
+					console.log('DEBUG: CloudflareVectorStore configured:', vectorStore.isConfigured());
+				} catch (error) {
+					console.error('DEBUG: Error creating CloudflareVectorStore:', error);
+				}
+			} else {
+				console.warn('DEBUG: CloudflareVectorStore not initialized - missing VECTORIZE_INDEX or AI bindings');
+			}
+			
 			this.initialized = true;
-			console.log(`Mnemosyne Memory System initialized successfully with Foundation ${latestFoundation.version}`);
+			console.log(`Mnemosyne Memory System initialized successfully with Foundation ${appliedFoundation.version || appliedFoundation?.version || 'unknown'}`);
 		} catch (error) {
 			console.error('Failed to initialize Mnemosyne Memory System:', error);
 			throw error;
