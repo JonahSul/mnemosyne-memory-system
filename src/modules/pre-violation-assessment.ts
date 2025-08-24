@@ -561,7 +561,7 @@ export class PreViolationAssessment {
 		// Define critical files by category
 		const criticalFiles = {
 			config: ['package.json', 'tsconfig.json', 'wrangler.jsonc', '.env'],
-			source: ['index.ts', 'src/index.ts', 'src/mcp-server.ts'],
+			source: ['index.ts', 'src/index.ts', 'src/agent.ts'],
 			documentation: ['README.md', 'DEPLOYMENT.md'],
 			git: ['.gitignore', '.gitattributes']
 		};

@@ -1,0 +1,9 @@
+{
+  "exportTime": "2025-08-23T23:13:58.991Z",
+  "environment": "staging",
+  "indexName": "mnemosyne-memory-index-stage",
+  "currentDimensions": 384,
+  "targetDimensions": 768,
+  "wranglerOutput": "\n ⛅️ wrangler 4.32.0\n───────────────────\n┌──────────────────────────────┬────────────┬────────┬─────────────┬─────────────────────────────┬─────────────────────────────┐\n│ name                         │ dimensions │ metric │ description │ created                     │ modified                    │\n├──────────────────────────────┼────────────┼────────┼─────────────┼─────────────────────────────┼─────────────────────────────┤\n│ mnemosyne-memory-index-stage │ 384        │ cosine │             │ 2025-08-22T03:18:33.742185Z │ 2025-08-22T03:18:33.742185Z │\n└──────────────────────────────┴────────────┴────────┴─────────────┴─────────────────────────────┴─────────────────────────────┘\n",
+  "backupReason": "Pre-migration backup before dimension upgrade"
+}

@@ -1,14 +1,19 @@
 {
 	"name": "mnemosyne-memory-system",
-	"version": "1.0.0",
-	"description": "Mnemosyne Memory System for AI behavior regulation and cognitive enhancement",
+	"version": "1.1.0",
+	"description": "Mnemosyne Memory System for AI behavior regulation and cognitive enhancement - Enhanced with empirically optimized search thresholds",
 	"main": "src/index.ts",
 	"type": "module",
 	"scripts": {
-		"dev": "wrangler dev",
-		"deploy": "wrangler deploy",
+		"dev": "wrangler dev -e staging",
+		"deploy": "wrangler deploy -e staging",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"upload-dataset": "node scripts/upload-training-data.mjs",
+		"upload-memory-artifacts": "node scripts/upload-memory-artifacts.mjs",
+		"upload-critical-artifacts": "node scripts/upload-memory-artifacts.mjs critical",
+		"export-vectors": "node scripts/export-vector-store.mjs",
+		"upgrade-vectors": "node scripts/upgrade-vector-dimensions.mjs"
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.17.3",
@@ -21,6 +26,6 @@
 		"dotenv": "^17.2.1",
 		"typescript": "^5.3.3",
 		"vitest": "^2.1.9",
-		"wrangler": "^3.86.1"
+		"wrangler": "^4.32.0"
 	}
 }

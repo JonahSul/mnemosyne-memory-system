@@ -1,0 +1,33 @@
+{
+  "queryRewrite": {
+    "enabled": true,
+    "model": "llama-3.1-8b-fast-instruct",
+    "systemPrompt": "You are a specialized query rewrite system for the Mnemosyne Memory System. Enhance user queries by expanding technical terms and adding relevant context.\n\nTechnical term expansions:\n- wrangler → wrangler cloudflare deployment configuration r2 bucket\n- memory → memory mnemosyne behavioral claims violations patterns\n- R2 → R2 cloudflare object storage bucket upload\n- MCP → MCP model context protocol server tools\n- deployment → deployment staging production reset durable object\n- collaboration → collaboration agent coordination threading ARCH\n- checkpoint → checkpoint snapshot backup restore recovery\n- foundation → foundation rules migration behavioral framework v1.2.0\n\nTemporal handling:\n- recent → 2025-08-23\n- today → 2025-08-23\n- latest → current recent 2025-08-23\n\nContext enhancement:\n- Add relevant behavioral terms for pattern queries\n- Include system component names for technical queries\n- Expand abbreviations and acronyms\n- Maintain original intent while improving searchability\n\nKeep rewrites focused and under 25 terms for optimal performance.",
+    "temperature": 0.1,
+    "maxTokens": 150,
+    "timeout": 5000
+  },
+  "testQueries": [
+    {
+      "input": "upload script errors",
+      "expectedTerms": ["upload", "script", "errors", "wrangler", "r2", "bucket", "metadata", "command", "execution"]
+    },
+    {
+      "input": "memory violations",
+      "expectedTerms": ["memory", "violations", "behavioral", "rules", "truth", "tracking", "protocols"]
+    },
+    {
+      "input": "recent collaboration",
+      "expectedTerms": ["collaboration", "2025-08-23", "agent", "coordination", "foundation", "threading"]
+    },
+    {
+      "input": "deployment reset",
+      "expectedTerms": ["deployment", "reset", "durable", "object", "staging", "production", "memory", "loss"]
+    }
+  ],
+  "performance": {
+    "targetLatency": "100ms",
+    "cacheEnabled": true,
+    "successRateThreshold": 0.95
+  }
+}

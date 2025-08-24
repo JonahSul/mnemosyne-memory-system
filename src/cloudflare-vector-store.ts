@@ -5,10 +5,18 @@
  * and Vectorize for vector database operations.
  */
 
+export interface CloudflareEnv {
+	VECTORIZE_INDEX: Vectorize;
+	AI: Ai;
+}
+
+export interface EmbeddingResponse {
+	shape: number[];
+	data: number[][];
+}
+
 export interface CloudflareConfig {
-	indexName: string;
-	accountId: string;
-	apiToken: string;
+	env: CloudflareEnv;
 }
 
 export interface VectorizeMetadata {
@@ -16,12 +24,6 @@ export interface VectorizeMetadata {
 	timestamp: string;
 	tags: string[];
 	[key: string]: unknown;
-}
-
-export interface VectorizeRecord {
-	id: string;
-	values: number[];
-	metadata: VectorizeMetadata;
 }
 
 export interface CloudflareKnowledgeItem {
@@ -39,13 +41,11 @@ export interface CloudflareSearchResult extends CloudflareKnowledgeItem {
 }
 
 export class CloudflareVectorStore {
-	private config: CloudflareConfig;
-	private vectorizeApiBase: string;
+	private env: CloudflareEnv;
 	private localKnowledge: Map<string, CloudflareKnowledgeItem> = new Map();
 
 	constructor(config: CloudflareConfig) {
-		this.config = config;
-		this.vectorizeApiBase = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/vectorize/indexes/${config.indexName}`;
+		this.env = config.env;
 	}
 
 	/**
@@ -53,28 +53,16 @@ export class CloudflareVectorStore {
 	 */
 	async generateEmbeddings(text: string): Promise<number[]> {
 		try {
-			// Use Cloudflare AI Workers text embeddings with proper account ID
-			const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${this.config.accountId}/ai/run/@cf/baai/bge-base-en-v1.5`, {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${this.config.apiToken}`,
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					text: [text]
-				})
-			});
+			// Use Worker AI binding directly
+			const response = await this.env.AI.run(
+				"@cf/baai/bge-base-en-v1.5",
+				{ text: [text] }
+			) as any;
 
-			if (!response.ok) {
-				throw new Error(`Cloudflare AI API error: ${response.statusText}`);
-			}
-
-			const result = await response.json() as { result: { data: number[][] } };
-			const embeddings = result.result.data[0];
-			if (!embeddings) {
+			if (!response.data || !response.data[0]) {
 				throw new Error('No embeddings returned from Cloudflare AI');
 			}
-			return embeddings;
+			return response.data[0];
 		} catch (error) {
 			console.error('Failed to generate embeddings:', error);
 			// Fallback to mock embeddings for development
@@ -86,8 +74,8 @@ export class CloudflareVectorStore {
 	 * Fallback mock embeddings for development/testing
 	 */
 	private generateMockEmbeddings(text: string): number[] {
-		// Generate consistent 768-dimensional embeddings based on text content
-		const dimension = 768;
+		// Generate consistent 768-dimensional embeddings to match production Vectorize index
+		const dimension = 768; // Updated to match production configuration
 		const embeddings: number[] = [];
 		
 		// Use text content to create deterministic but varied embeddings
@@ -100,7 +88,16 @@ export class CloudflareVectorStore {
 		
 		// Normalize the vector
 		const magnitude = Math.sqrt(embeddings.reduce((sum, val) => sum + val * val, 0));
-		return embeddings.map(val => val / magnitude);
+		if (magnitude > 0) {
+			for (let i = 0; i < embeddings.length; i++) {
+				const current = embeddings[i];
+				if (current !== undefined) {
+					embeddings[i] = current / magnitude;
+				}
+			}
+		}
+		
+		return embeddings;
 	}
 
 	private simpleHash(str: string): number {
@@ -108,21 +105,20 @@ export class CloudflareVectorStore {
 		for (let i = 0; i < str.length; i++) {
 			const char = str.charCodeAt(i);
 			hash = ((hash << 5) - hash) + char;
-			hash = hash & hash; // Convert to 32-bit integer
+			hash = hash & hash; // Convert to 32bit integer
 		}
 		return Math.abs(hash);
 	}
 
 	private seededRandom(seed: number): () => number {
-		let state = seed;
-		return () => {
-			state = (state * 1664525 + 1013904223) % Math.pow(2, 32);
-			return state / Math.pow(2, 32);
-		};
+		let m = 2**35 - 31;
+		let a = 185852;
+		let s = seed % m;
+		return () => (s = s * a % m) / m;
 	}
 
 	/**
-	 * Store knowledge in Cloudflare Vectorize
+	 * Store knowledge with Vectorize
 	 */
 	async storeKnowledge(knowledge: {
 		content: string;
@@ -132,42 +128,24 @@ export class CloudflareVectorStore {
 		const id = `knowledge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 		const timestamp = new Date().toISOString();
 		
-		let embedding: number[];
-		try {
-			embedding = await this.generateEmbeddings(knowledge.content);
-		} catch (error) {
-			console.warn('Failed to generate embeddings, using mock embeddings for local storage:', error);
-			// Use mock embeddings for local storage fallback
-			embedding = this.generateMockEmbeddings(knowledge.content);
-		}
+		// Generate embeddings
+		const embedding = await this.generateEmbeddings(knowledge.content);
 		
-		const vectorizeRecord: VectorizeRecord = {
-			id,
+		// Prepare Vectorize record
+		const vectorizeRecord: VectorizeVector = {
+			id: id,
 			values: embedding,
 			metadata: {
 				content: knowledge.content,
-				timestamp,
+				timestamp: timestamp,
 				tags: knowledge.tags || [],
 				...knowledge.metadata
 			}
 		};
 
 		try {
-			// Store in Cloudflare Vectorize
-			const response = await fetch(`${this.vectorizeApiBase}/insert`, {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${this.config.apiToken}`,
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					vectors: [vectorizeRecord]
-				})
-			});
-
-			if (!response.ok) {
-				console.warn(`Vectorize storage failed: ${response.statusText}, using local storage`);
-			}
+			// Store in Cloudflare Vectorize using Worker binding
+			await this.env.VECTORIZE_INDEX.upsert([vectorizeRecord]);
 		} catch (error) {
 			console.warn('Vectorize storage unavailable, using local storage:', error);
 		}
@@ -200,56 +178,62 @@ export class CloudflareVectorStore {
 		try {
 			queryEmbedding = await this.generateEmbeddings(query);
 		} catch (error) {
-			console.warn('Failed to generate query embeddings, using mock embeddings for local search:', error);
-			// Use mock embeddings for local search fallback
-			queryEmbedding = this.generateMockEmbeddings(query);
+			console.error('Failed to generate query embedding:', error);
+			return [];
 		}
 
 		try {
-			// Query Cloudflare Vectorize
-			const response = await fetch(`${this.vectorizeApiBase}/query`, {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${this.config.apiToken}`,
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					vector: queryEmbedding,
-					topK: limit,
-					returnMetadata: true
-				})
+			// Query Vectorize using Worker binding
+			const matches = await this.env.VECTORIZE_INDEX.query(queryEmbedding, {
+				topK: limit,
+				returnValues: true,
+				returnMetadata: true
 			});
 
-			if (response.ok) {
-				const result = await response.json() as { result: { matches: any[] } };
-				return result.result.matches.map((match: any) => ({
-					id: match.id,
-					content: match.metadata.content,
-					embedding: match.vector || queryEmbedding,
-					metadata: match.metadata,
-					tags: match.metadata.tags || [],
-					timestamp: match.metadata.timestamp,
-					vectorizeId: match.id,
-					similarity: match.score
-				})).filter((item: CloudflareSearchResult) => item.similarity >= threshold);
+			const results: CloudflareSearchResult[] = [];
+			for (const match of matches.matches) {
+				if (match.score >= threshold && match.metadata) {
+					results.push({
+						id: match.id,
+						content: match.metadata.content as string,
+						embedding: Array.from(match.values || []),
+						metadata: match.metadata,
+						tags: (match.metadata.tags as string[]) || [],
+						timestamp: match.metadata.timestamp as string,
+						vectorizeId: match.id,
+						similarity: match.score
+					});
+				}
 			}
-		} catch (error) {
-			console.warn('Vectorize search unavailable, using fallback:', error);
-		}
 
-		// Fallback: search local knowledge
+			return results;
+		} catch (error) {
+			console.warn('Vectorize search unavailable, using local search:', error);
+			return this.searchLocal(query, queryEmbedding, options);
+		}
+	}
+
+	/**
+	 * Fallback local search when Vectorize is unavailable
+	 */
+	private searchLocal(query: string, queryEmbedding: number[], options: {
+		limit?: number;
+		threshold?: number;
+	}): CloudflareSearchResult[] {
+		const { limit = 5, threshold = 0.1 } = options;
 		const results: CloudflareSearchResult[] = [];
-		for (const item of this.localKnowledge.values()) {
-			const similarity = this.cosineSimilarity(queryEmbedding, item.embedding);
+		
+		for (const stored of this.localKnowledge.values()) {
+			const similarity = this.cosineSimilarity(queryEmbedding, stored.embedding);
+			
 			if (similarity >= threshold) {
 				results.push({
-					...item,
+					...stored,
 					similarity
 				});
 			}
 		}
-
-		// Sort by similarity descending and limit results
+		
 		return results
 			.sort((a, b) => b.similarity - a.similarity)
 			.slice(0, limit);
@@ -259,48 +243,49 @@ export class CloudflareVectorStore {
 	 * Calculate cosine similarity between two vectors
 	 */
 	private cosineSimilarity(a: number[], b: number[]): number {
-		if (a.length !== b.length) {
-			throw new Error('Vectors must have the same length');
-		}
-
+		if (a.length !== b.length) return 0;
+		
 		let dotProduct = 0;
 		let normA = 0;
 		let normB = 0;
-
+		
 		for (let i = 0; i < a.length; i++) {
-			const aVal = a[i] || 0;
-			const bVal = b[i] || 0;
-			dotProduct += aVal * bVal;
-			normA += aVal * aVal;
-			normB += bVal * bVal;
+			const valA = a[i];
+			const valB = b[i];
+			if (valA !== undefined && valB !== undefined) {
+				dotProduct += valA * valB;
+				normA += valA * valA;
+				normB += valB * valB;
+			}
 		}
-
+		
 		const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
-		return magnitude === 0 ? 0 : dotProduct / magnitude;
+		return magnitude > 0 ? dotProduct / magnitude : 0;
 	}
 
 	/**
-	 * Check if the store is properly configured
+	 * Check if Vectorize is properly configured
 	 */
 	isConfigured(): boolean {
-		return !!(this.config.indexName && this.config.accountId && this.config.apiToken);
+		return !!(this.env.VECTORIZE_INDEX && this.env.AI);
 	}
 
 	/**
-	 * Get the configured index name
+	 * Get index information
 	 */
 	getIndexName(): string {
-		return this.config.indexName;
+		return "VECTORIZE_INDEX";
 	}
 
 	/**
-	 * Get configuration info (without sensitive data)
+	 * Get storage statistics
 	 */
-	getConfigInfo(): { indexName: string; accountId: string; hasApiToken: boolean } {
+	getStats() {
 		return {
-			indexName: this.config.indexName,
-			accountId: this.config.accountId,
-			hasApiToken: !!this.config.apiToken
+			localItems: this.localKnowledge.size,
+			configured: this.isConfigured(),
+			indexName: this.getIndexName(),
+			embeddingDimensions: 768
 		};
 	}
 }

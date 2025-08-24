@@ -2,6 +2,10 @@
 .vscode
 node_modules
 
+# All the copilot notes!
+copilot-notes/*
+.continue/*
+
 # Environment files - never commit API keys/tokens
 .env
 .env.*
@@ -14,3 +18,5 @@ test-results/
 .mnemosyne/*.tmp.json
 staging.log
 
+# Wrangler build artifacts
+.wrangler/tmp

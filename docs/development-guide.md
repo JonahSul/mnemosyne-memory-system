@@ -28,7 +28,7 @@ npm run dev
 npm test
 
 # Deploy to staging
-npm run deploy:staging
+npm run deploy
 ```
 
 ### Project Structure

@@ -9,6 +9,8 @@
 
 import { BehavioralMemoryTools, BehavioralStatus } from './behavioral-memory-subsystem.js';
 import { VectorKnowledgeTools, SemanticSearchResult, TieredSearchResult } from './vector-knowledge-tools.js';
+import { HybridRetriever, HybridResult, HybridRetrieverOptions } from './hybrid-retriever.js';
+import { CloudflareAutoRAGClient } from './autorag-adapter.js';
 
 export interface MemorySystemHealth {
 	behavioral: {
@@ -48,10 +50,27 @@ export interface UnifiedSearchResult {
 export class UnifiedMemoryFacade {
 	private behavioral: BehavioralMemoryTools;
 	private vector: VectorKnowledgeTools;
+	private hybrid: HybridRetriever;
+	private env?: any;
 
-	constructor() {
-		this.behavioral = new BehavioralMemoryTools();
-		this.vector = new VectorKnowledgeTools();
+	constructor(deps?: { env?: any; behavioral?: BehavioralMemoryTools; vector?: VectorKnowledgeTools; hybrid?: HybridRetriever; autoragServiceName?: string }) {
+		this.env = deps?.env;
+		this.behavioral = deps?.behavioral ?? new BehavioralMemoryTools();
+		this.vector = deps?.vector ?? new VectorKnowledgeTools();
+
+		if (deps?.hybrid) {
+			this.hybrid = deps.hybrid;
+		} else {
+			let autorag;
+			if (this.env) {
+				try {
+					autorag = new CloudflareAutoRAGClient(this.env, deps?.autoragServiceName);
+				} catch (_) {
+					// leave undefined; HybridRetriever will handle absence
+				}
+			}
+			this.hybrid = new HybridRetriever({ vector: this.vector as any, autorag });
+		}
 	}
 
 	/**
@@ -232,6 +251,13 @@ export class UnifiedMemoryFacade {
 	/**
 	 * Export complete memory state from both systems
 	 */
+	/**
+	 * Hybrid search orchestration per ADR-002 and hybrid-search-policy
+	 */
+	async hybridSearch(query: string, options: HybridRetrieverOptions = {}): Promise<HybridResult> {
+		return await this.hybrid.retrieve(query, options);
+	}
+
 	async exportCompleteState(): Promise<{
 		behavioral: any;
 		vector: any;

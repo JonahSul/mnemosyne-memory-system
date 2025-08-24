@@ -178,7 +178,7 @@ export function testRegistrySystem() {
 export function showRegistryComparison() {
 	console.log('\n📊 Registry Approach Comparison:\n');
 
-	console.log('❌ MANUAL APPROACH (Current mcp-server.ts):');
+	console.log('❌ MANUAL APPROACH (Legacy approach):');
 	console.log(`const tools: ToolImplementation[] = [
   {
     name: 'memory_log_claim',
