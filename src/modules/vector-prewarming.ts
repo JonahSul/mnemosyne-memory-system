@@ -39,11 +39,23 @@ export interface VectorPrewarmingOperations {
 	prioritizeVectorPrewarmingSync(query: string): { domainMatch: string; priority: number; suggestedVectors: string[] };
 }
 
+
+import { CloudflareVectorStore } from '../cloudflare-vector-store';
+
 export class VectorPrewarmingManager implements VectorPrewarmingOperations {
+	// NOTE: previous implementation stored authoritative state in volatile Maps/Arrays.
+	// ARCHITECTURAL FIX: use write-through persistence (KV + Vectorize) on all mutating ops.
 	private activePrewarming: Map<string, VectorPrewarmingStatus> = new Map();
 	private usagePatterns: UserBehaviorPattern[] = [];
 	private effectivenessHistory: PrewarmingEffectiveness[] = [];
 	private adaptedStrategies: AdaptedPrewarmingStrategy[] = [];
+	private vectorStore: CloudflareVectorStore;
+	private kvStore: any;
+
+	constructor(vectorStore?: CloudflareVectorStore, kvStore?: any) {
+		this.vectorStore = vectorStore || new CloudflareVectorStore({ env: {} as any });
+		this.kvStore = kvStore;
+	}
 
 	analyzeQueryForVectorNeeds(query: string): VectorAnalysis {
 		// Extract semantic concepts from the query
@@ -83,12 +95,27 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 
 		this.activePrewarming.set(prewarmingId, status);
 
+		// Write-through persistence
+		try {
+			if (this.kvStore) await this.kvStore.put(`prewarming:${prewarmingId}`, JSON.stringify(status));
+			if (this.vectorStore && this.vectorStore.storeKnowledge) await this.vectorStore.storeKnowledge({ content: JSON.stringify(status), metadata: { id: prewarmingId, type: 'prewarming', startTime: status.startTime }, tags: ['prewarming', 'status'] });
+		} catch (e) {
+			// Non-fatal: keep in-memory as fallback
+		}
+
 		// Simulate vector pre-warming process
 		setTimeout(() => {
 			const updatedStatus = this.activePrewarming.get(prewarmingId);
 			if (updatedStatus) {
 				updatedStatus.isActive = false;
 				this.activePrewarming.set(prewarmingId, updatedStatus);
+				// Persist the updated status
+				try {
+					if (this.kvStore) this.kvStore.put(`prewarming:${prewarmingId}`, JSON.stringify(updatedStatus));
+					if (this.vectorStore && this.vectorStore.storeKnowledge) this.vectorStore.storeKnowledge({ content: JSON.stringify(updatedStatus), metadata: { id: prewarmingId, type: 'prewarming', startTime: updatedStatus.startTime, isActive: updatedStatus.isActive }, tags: ['prewarming', 'status'] });
+				} catch (e) {
+					// ignore
+				}
 			}
 		}, strategy.estimatedLatency);
 
@@ -108,6 +135,14 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 			confidence,
 			relatedPatterns
 		};
+	}
+
+	// Persist usage patterns when set
+	private async persistUsagePatterns() {
+		try {
+			if (this.kvStore) await this.kvStore.put('prewarming:usagePatterns', JSON.stringify(this.usagePatterns));
+			if (this.vectorStore && this.vectorStore.storeKnowledge) await this.vectorStore.storeKnowledge({ content: JSON.stringify(this.usagePatterns), metadata: { id: 'usagePatterns', type: 'prewarming_meta' }, tags: ['prewarming', 'usage'] });
+		} catch (e) {}
 	}
 
 	async prioritizeVectorsByDomain(domain: string): Promise<VectorPrioritization> {
@@ -157,6 +192,11 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 		};
 
 		this.effectivenessHistory.push(effectiveness);
+		// Persist effectiveness
+		try {
+			if (this.kvStore) await this.kvStore.put(`prewarming:effectiveness:${strategy.sessionId}`, JSON.stringify(effectiveness));
+			if (this.vectorStore && this.vectorStore.storeKnowledge) await this.vectorStore.storeKnowledge({ content: JSON.stringify(effectiveness), metadata: { id: strategy.sessionId, type: 'prewarming_effectiveness' }, tags: ['prewarming', 'effectiveness'] });
+		} catch (e) {}
 		return effectiveness;
 	}
 
@@ -173,6 +213,11 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 		};
 
 		this.adaptedStrategies.push(adapted);
+		// Persist adapted strategy
+		try {
+			if (this.kvStore) await this.kvStore.put(`prewarming:adapted:${Date.now()}`, JSON.stringify(adapted));
+			if (this.vectorStore && this.vectorStore.storeKnowledge) await this.vectorStore.storeKnowledge({ content: JSON.stringify(adapted), metadata: { type: 'prewarming_adapted' }, tags: ['prewarming', 'adapted'] });
+		} catch (e) {}
 		return adapted;
 	}
 
@@ -375,6 +420,13 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 			targetConcepts: concepts,
 			startTime: new Date().toISOString()
 		};
+
+		// Persist synchronous prewarming status
+		try {
+			const id = `currentPrewarming`;
+			if (this.kvStore) this.kvStore.put(`prewarming:${id}`, JSON.stringify(this.currentPrewarming));
+			if (this.vectorStore && this.vectorStore.storeKnowledge) this.vectorStore.storeKnowledge({ content: JSON.stringify(this.currentPrewarming), metadata: { id, type: 'prewarming_current' }, tags: ['prewarming', 'current'] });
+		} catch (e) {}
 		
 		// Simulate async pre-warming completion
 		setTimeout(() => {

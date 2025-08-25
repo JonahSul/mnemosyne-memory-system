@@ -10,10 +10,12 @@ import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MnemosyneMemorySystem } from "../memory-tool.js";
 import { VectorStore } from "../vector-store.js";
+import { CloudflareVectorStore } from "../cloudflare-vector-store.js";
 import { MultiTierMemorySystem } from "../multi-tier-memory.js";
 import { MemoryNotFoundError } from "../modules/core-memory.js";
 import { foundationMigrationV1 } from "../../migrations/foundation.js";
 import { KVMemoryLayer } from "../modules/kv-memory-layer.js";
+import { DOStateExtractor } from "../modules/do-state-extractor.js";
 
 // Tool implementation interface
 export interface ToolImplementation {
@@ -39,10 +41,17 @@ function getMnemosyneMemoryInstance(): MnemosyneMemorySystem {
 	return memoryInstance;
 }
 
-let vectorStoreInstance: VectorStore | null = null;
-function getVectorStoreInstance(): VectorStore {
+let vectorStoreInstance: CloudflareVectorStore | null = null;
+function getVectorStoreInstance(): CloudflareVectorStore {
 	if (!vectorStoreInstance) {
-		vectorStoreInstance = new VectorStore();
+		// Get Worker environment from global context
+		const workerEnv = (globalThis as any).getWorkerEnvironment?.() || {};
+		if (workerEnv.VECTORIZE_INDEX && workerEnv.AI) {
+			vectorStoreInstance = new CloudflareVectorStore({ env: workerEnv });
+		} else {
+			console.warn('CloudflareVectorStore: Worker environment not available, using fallback configuration');
+			vectorStoreInstance = new CloudflareVectorStore({ env: {} as any });
+		}
 	}
 	return vectorStoreInstance;
 }
@@ -400,6 +409,86 @@ ${params.includeRestorePlan && sanityResults.restorePlan.length > 0 ?
 					text: `Memory state exported: ${JSON.stringify(exportData, null, 2)}`
 				}]
 			};
+		}
+	},
+
+	{
+		name: "memory_emergency_extract_do_state",
+		description: "EMERGENCY: Extract everything valuable from Durable Objects state immediately before deployment to prevent data loss. This tool captures all memory system state, KV data, and session information, storing it persistently in KV and vector storage for post-deployment recovery. Use this before any deployment that might reset Durable Objects.",
+		schema: {
+			force: z.boolean().optional().describe("Force extraction even if system appears healthy (default: false)")
+		},
+		handler: async (params) => {
+			const memory = getMnemosyneMemoryInstance();
+			
+			// Get KV memory layer from global instance
+			const kvMemory = (globalThis as any).getKVMemoryInstance ? (globalThis as any).getKVMemoryInstance() : null;
+			
+			// Get environment from global context (set during agent initialization)
+			const env = (globalThis as any).getWorkerEnvironment ? (globalThis as any).getWorkerEnvironment() : null;
+
+			if (!kvMemory) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: "❌ EMERGENCY EXTRACTION FAILED: KV Memory Layer not available"
+					}],
+					isError: true
+				};
+			}
+
+			try {
+				const extractor = new DOStateExtractor(memory, kvMemory, env);
+				
+				// Check if extraction is possible
+				const healthCheck = await extractor.canExtractState();
+				if (!healthCheck.canExtract && !params.force) {
+					return {
+						content: [{
+							type: "text" as const,
+							text: `❌ EMERGENCY EXTRACTION BLOCKED:\n${healthCheck.issues.map(issue => `- ${issue}`).join('\n')}\n\nUse force: true to override.`
+						}],
+						isError: true
+					};
+				}
+
+				// Perform emergency extraction
+				console.log('🚨 STARTING EMERGENCY DO STATE EXTRACTION...');
+				const snapshot = await extractor.extractCompleteState();
+
+				let responseText = `🚨 **EMERGENCY DO STATE EXTRACTION COMPLETE** 🚨\n\n`;
+				responseText += `**Extraction Time:** ${snapshot.metadata.extractionTime}ms\n`;
+				responseText += `**Total Size:** ${(snapshot.metadata.totalSize / 1024).toFixed(1)}KB\n\n`;
+				
+				responseText += `**Critical Data Preserved:**\n`;
+				responseText += `- Claims: ${snapshot.criticalData.claims}\n`;
+				responseText += `- Rules: ${snapshot.criticalData.rules}\n`;
+				responseText += `- Violations: ${snapshot.criticalData.violations}\n`;
+				responseText += `- Knowledge Items: ${snapshot.criticalData.knowledge}\n\n`;
+				
+				responseText += `**Storage Locations:**\n`;
+				responseText += `- KV Storage: ${snapshot.kvSnapshot.length} items backed up\n`;
+				responseText += `- Vector Storage: ${snapshot.vectorSnapshot.length} emergency snapshots stored\n`;
+				responseText += `- Session State: Preserved for recovery\n\n`;
+				
+				responseText += `**🔄 DEPLOYMENT SAFE:** All valuable data extracted from volatile Durable Objects storage and stored persistently. Post-deployment recovery available via memory_restore_from_snapshots or memory_backfill_from_vector_store.`;
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: responseText
+					}]
+				};
+
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ EMERGENCY EXTRACTION FAILED: ${error instanceof Error ? error.message : 'Unknown error'}`
+					}],
+					isError: true
+				};
+			}
 		}
 	},
 

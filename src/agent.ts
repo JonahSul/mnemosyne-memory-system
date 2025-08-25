@@ -12,7 +12,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MnemosyneMemorySystem } from "./memory-tool.js";
 import { MemoryNotFoundError } from "./modules/core-memory.js";
-import { foundationMigrationV1, applyFoundationMigration } from "../migrations/foundation.js";
+import { foundationMigrationV1, applyFoundationMigration, foundationMigrationV1_4_1 } from "../migrations/foundation.js";
 import { foundationMigrationV12 } from "../migrations/foundation-v1.2.0.js";
 import { registerMemoryTools } from "./tools/registry.js";
 import { CloudflareVectorStore } from "./cloudflare-vector-store.js";
@@ -114,10 +114,19 @@ export class MnemosyneMemoryMCP {
 			// Set up global memory instance getter for tools
 			(globalThis as any).getMemoryInstance = () => this.memory;
 			(globalThis as any).getKVMemoryInstance = () => this.kvMemory;
+			(globalThis as any).getWorkerEnvironment = () => this.env;
 			
 			// Re-enable tools registry
 			registerMemoryTools(this.server);
 			
+			// Install persistence wrappers
+			try {
+				const { installPersistenceWrappers } = await import('./modules/persistence-installer.js');
+				await installPersistenceWrappers(this);
+			} catch (e) {
+				console.warn('Failed to install persistence wrappers:', e);
+			}
+
 			// Initialize CloudflareVectorStore with Worker environment bindings
 			console.log('DEBUG: Checking CloudflareVectorStore initialization...');
 			console.log('DEBUG: env.VECTORIZE_INDEX available:', !!this.env.VECTORIZE_INDEX);
@@ -151,8 +160,9 @@ export class MnemosyneMemoryMCP {
 	private getLatestFoundationMigration() {
 		// Available foundation migrations in order of preference (latest first)
 		const availableFoundations = [
-			foundationMigrationV12, // v1.2.0 - Collaborative Intelligence Framework
-			foundationMigrationV1   // v1.0.0 - Base Foundation (fallback)
+			foundationMigrationV1_4_1, // v1.4.1 - Integrated Memory + Terminal Protocols
+			foundationMigrationV12,    // v1.2.0 - Collaborative Intelligence Framework
+			foundationMigrationV1      // v1.0.0 - Base Foundation (fallback)
 		];
 
 		// Return the first available foundation (highest version)
@@ -163,8 +173,8 @@ export class MnemosyneMemoryMCP {
 			}
 		}
 
-		// Fallback to v1.0.0 if somehow v1.2.0 is not available
-		console.warn('Using fallback Foundation v1.0.0 - latest foundation not available');
+		// Fallback to v1.0.0 if somehow latest foundations are not available
+		console.warn('Using fallback Foundation v1.0.0 - latest foundations not available');
 		return foundationMigrationV1;
 	}
 

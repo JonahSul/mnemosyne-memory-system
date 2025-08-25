@@ -29,13 +29,6 @@
 			"index_name": "mnemosyne-memory-index-dev"
 		}
 	],
-	"kv_namespaces": [
-		{
-			"binding": "MEMORY_KV",
-			"id": "dev_memory_kv_namespace",
-			"preview_id": "dev_memory_kv_namespace"
-		}
-	],
 	"define": {
 		"__WRANGLER_ENV__": "\"development\""
 	},
@@ -83,8 +76,8 @@
 			"kv_namespaces": [
 				{
 					"binding": "MEMORY_KV",
-					"id": "staging_memory_kv_namespace",
-					"preview_id": "staging_memory_kv_namespace"
+					"id": "1de1cb5561e443a78dfb0998c3b48d11",
+					"preview_id": "cd9da4f552074660ab39c1777bc32abf"
 				}
 			],
 			"define": {
@@ -120,13 +113,6 @@
 				{
 					"binding": "R2_BUCKET",
 					"bucket_name": "mnemosyne-autorag-prod"
-				}
-			],
-			"kv_namespaces": [
-				{
-					"binding": "MEMORY_KV",
-					"id": "production_memory_kv_namespace",
-					"preview_id": "production_memory_kv_namespace"
 				}
 			],
 			"define": {

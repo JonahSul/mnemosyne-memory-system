@@ -4,13 +4,13 @@
 
 This project uses a structured multi-environment deployment approach with three distinct environments:
 
-### 🛠️ Development (Default)
+### 🛠️ Development
 - **Worker Name**: `mnemosyne-memory-system-dev`
 - **Durable Object**: `MNEMOSYNE_MCP_OBJECT_DEV`
 - **Vectorize Index**: `mnemosyne-memory-index-dev`
 - **Purpose**: Local development and testing
 
-### 🧪 Staging
+### 🧪 Staging (Default)
 - **Worker Name**: `mnemosyne-memory-system-stage`
 - **Durable Object**: `MNEMOSYNE_MCP_OBJECT_STAGE`
 - **Vectorize Index**: `mnemosyne-memory-index-stage`
@@ -36,13 +36,13 @@ npx wrangler tail
 ### Staging Deployment
 ```bash
 # Deploy to staging environment
-npx wrangler deploy --env staging
+npx wrangler deploy --e staging
 
 # View staging logs
-npx wrangler tail --env staging
+npx wrangler tail --e staging
 
 # Test staging deployment
-# (Your staging worker will be available at mnemosyne-memory-system-stage.your-subdomain.workers.dev)
+# (Your staging worker will be available at mnemosyne-memory-system-stage.<your-subdomain>.workers.dev)
 ```
 
 ### Production Deployment

@@ -8,7 +8,8 @@
  */
 
 import { MemoryEntry, BehavioralRule } from './memory-interfaces.js';
-import { CoreMemoryManager, MemoryNotFoundError } from './core-memory.js';
+import { PersistentCoreMemoryManager, MemoryNotFoundError } from './persistent-core-memory.js';
+import { CloudflareVectorStore } from '../cloudflare-vector-store.js';
 import { BehavioralRuleManager } from './behavioral-rules.js';
 
 export interface ClaimVerificationResult {
@@ -37,11 +38,13 @@ export interface BehavioralStatus {
  * and rule enforcement. Designed to work with existing modular architecture.
  */
 export class BehavioralMemoryTools {
-	private coreMemory: CoreMemoryManager;
+	private coreMemory: PersistentCoreMemoryManager;
 	private behavioralRules: BehavioralRuleManager;
 
 	constructor() {
-		this.coreMemory = new CoreMemoryManager();
+	// Use persistent core memory (KV + Vectorize) — DO memory is unsafe for durable storage
+	const vectorStore = new CloudflareVectorStore({ env: {} as any });
+	this.coreMemory = new PersistentCoreMemoryManager(vectorStore);
 		this.behavioralRules = new BehavioralRuleManager();
 	}
 
@@ -58,7 +61,7 @@ export class BehavioralMemoryTools {
 			context
 		};
 
-		await this.coreMemory.storeMemory(claimEntry);
+	await this.coreMemory.storeMemory(claimEntry);
 		return claimEntry.id;
 	}
 
@@ -79,21 +82,21 @@ export class BehavioralMemoryTools {
 			}
 		};
 
-		await this.coreMemory.storeMemory(violationEntry);
+	await this.coreMemory.storeMemory(violationEntry);
 	}
 
 	/**
 	 * Get behavioral status from stored memories
 	 */
-	getBehavioralStatus(): BehavioralStatus {
-		const stats = this.coreMemory.getMemoryStats();
-		
+	async getBehavioralStatus(): Promise<BehavioralStatus> {
+		const stats = await this.coreMemory.getMemoryStats();
+
 		return {
 			unverifiedClaims: stats.pending || 0,
 			recentViolations: [], // Could be enhanced with memory search
 			activeRules: 3, // From foundation - could be enhanced
 			complianceScore: stats.verified ? 
-				(stats.verified / (stats.verified + stats.failed || 1)) * 100 : 
+				(stats.verified / ((stats.verified + stats.failed) || 1)) * 100 : 
 				100
 		};
 	}

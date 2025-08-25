@@ -13,6 +13,7 @@ import type {
 	OptimizedConsultationFrequency
 } from './memory-interfaces';
 import { sharedPrewarming, type SharedPrewarmingOperations } from './shared-prewarming';
+import { CloudflareVectorStore } from '../cloudflare-vector-store';
 
 /**
  * Workflow Integration Module
@@ -48,6 +49,7 @@ export interface WorkflowIntegrationOperations extends SharedPrewarmingOperation
 }
 
 export class WorkflowIntegrationManager implements WorkflowIntegrationOperations {
+	// Persistence: KV + Vectorize for durable workflow data
 	private checkpoints: Map<string, WorkflowCheckpoint> = new Map();
 	private triggeredSearches: TriggeredMemorySearch[] = [];
 	private efficiencyAnalyses: WorkflowEfficiencyAnalysis[] = [];
@@ -55,7 +57,14 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 	private feedbackPatterns: FeedbackPattern[] = [];
 	private failurePatterns: FailurePattern[] = [];
 	private avoidanceStrategies: FailureAvoidanceStrategy[] = [];
-	
+	private vectorStore: CloudflareVectorStore;
+	private kvStore: any;
+
+	constructor(vectorStore?: CloudflareVectorStore, kvStore?: any) {
+		this.vectorStore = vectorStore || new CloudflareVectorStore({ env: {} as any });
+		this.kvStore = kvStore;
+	}
+
 	// Unified storage for patterns and strategies
 	private learnedPatterns: any[] = [];
 	private behaviorAdjustments: any = {};
@@ -69,9 +78,33 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 	getPrewarmingHistory = sharedPrewarming.getPrewarmingHistory.bind(sharedPrewarming);
 	analyzePrewarmingPatterns = sharedPrewarming.analyzePrewarmingPatterns.bind(sharedPrewarming);
 
+	recordConsultationValue(entry: Record<string, unknown>): void {
+		// Store consultation value data for analysis (persisted elsewhere if configured)
+		this.behaviorPatterns.push({
+			id: `consultation_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+			type: 'consultation_value',
+			successRate: (entry.valueAdded as number) || 0.7,
+			frequency: 1,
+			context: entry
+		});
+
+		// Write-through persistence if KV or vector store is available
+		try {
+			if (this.kvStore) {
+				this.kvStore.put(`consultation:${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, JSON.stringify(entry));
+			}
+			if (this.vectorStore && this.vectorStore.storeKnowledge) {
+				this.vectorStore.storeKnowledge({ content: JSON.stringify(entry), metadata: { type: 'consultation_value' }, tags: ['consultation'] });
+			}
+		} catch (e) {
+			// Non-fatal: keep in-memory patterns as fallback
+			// Inline architectural note: ensure authoritative persistence elsewhere before relying on this data
+		}
+	}
+
 	async createMemoryConsultationCheckpoint(
-		stage: string, 
-		context: Record<string, unknown>, 
+		stage: string,
+		context: Record<string, unknown>,
 		priority: 'low' | 'medium' | 'high' | 'critical'
 	): Promise<WorkflowCheckpoint> {
 		const checkpoint: WorkflowCheckpoint = {
@@ -82,6 +115,14 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 			requiresMemoryConsultation: this.shouldTriggerMemoryConsultation(priority, context),
 			priority
 		};
+
+		// Persist checkpoint immediately
+		try {
+			if (this.kvStore) await this.kvStore.put(`checkpoint:${checkpoint.id}`, JSON.stringify(checkpoint));
+			if (this.vectorStore && this.vectorStore.storeKnowledge) await this.vectorStore.storeKnowledge({ content: JSON.stringify(checkpoint), metadata: { id: checkpoint.id, stage: checkpoint.stage, priority: checkpoint.priority, timestamp: checkpoint.timestamp }, tags: ['checkpoint'] });
+		} catch (e) {
+			// Non-fatal; in-memory copy retained as fallback
+		}
 
 		this.checkpoints.set(checkpoint.id, checkpoint);
 		return checkpoint;
@@ -103,9 +144,17 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 			estimatedRelevance
 		};
 
+		try {
+			if (this.kvStore) await this.kvStore.put(`triggered:${checkpoint.id}:${Date.now()}`, JSON.stringify(triggeredSearch));
+			if (this.vectorStore && this.vectorStore.storeKnowledge) await this.vectorStore.storeKnowledge({ content: triggeredSearch.query, metadata: { checkpointId: checkpoint.id, priority: triggeredSearch.priority, estimatedRelevance: triggeredSearch.estimatedRelevance }, tags: ['triggered_search'] });
+		} catch (e) {
+			// Non-fatal
+		}
+
 		this.triggeredSearches.push(triggeredSearch);
 		return triggeredSearch;
 	}
+
 
 	async analyzeWorkflowEfficiency(workflowData: Record<string, unknown>): Promise<WorkflowEfficiencyAnalysis> {
 		const workflowId = `workflow_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -193,6 +242,15 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 		};
 	}
 
+	// Synchronous implementation to satisfy interface
+	createOptimizedWorkflow(memoryInsights: Record<string, unknown>): { checkpointStrategy: string; prewarmingIntensity: string; responseStyle: string } {
+		const insightsArray = memoryInsights as any as WorkflowEfficiencyAnalysis[];
+		const checkpointStrategy = this.optimizeCheckpointStrategy(insightsArray);
+		const prewarmingIntensity = this.optimizePrewarmingIntensity(insightsArray);
+		const responseStyle = this.optimizeResponseStyle(insightsArray);
+		return { checkpointStrategy, prewarmingIntensity, responseStyle };
+	}
+
 	async balanceSpeedVsThoroughness(performanceMetrics: Record<string, number>): Promise<SpeedThoroughnessBalance> {
 		const responseTime = performanceMetrics.responseTime || 1000;
 		const completeness = performanceMetrics.completeness || 0.8;
@@ -216,6 +274,16 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 			speedWeight,
 			thoroughnessWeight
 		};
+	}
+
+	// Synchronous implementation to satisfy interface
+	determineSpeedThoroughnessBalance(context: Record<string, unknown>): { approach: string } {
+		if ((context as any).priority === 'urgent') {
+			return { approach: 'speed-optimized' };
+		} else if ((context as any).complexity === 'high') {
+			return { approach: 'thoroughness-optimized' };
+		}
+		return { approach: 'balanced' };
 	}
 
 	async measureConsultationValue(consultationData: Array<Record<string, unknown>>): Promise<ConsultationValue> {
@@ -525,62 +593,7 @@ export class WorkflowIntegrationManager implements WorkflowIntegrationOperations
 		});
 	}
 
-	recordConsultationValue(entry: Record<string, unknown>): void {	}
-
-	recordConsultationValue(entry: Record<string, unknown>): void {	recordSuccessfulPattern(interaction: Record<string, unknown>): void {
-		this.behaviorPatterns.push({
-			id: `success_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-			type: 'successful_interaction',
-			successRate: 1.0,
-			frequency: 1,
-			context: interaction
-		});
-	}
-
-	processFeedbackPattern(feedback: Record<string, unknown>): void {
-		this.feedbackPatterns.push({
-			userFeedback: (feedback.feedback as string) || 'positive',
-			behaviorContext: (feedback.context as string) || 'general',
-			adjustment: this.determineAdjustmentFromFeedback((feedback.feedback as string) || 'positive')
-		});
-	}
-
-	recordFailurePattern(pattern: Record<string, unknown>): void {
-		this.failurePatterns.push({
-			pattern: (pattern.type as string) || 'unknown_failure',
-			indicators: [(pattern.indicator as string) || 'timeout'],
-			consequences: [(pattern.consequence as string) || 'poor_performance'],
-			frequency: 1
-		});
-	}
-
-	createOptimizedWorkflow(memoryInsights: Record<string, unknown>): { checkpointStrategy: string; prewarmingIntensity: string; responseStyle: string } {
-		return {
-			checkpointStrategy: 'thorough-consultation',
-			prewarmingIntensity: 'adaptive',
-			responseStyle: 'detailed'
-		};
-	}
-
-	determineSpeedThoroughnessBalance(context: Record<string, unknown>): { approach: string } {
-		if (context.priority === 'urgent') {
-			return { approach: 'speed-optimized' };
-		} else if (context.complexity === 'high') {
-			return { approach: 'thoroughness-optimized' };
-		}
-		return { approach: 'balanced' };
-	}
-
-	recordConsultationValue(entry: Record<string, unknown>): void {
-		// Store consultation value data for analysis
-		this.behaviorPatterns.push({
-			id: `consultation_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-			type: 'consultation_value',
-			successRate: (entry.valueAdded as number) || 0.7,
-			frequency: 1,
-			context: entry
-		});
-	}
+ 
 
 	// Utility methods
 	getCheckpoints(): Map<string, WorkflowCheckpoint> {

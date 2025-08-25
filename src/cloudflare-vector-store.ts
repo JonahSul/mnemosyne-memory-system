@@ -42,10 +42,14 @@ export interface CloudflareSearchResult extends CloudflareKnowledgeItem {
 
 export class CloudflareVectorStore {
 	private env: CloudflareEnv;
+	// ARCHITECTURAL VIOLATION: This localKnowledge Map is VOLATILE cache
+	// FIX REQUIRED: Remove volatile cache, use only persistent Vectorize storage
+	// TODO: All operations should go directly to env.VECTORIZE_INDEX
 	private localKnowledge: Map<string, CloudflareKnowledgeItem> = new Map();
 
 	constructor(config: CloudflareConfig) {
-		this.env = config.env;
+		// Allow tests or non-Cloudflare environments to omit env bindings
+		this.env = (config && (config as any).env) || ({} as any);
 	}
 
 	/**

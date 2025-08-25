@@ -52,7 +52,7 @@ export class HybridRetriever {
 
 	constructor(deps?: { vector?: VectorKnowledgeTools; autorag?: AutoRAGClient; flags?: { boosts?: { autorag?: number; vectorize?: number; tiers?: Record<string, number> } } }) {
 		this.vector = deps?.vector ?? new VectorKnowledgeTools();
-		this.autorag = deps?.autorag;
+	if (deps?.autorag) this.autorag = deps.autorag;
 		this.flags = deps?.flags ?? {};
 	}
 
@@ -71,7 +71,7 @@ export class HybridRetriever {
 				const s = performance.now();
 				const vec: SemanticSearchResult = await this.vector.searchKnowledge(query, {
 					limit: options.expectedResults ?? 8,
-					threshold: options.threshold
+					threshold: typeof options.threshold === 'number' ? options.threshold : 0
 				});
 				sourceLatencies.vectorize = Math.round((performance.now() - s) * 1000) / 1000;
 				return { source: 'vectorize' as const, payload: vec };

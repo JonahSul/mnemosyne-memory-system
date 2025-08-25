@@ -1,4 +1,5 @@
 import type { BehaviorPattern, InteractionPattern } from './memory-interfaces';
+import { CloudflareVectorStore } from '../cloudflare-vector-store';
 
 /**
  * Behavioral Pattern Learning Module
@@ -17,10 +18,18 @@ export interface BehavioralPatternOperations {
 }
 
 export class BehavioralPatternLearner implements BehavioralPatternOperations {
+	// Persistence: store learned patterns in Vectorize + optional KV for rapid access
 	private learnedPatterns: Map<string, BehaviorPattern> = new Map();
 	private interactionHistory: Array<Record<string, unknown>> = [];
 	private patternEvolution: Map<string, Array<{timestamp: string; effectiveness: number}>> = new Map();
 	private adaptationHistory: Array<{timestamp: string; adjustment: string; reason: string}> = [];
+	private vectorStore: CloudflareVectorStore;
+	private kvStore: any;
+
+	constructor(vectorStore?: CloudflareVectorStore, kvStore?: any) {
+		this.vectorStore = vectorStore || new CloudflareVectorStore({ env: {} as any });
+		this.kvStore = kvStore;
+	}
 
 	async learnFromInteractionPatterns(interactions: Array<Record<string, unknown>>): Promise<BehaviorPattern[]> {
 		this.interactionHistory.push(...interactions);
@@ -31,6 +40,21 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 		for (const [patternType, groupedInteractions] of patternGroups) {
 			const pattern = this.analyzePatternGroup(patternType, groupedInteractions);
 			patterns.push(pattern);
+			// Immediate persistence: KV + Vectorize
+			try {
+				if (this.kvStore) {
+					await this.kvStore.put(`pattern:${pattern.id}`, JSON.stringify(pattern));
+				}
+				await this.vectorStore.storeKnowledge({
+					content: JSON.stringify(pattern),
+					metadata: { id: pattern.id, type: pattern.type, successRate: pattern.successRate, frequency: pattern.frequency, timestamp: new Date().toISOString() },
+					tags: [pattern.type]
+				});
+			} catch (e) {
+				// Best-effort persistence; keep in-memory as fallback
+				// eslint-disable-next-line no-console
+				console.warn('Failed to persist pattern immediately:', e);
+			}
 			this.learnedPatterns.set(pattern.id, pattern);
 		}
 

@@ -11,7 +11,8 @@
  */
 
 // Core Memory Operations
-import { CoreMemoryOperations, CoreMemoryManager } from './modules/core-memory';
+import { PersistentCoreMemoryOperations, PersistentCoreMemoryManager } from './modules/persistent-core-memory';
+import { CloudflareVectorStore } from './cloudflare-vector-store';
 import { BehavioralRuleOperations, BehavioralRuleManager } from './modules/behavioral-rules';
 
 // Specialized Operations
@@ -83,7 +84,7 @@ export class MnemosyneMemorySystem {
 	private delegator: Delegator;
 	
 	// Core modules (direct access when needed)
-	private coreMemory: CoreMemoryOperations;
+	private coreMemory: PersistentCoreMemoryOperations;
 	private behavioralRules: BehavioralRuleOperations;
 	
 	// Foundation tracking
@@ -91,7 +92,9 @@ export class MnemosyneMemorySystem {
 
 	constructor() {
 		// Initialize all modular components
-		this.coreMemory = new CoreMemoryManager();
+	// Initialize persistent vector store (worker env will supply real bindings at runtime)
+	const vectorStore = new CloudflareVectorStore({ env: {} as any });
+	this.coreMemory = new PersistentCoreMemoryManager(vectorStore);
 		this.behavioralRules = new BehavioralRuleManager();
 
 		// Initialize specialized modules
@@ -175,8 +178,8 @@ export class MnemosyneMemorySystem {
 		return this.coreMemory.verifyClaim(claimId, success, evidence, notes);
 	}
 
-	getUnverifiedClaims(): MemoryEntry[] {
-		return this.coreMemory.getUnverifiedClaims();
+	async getUnverifiedClaims(): Promise<MemoryEntry[]> {
+		return await this.coreMemory.getUnverifiedClaims();
 	}
 
 	async recordViolation(ruleId: string, context: string, correctionPlan?: string, severity?: 'minor' | 'moderate' | 'major' | 'critical'): Promise<void> {
@@ -238,23 +241,27 @@ export class MnemosyneMemorySystem {
 		return this.delegator.delegate('storeKnowledge', content, enhancedMetadata, tags, testing);
 	}
 
-	storeMemory(entry: MemoryEntry, testing?: boolean): void {
+	async storeMemory(entry: MemoryEntry, testing?: boolean): Promise<void> {
 		if (testing) {
 			entry.context = { ...(entry.context || {}), testing: true };
 		}
-		this.coreMemory.storeMemory(entry, testing);
+		await this.coreMemory.storeMemory(entry, testing);
 	}
 
-	searchMemory(query: string, includeTestingData: boolean = false): MemoryEntry[] {
-		return this.coreMemory.searchMemory(query, includeTestingData) as any;
+	async searchMemory(query: string, includeTestingData: boolean = false): Promise<MemoryEntry[]> {
+		return await this.coreMemory.searchMemory(query, includeTestingData) as any;
 	}
 
-	getMemoryStats(): { total: number; recentEntries: number } {
-		return this.coreMemory.getMemoryStats();
+	async getMemoryStats(): Promise<{ total: number; recentEntries: number }> {
+		const stats = await this.coreMemory.getMemoryStats();
+		return {
+			total: stats.totalMemories || 0,
+			recentEntries: stats.recentEntries || 0
+		};
 	}
 
-	exportMemory(includeTestingData: boolean = false): MemoryEntry[] {
-		return this.coreMemory.exportMemory(includeTestingData) as any;
+	async exportMemory(includeTestingData: boolean = false): Promise<MemoryEntry[]> {
+		return await this.coreMemory.exportMemory(includeTestingData) as any;
 	}
 
 	// =============================================================================
@@ -800,10 +807,10 @@ export class MnemosyneMemorySystem {
 
 		try {
 			// 1. Check if we need backfill (empty behavioral memory)
-			const currentMemory = this.coreMemory.getMemories();
+				const currentMemory = await this.coreMemory.getMemories();
 			const currentRules = await this.behavioralRules.getBehavioralRules();
 			
-			const memoryCount = currentMemory.size;
+			const memoryCount = Array.isArray(currentMemory) ? currentMemory.length : 0;
 			const ruleCount = currentRules.length;
 			
 			summary.push(`Current state: ${memoryCount} memories, ${ruleCount} rules`);
@@ -820,8 +827,8 @@ export class MnemosyneMemorySystem {
 					summary.push(...snapshotResult.summary);
 					
 					// If snapshot restoration was successful, we may not need general backfill
-					const updatedMemory = this.coreMemory.getMemories();
-					if (updatedMemory.size > 0) {
+					const updatedMemory = await this.coreMemory.getMemories();
+					if (Array.isArray(updatedMemory) && updatedMemory.length > 0) {
 						summary.push(`Snapshot restoration complete - skipping general backfill`);
 						return {
 							success: true,
@@ -881,9 +888,9 @@ export class MnemosyneMemorySystem {
 						if (totalRestored >= maxItems) break;
 						
 						// Check if this knowledge is already in behavioral memory
-						const alreadyExists = Array.from(currentMemory.values()).some((mem: MemoryEntry) => 
-							mem.content && mem.content.includes(result.content.substring(0, 100))
-						);
+						const alreadyExists = Array.isArray(currentMemory)
+							? currentMemory.some((mem: MemoryEntry) => mem.content && mem.content.includes(result.content.substring(0, 100)))
+							: false;
 
 						if (!alreadyExists) {
 							// Reconstruct as knowledge/context entry

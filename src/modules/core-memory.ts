@@ -33,6 +33,9 @@ export interface CoreMemoryOperations {
 }
 
 export class CoreMemoryManager implements CoreMemoryOperations {
+	// ARCHITECTURAL VIOLATION: This Map storage is VOLATILE - lost on worker restart
+	// FIX REQUIRED: Replace with immediate CloudflareVectorStore/KV writes
+	// TODO: Remove volatile Map, implement write-through persistence
 	private memories = new Map<string, MemoryEntry>();
 
 	/**
@@ -81,6 +84,8 @@ export class CoreMemoryManager implements CoreMemoryOperations {
 			}
 		};
 
+		// PERSISTENCE VIOLATION: Writing to volatile Map instead of persistent storage
+		// FIX REQUIRED: Replace with await vectorStore.store() or KV.put() call
 		this.memories.set(claimId, memory);
 		return claimId;
 	}
@@ -101,6 +106,8 @@ export class CoreMemoryManager implements CoreMemoryOperations {
 			}
 		};
 
+		// PERSISTENCE VIOLATION: Writing to volatile Map instead of persistent storage
+		// FIX REQUIRED: Replace with await vectorStore.store() or KV.put() call
 		this.memories.set(assumptionId, memory);
 		return assumptionId;
 	}
@@ -117,6 +124,8 @@ export class CoreMemoryManager implements CoreMemoryOperations {
 			memory.context = { ...memory.context, notes };
 		}
 
+		// PERSISTENCE VIOLATION: Updating volatile Map instead of persistent storage
+		// FIX REQUIRED: Replace with await vectorStore.update() or KV.put() call
 		this.memories.set(claimId, memory);
 		return true;
 	}

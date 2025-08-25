@@ -1,0 +1,198 @@
+/**
+ * Persistence Wrappers
+ *
+ * Generic failure-handling primitives for memory persistence operations:
+ * - retryWithBackoff: retry logic with exponential backoff
+ * - CircuitBreaker: simple circuit breaker to avoid cascading failures
+ * - withRetryAndFallback: combine retry + fallback behavior
+ * - wrapPersistenceMethod: helper to monkey-patch existing methods with wrapper
+ *
+ * Usage:
+ * import { wrapPersistenceMethod, withRetryAndFallback, CircuitBreaker } from './modules/persistence-wrappers';
+ *
+ * wrapPersistenceMethod(core, 'storeMemory', { fallback: async (entry) => { fallback logic } });
+ */
+
+export type AsyncFunc<T = any> = (...args: any[]) => Promise<T>;
+
+export async function retryWithBackoff<T>(
+  fn: AsyncFunc<T>,
+  args: any[],
+  attempts = 5,
+  initialDelay = 200,
+  factor = 2,
+  maxDelay = 5000
+): Promise<T> {
+  let attempt = 0;
+  let delay = initialDelay;
+  while (attempt < attempts) {
+    try {
+      return await fn(...args);
+    } catch (err) {
+      attempt++;
+      if (attempt >= attempts) throw err;
+      await new Promise(res => setTimeout(res, delay));
+      delay = Math.min(delay * factor, maxDelay);
+    }
+  }
+  // should never reach here
+  return fn(...args);
+}
+
+export type CircuitBreakerOptions = {
+  failureThreshold?: number; // failures to open
+  successThreshold?: number; // successes to close
+  timeoutMs?: number; // open state timeout
+};
+
+export class CircuitBreaker {
+  private failures = 0;
+  private successes = 0;
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+  private openedAt = 0;
+  private opts: Required<CircuitBreakerOptions>;
+
+  constructor(opts: CircuitBreakerOptions = {}) {
+    this.opts = {
+      failureThreshold: opts.failureThreshold ?? 5,
+      successThreshold: opts.successThreshold ?? 2,
+      timeoutMs: opts.timeoutMs ?? 30_000
+    };
+  }
+
+  canRequest(): boolean {
+    if (this.state === 'OPEN') {
+      const now = Date.now();
+      if (now - this.openedAt > this.opts.timeoutMs) {
+        this.state = 'HALF_OPEN';
+        this.successes = 0;
+        return true;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  recordSuccess() {
+    if (this.state === 'HALF_OPEN') {
+      this.successes++;
+      if (this.successes >= this.opts.successThreshold) {
+        this.state = 'CLOSED';
+        this.failures = 0;
+      }
+    } else if (this.state === 'CLOSED') {
+      // keep healthy
+    }
+  }
+
+  recordFailure() {
+    this.failures++;
+    if (this.failures >= this.opts.failureThreshold) {
+      this.state = 'OPEN';
+      this.openedAt = Date.now();
+    }
+  }
+
+  getState() {
+    return this.state;
+  }
+}
+
+export type WithRetryOptions<T> = {
+  attempts?: number;
+  initialDelayMs?: number;
+  factor?: number;
+  maxDelayMs?: number;
+  circuitBreaker?: CircuitBreaker;
+  fallback?: AsyncFunc<T> | null;
+};
+
+export function withRetryAndFallback<T = any>(
+  fn: AsyncFunc<T>,
+  options: WithRetryOptions<T> = {}
+): AsyncFunc<T> {
+  const attempts = options.attempts ?? 5;
+  const initialDelay = options.initialDelayMs ?? 200;
+  const factor = options.factor ?? 2;
+  const maxDelay = options.maxDelayMs ?? 5000;
+  const cb = options.circuitBreaker;
+  const fallback = options.fallback ?? null;
+
+  return async (...args: any[]) => {
+    if (cb && !cb.canRequest()) {
+      if (fallback) return fallback(...args);
+      throw new Error('Circuit open - request short-circuited');
+    }
+
+    try {
+      const result = await retryWithBackoff(fn, args, attempts, initialDelay, factor, maxDelay);
+      if (cb) cb.recordSuccess();
+      return result;
+    } catch (err) {
+      if (cb) cb.recordFailure();
+      if (fallback) {
+        try {
+          return await fallback(...args);
+        } catch (fallbackErr) {
+          // throw original error to preserve root cause
+          throw err;
+        }
+      }
+      throw err;
+    }
+  };
+}
+
+export type WrapOptions<T = any> = {
+  attempts?: number;
+  initialDelayMs?: number;
+  factor?: number;
+  maxDelayMs?: number;
+  circuitBreaker?: CircuitBreaker;
+  fallback?: AsyncFunc<T> | null;
+  afterSuccess?: (result: any, args: any[]) => void | Promise<void>;
+  beforeAttempt?: (args: any[]) => void | Promise<void>;
+};
+
+/**
+ * Replace a method on targetObj with a failure-handling wrapper.
+ * The wrapper will apply retry/backoff, optional circuit breaker, fallback, and an afterSuccess hook.
+ */
+export function wrapPersistenceMethod<T = any>(
+  targetObj: any,
+  methodName: string,
+  options: WrapOptions<T> = {}
+): void {
+  if (!targetObj || typeof targetObj[methodName] !== 'function') {
+    throw new Error(`Cannot wrap method ${methodName} - not found on target`);
+  }
+
+  const original: AsyncFunc<T> = targetObj[methodName].bind(targetObj);
+
+  const cb = options.circuitBreaker ?? new CircuitBreaker({ failureThreshold: 5, timeoutMs: 30_000 });
+
+  const wrapped = withRetryAndFallback<T>(async (...args: any[]) => {
+    if (options.beforeAttempt) await options.beforeAttempt(args);
+    const res = await original(...args);
+    if (options.afterSuccess) await options.afterSuccess(res, args);
+    return res;
+  }, {
+    attempts: options.attempts ?? 5,
+    initialDelayMs: options.initialDelayMs ?? 200,
+    factor: options.factor ?? 2,
+    maxDelayMs: options.maxDelayMs ?? 5000,
+    circuitBreaker: cb,
+    fallback: options.fallback ?? null
+  });
+
+  targetObj[methodName] = wrapped;
+}
+
+// Simple debounce helper for snapshotting
+export function debounce<T extends (...args: any[]) => any>(fn: T, wait = 1000) {
+  let timer: any = null;
+  return (...args: any[]) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}

@@ -69,7 +69,9 @@ export class UnifiedMemoryFacade {
 					// leave undefined; HybridRetriever will handle absence
 				}
 			}
-			this.hybrid = new HybridRetriever({ vector: this.vector as any, autorag });
+			const hybridDeps: any = { vector: this.vector as any };
+			if (autorag) hybridDeps.autorag = autorag;
+			this.hybrid = new HybridRetriever(hybridDeps);
 		}
 	}
 
@@ -208,7 +210,7 @@ export class UnifiedMemoryFacade {
 	 * Comprehensive system health check
 	 */
 	async getSystemHealth(): Promise<MemorySystemHealth> {
-		const behavioralStatus = this.behavioral.getBehavioralStatus();
+		const behavioralStatus = await this.behavioral.getBehavioralStatus();
 		const vectorStats = this.vector.getKnowledgeStats();
 
 		const health: MemorySystemHealth = {

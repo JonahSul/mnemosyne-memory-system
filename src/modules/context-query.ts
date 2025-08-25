@@ -1,4 +1,5 @@
 import type { ContextQuery } from './memory-interfaces';
+import { CloudflareVectorStore } from '../cloudflare-vector-store';
 
 /**
  * Context & Query Management Module
@@ -19,10 +20,18 @@ export interface ContextQueryOperations {
 }
 
 export class ContextQueryManager implements ContextQueryOperations {
+	// PERSISTENCE: Use Vectorize for semantic storage + optional KV for rapid-access
 	private contexts: Map<string, Record<string, unknown>> = new Map();
 	private queries: ContextQuery[] = [];
 	private knowledgeStore: Map<string, any> = new Map();
 	private tieredKnowledge: Map<string, any> = new Map();
+	private vectorStore: CloudflareVectorStore;
+	private kvStore: any;
+
+	constructor(vectorStore?: CloudflareVectorStore, kvStore?: any) {
+		this.vectorStore = vectorStore || new CloudflareVectorStore({ env: {} as any });
+		this.kvStore = kvStore;
+	}
 
 	logContextQuery(query: string, context?: Record<string, unknown>): string {
 		const queryId = `mem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -112,7 +121,13 @@ export class ContextQueryManager implements ContextQueryOperations {
 
 	async storeContext(context: Record<string, unknown>): Promise<string> {
 		const contextId = `context_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-		this.contexts.set(contextId, context);
+		const entry = { id: contextId, context, timestamp: new Date().toISOString() };
+		// Write-through to KV for rapid access
+		if (this.kvStore) {
+			await this.kvStore.put(`context:${contextId}`, JSON.stringify(entry));
+		}
+		// Keep a small in-memory index for quick reads (non-authoritative)
+		this.contexts.set(contextId, entry.context as Record<string, unknown>);
 		return contextId;
 	}
 
@@ -128,9 +143,15 @@ export class ContextQueryManager implements ContextQueryOperations {
 		
 		this.queries.push(contextQuery);
 
-		// Simulate semantic search with testing data filtering
-		const results = this.performSemanticSearch(query, limit, threshold, includeTestingData);
-		return results;
+		// Use Vectorize for semantic search
+		const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
+		return vectorResults.map(r => ({
+			id: r.id,
+			content: r.content,
+			similarity: r.similarity,
+			metadata: r.metadata,
+			tags: r.tags
+		}));
 	}
 
 	async searchTiered(
@@ -151,9 +172,23 @@ export class ContextQueryManager implements ContextQueryOperations {
 		
 		this.queries.push(contextQuery);
 
-		// Simulate tiered search with tier-aware ranking
-		const results = this.performTieredSearch(query, tierPreference, limit, threshold, includeTestingData);
-		return results;
+		// Use Vectorize and filter by tier metadata when available
+		const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
+		const filtered = vectorResults.filter(r => {
+			const meta = r.metadata as any;
+			if (!meta) return false;
+			if (tierPreference === 'all') return true;
+			return meta.tier === tierPreference;
+		}).slice(0, limit);
+
+		return filtered.map(r => ({
+			id: r.id,
+			content: r.content,
+			similarity: r.similarity,
+			tier: (r.metadata as any)?.tier,
+			metadata: r.metadata,
+			tags: r.tags
+		}));
 	}
 
 	async storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[], testing?: boolean): Promise<string> {
@@ -171,6 +206,11 @@ export class ContextQueryManager implements ContextQueryOperations {
 			embeddings: this.generateEmbeddings(content)
 		};
 
+		// Persist to KV (rapid access) and vector store (semantic)
+		if (this.kvStore) {
+			await this.kvStore.put(`knowledge:${knowledgeId}`, JSON.stringify(knowledgeEntry));
+		}
+		await this.vectorStore.storeKnowledge({ content, metadata: knowledgeEntry.metadata, tags: knowledgeEntry.tags });
 		this.knowledgeStore.set(knowledgeId, knowledgeEntry);
 		return knowledgeId;
 	}
@@ -209,6 +249,10 @@ export class ContextQueryManager implements ContextQueryOperations {
 			lastAccessed: new Date().toISOString()
 		};
 
+		if (this.kvStore) {
+			await this.kvStore.put(`tiered:${knowledgeId}`, JSON.stringify(knowledgeEntry));
+		}
+		await this.vectorStore.storeKnowledge({ content, metadata: knowledgeEntry.metadata, tags: [...(tags||[]), tier] });
 		this.tieredKnowledge.set(knowledgeId, knowledgeEntry);
 		return knowledgeId;
 	}
@@ -218,6 +262,7 @@ export class ContextQueryManager implements ContextQueryOperations {
 		const tieredStats = this.calculateTieredStats();
 		const queryStats = this.calculateQueryStats();
 		const contextStats = this.calculateContextStats();
+		const vectorStats = this.vectorStore.getStats ? this.vectorStore.getStats() : { localItems: 0 };
 
 		return {
 			knowledge: knowledgeStats,
@@ -225,6 +270,7 @@ export class ContextQueryManager implements ContextQueryOperations {
 			queries: queryStats,
 			contexts: contextStats,
 			totalEntries: this.knowledgeStore.size + this.tieredKnowledge.size,
+			vectorStore: vectorStats,
 			timestamp: new Date().toISOString()
 		};
 	}
@@ -265,76 +311,20 @@ export class ContextQueryManager implements ContextQueryOperations {
 	}
 
 	// Private helper methods
-	private performSemanticSearch(query: string, limit: number, threshold: number, includeTestingData: boolean = false): any[] {
+	private async performSemanticSearch(query: string, limit: number, threshold: number, includeTestingData: boolean = false): Promise<any[]> {
 		const queryEmbeddings = this.generateEmbeddings(query);
-		const results: any[] = [];
-
-		for (const [id, entry] of this.knowledgeStore) {
-			// Skip testing data unless explicitly requested
-			if (!includeTestingData && entry.metadata?.testing) {
-				continue;
-			}
-			
-			const similarity = this.calculateSimilarity(queryEmbeddings, entry.embeddings);
-			if (similarity >= threshold) {
-				results.push({
-					id,
-					content: entry.content,
-					similarity,
-					metadata: entry.metadata,
-					tags: entry.tags
-				});
-			}
-		}
-
-		// Sort by similarity and limit results
-		return results
-			.sort((a, b) => b.similarity - a.similarity)
-			.slice(0, limit);
+	// Fallback: use vector store if available
+	const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
+	return vectorResults.map(r => ({ id: r.id, content: r.content, similarity: r.similarity, metadata: r.metadata, tags: r.tags }));
 	}
 
-	private performTieredSearch(query: string, tierPreference: string, limit: number, threshold: number, includeTestingData: boolean = false): any[] {
+	private async performTieredSearch(query: string, tierPreference: string, limit: number, threshold: number, includeTestingData: boolean = false): Promise<any[]> {
 		const queryEmbeddings = this.generateEmbeddings(query);
-		const results: any[] = [];
-
-		for (const [id, entry] of this.tieredKnowledge) {
-			// Skip if tier doesn't match preference (unless 'all')
-			if (tierPreference !== 'all' && entry.tier !== tierPreference) {
-				continue;
-			}
-
-			// Skip testing data unless explicitly requested
-			if (!includeTestingData && entry.metadata?.testing) {
-				continue;
-			}
-
-			const similarity = this.calculateSimilarity(queryEmbeddings, entry.embeddings);
-			if (similarity >= threshold) {
-				// Apply tier-aware ranking boost
-				const tierBoost = this.getTierBoost(entry.tier);
-				const adjustedSimilarity = Math.min(1.0, similarity * tierBoost);
-
-				results.push({
-					id,
-					content: entry.content,
-					similarity: adjustedSimilarity,
-					originalSimilarity: similarity,
-					tier: entry.tier,
-					importance: entry.importance,
-					metadata: entry.metadata,
-					tags: entry.tags
-				});
-
-				// Update access tracking
-				entry.accessCount++;
-				entry.lastAccessed = new Date().toISOString();
-			}
-		}
-
-		// Sort by adjusted similarity and limit results
-		return results
-			.sort((a, b) => b.similarity - a.similarity)
-			.slice(0, limit);
+	const vectorResults = await this.vectorStore.searchSimilar(query, { limit: 100, threshold });
+	const mapped = vectorResults.map(r => ({ id: r.id, content: r.content, similarity: r.similarity, tier: (r.metadata as any)?.tier, metadata: r.metadata, tags: r.tags }));
+	// Apply tier filtering and ranking
+	const filtered = mapped.filter(e => tierPreference === 'all' ? true : e.tier === tierPreference);
+	return filtered.slice(0, limit);
 	}
 
 	private generateEmbeddings(content: string): number[] {
