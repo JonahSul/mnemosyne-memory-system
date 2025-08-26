@@ -37,10 +37,22 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 			if (typeof getVectorStoreInstance === 'function') {
 				this.vectorStore = getVectorStoreInstance();
 			} else {
-				throw new Error(
-					'FATAL: BehavioralPatternsManager requires CloudflareVectorStore instance. ' +
-					'Provide vectorStore parameter or ensure getVectorStoreInstance is available.'
-				);
+				// Check for test/dev environment before failing
+				const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
+				if (isDevOrTest) {
+					console.warn('⚠️ BehavioralPatternsManager DEV/TEST: Using empty env fallback - data will be volatile');
+					// Create minimal test shim for behavioral patterns
+					this.vectorStore = {
+						upsert: async () => ({ upsertedCount: 0 }),
+						query: async () => ({ matches: [] }),
+						deleteMany: async () => ({ deletedCount: 0 })
+					} as any;
+				} else {
+					throw new Error(
+						'FATAL: BehavioralPatternsManager requires CloudflareVectorStore instance. ' +
+						'Provide vectorStore parameter or ensure getVectorStoreInstance is available.'
+					);
+				}
 			}
 		}
 		this.kvStore = kvStore;

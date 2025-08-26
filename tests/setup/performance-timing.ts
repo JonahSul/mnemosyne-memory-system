@@ -15,6 +15,11 @@ globalThis.PERFORMANCE_BASELINES = new Map();
 globalThis.PERFORMANCE_CURRENT = new Map();  
 globalThis.PERFORMANCE_VIOLATIONS = [];
 
+// CRITICAL: Set NODE_ENV for memory system vector store initialization 
+// This prevents "Production vector store initialization failed" errors
+// by ensuring all memory system components use test-mode fallbacks
+(globalThis as any).NODE_ENV = 'test';
+
 // Performance baseline thresholds (in milliseconds)
 const PERFORMANCE_BASELINES_CONFIG = {
   // Individual test thresholds

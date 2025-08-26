@@ -22,27 +22,48 @@ Analysis of the current `src/agent.ts` reveals complete lack of authentication m
 
 ## Decision
 
-Implement a **Distributed Knowledge Network Architecture** with three primary roles and comprehensive authentication foundation for the Mnemosyne federation.
+Implement a **Distributed Knowledge Network Architecture** with five primary roles and comprehensive authentication foundation for the Mnemosyne federation.
 
 ## Core Architecture Roles
 
-### Arbiter (Knowledge Flow Coordinator)
-- **Purpose**: Central curator and coordinator for incoming knowledge flows
-- **Key Responsibilities**: Knowledge submission processing, validation, routing, policy enforcement
-- **Implementation**: Distributed coordinator service with consensus mechanisms
+### Agent (System Participant)
+- **Purpose**: Any participant operating within the system with baseline responsibilities
+- **Key Responsibilities**: Adhere to fundamental system laws (don't harm, don't corrupt, don't impersonate), contribute constructively to shared knowledge, respect democratic governance decisions
+- **Implementation**: Base role with cryptographic identity and behavioral monitoring
 - **Security Integration**: Full integration with [ADR-009 Worker Identity and Authentication](ADR-009-worker-identity-authentication.md)
 
-### Collection (Knowledge Repository)  
-- **Purpose**: Secure storage and retrieval system for curated knowledge
-- **Key Responsibilities**: Knowledge persistence, search/retrieval APIs, versioning, access control
-- **Implementation**: Enhanced CloudflareVectorStore with authentication layers
-- **Privacy Features**: Support for both public and private knowledge partitions
+### Arbiter (Truth Decider and Tie-Breaker)
+- **Purpose**: Highest-trust agent in each neighborhood, democratically elected by peers
+- **Key Responsibilities**: Authoritative truth determination, dispute resolution, tie-breaking for contested memory claims, final arbitration of neighborhood governance matters
+- **Implementation**: Elected role with enhanced privileges and accountability mechanisms
+- **Democratic Process**: Term-limited elections with competency assessment and community oversight
 
-### Archivist (Knowledge Classifier and Quality Decorator)
+### Archivist (Knowledge Flow Coordinator)
+- **Purpose**: Central curator and coordinator for incoming knowledge flows
+- **Key Responsibilities**: Knowledge submission processing, validation, routing, policy enforcement, traffic control for information flows
+- **Implementation**: Distributed coordinator service with consensus mechanisms
+- **Network Management**: Ensures smooth and secure information flow throughout the knowledge network
+
+### Curator (Knowledge Enrichment and Classification)
 - **Purpose**: Knowledge enrichment and classification system
-- **Key Responsibilities**: Content analysis, metadata decoration, duplicate detection, cataloging
+- **Key Responsibilities**: Content analysis, metadata decoration, duplicate detection, categorization, quality enhancement
 - **Implementation**: AI-powered classification with human-in-the-loop validation
-- **Quality Assurance**: Integration with quality metrics and curation standards
+- **Quality Assurance**: Ensures stored knowledge is well-organized, properly categorized, and easily discoverable
+
+### Custodian (Security and Health Specialist)
+- **Purpose**: Memory system security and health maintenance
+- **Key Responsibilities**: Attack pattern detection, malactor identification and eviction, system health monitoring, defense-in-depth implementation
+- **Implementation**: Proactive security monitoring with automated threat response
+- **Threat Management**: Identifies and isolates threats including malicious actors and disoriented agents stuck in damaging loops, recruits Arbiters for falsehood determination
+
+### Hermes (Inter-Cluster Messenger and Guardian)
+- **Purpose**: Boundary-spanning representative for inter-cluster operations and cluster protection
+- **Key Responsibilities**: Inter-cluster communication, knowledge transfer, cluster interest representation, boundary security, cultural preservation, representing best interests of every party to any transaction
+- **Implementation**: Democratically elected role with continuous multi-source accountability
+- **Democratic Process**: Elected by cluster participants based on verifiable competency evidence, replaceable when ineffective
+- **Accountability Framework**: Continuous self-analysis and peer grading within cluster, plus external behavioral observations from federation operations
+- **Dual Function**: Serves as both messenger (enabling inter-cluster cooperation) and guardian (protecting cluster integrity)
+- **Principle**: "Doing the next right thing" through balanced representation of all transaction parties
 
 ### Authentication and Access Control Framework
 

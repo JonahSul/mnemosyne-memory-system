@@ -78,25 +78,23 @@ Add to your MCP client configuration:
 
 ### Foundation Management  
 
-- `memory_view_foundation` - View foundational behavioral rules and compliance
-- `memory_update_foundation` - **⭐ HOT-DEPLOY:** Runtime behavioral rule updates
+- `memory_admin` - **⭐ ADVANCED:** Administrative operations and foundation management
 
-## 🔄 Runtime Foundation Updates
+## 🔄 Runtime Foundation Management
 
-### Hot-Deployment Capabilities
+### Administrative Capabilities
 
-The Mnemosyne Memory System now supports **runtime foundation updates**, enabling behavioral rule changes without server restart:
+The Mnemosyne Memory System supports **advanced administrative operations** through the `memory_admin` tool:
 
 ```typescript
-// Example: Deploy enhanced debugging rules
-await agent.callTool('memory_update_foundation', {
-  migration: enhancedFoundationV1_1,
-  options: {
-    mergeRules: true,           // Merge with existing rules
-    preserveViolations: true,   // Keep violation history  
-    backup: true,              // Create automatic backup
-    dryRun: false             // Apply changes immediately
-  }
+// Example: View current foundation
+await agent.callTool('memory_admin', {
+  operation: 'view_foundation'
+});
+
+// Example: Export system state for backup
+await agent.callTool('memory_admin', {
+  operation: 'export_state'
 });
 ```
 
@@ -116,10 +114,7 @@ curl -X POST https://your-worker.workers.dev/foundation \
 
 ### Creating Custom Foundations
 
-Create domain-specific foundations by extending the base migration structure found in `migrations/foundation.ts`. See `migrations/examples.ts` for comprehensive examples including:
-
-- **Enhanced Foundation v1.1.0** - Improved systematic debugging and safety constraints
-- **Web Development Foundation v2.0.0** - Specialized rules for web development projects
+Create domain-specific foundations by extending the base migration structure found in `migrations/foundation-v1.5.0-fixed.ts`. The current system uses **Foundation v1.5.0** as the single source of truth for all behavioral rules and patterns.
 
 ## 📋 Foundation Rules System
 

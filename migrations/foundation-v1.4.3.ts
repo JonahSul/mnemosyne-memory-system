@@ -134,7 +134,7 @@ export const foundationMigrationMemoryOptimization = {
 		}
 	},
 	
-	deploymentNote: "This foundation version must be committed to repository before deployment via memory_update_foundation (following repository-first discipline)"
+	deploymentNote: "This foundation version must be committed to repository before deployment via memory_admin tool (following repository-first discipline)"
 };
 
 export default foundationMigrationMemoryOptimization;

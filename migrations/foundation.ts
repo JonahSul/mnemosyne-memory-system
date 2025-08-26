@@ -10,8 +10,8 @@
  * Note: This foundation can serve as a template for creating your own custom foundations.
  * Consider creating additional migration files for domain-specific behavioral patterns.
  * 
- * Runtime Updates: Foundations can also be updated during server operation using the
- * memory_update_foundation tool for hot-deployment of behavioral changes.
+ * Runtime Updates: Foundations can be managed using the memory_admin tool for
+ * administrative operations and foundation management.
  */
 
 import { MnemosyneMemorySystem } from "../src/memory-tool.js";
@@ -648,11 +648,11 @@ export async function applyFoundationMigration(memory: MnemosyneMemorySystem, mi
 		});
 	});
 
-	// Set foundation metadata in memory system
-	(memory as any).currentFoundation = {
+	// Set foundation metadata directly
+	memory.setFoundationMetadata({
 		version: migration.version,
 		timestamp: new Date().toISOString()
-	};
+	});
 
 	// Log migration completion
 	const migrationId = memory.logClaim(
@@ -672,3 +672,134 @@ export async function applyFoundationMigration(memory: MnemosyneMemorySystem, mi
 		`Migration applied: ${migration.coreRules.length} rules, ${migration.essentialPatterns.length} patterns, ${migration.safetyConstraints.length} constraints`
 	);
 }
+
+/**
+ * Foundation v1.5.0: Evidence-Based Accountability & Atomic Memory Architecture
+ * 
+ * This foundation establishes rigorous standards for evidence-based memory storage,
+ * accountability mechanisms, and optimal usage patterns for the memory system.
+ */
+export const foundationMigrationV15: FoundationMigration = {
+	version: "1.5.0",
+	description: "Evidence-Based Accountability & Atomic Memory Architecture",
+	
+	// Core Behavioral Rules in expected format
+	coreRules: [
+		{
+			id: "evidence-first-principle",
+			rule: "Every factual claim must include verifiable evidence before storage",
+			description: "No statement of fact enters memory without supporting evidence that can be independently verified",
+			priority: "critical" as const,
+			enforcement: "strict" as const,
+			examples: [
+				"Store test results with specific output logs as evidence",
+				"Include file counts or metrics when making system claims",
+				"Cross-reference new information with existing memory",
+				"Use verification_method to indicate validation approach"
+			]
+		},
+		
+		{
+			id: "atomic-commit-pattern", 
+			rule: "Store information in small, focused, atomic units rather than large blocks",
+			description: "Optimize for granular knowledge building that enables precise retrieval and validation",
+			priority: "high" as const,
+			enforcement: "advisory" as const,
+			examples: [
+				"Store single observations rather than complex multi-part claims",
+				"Break down behavioral patterns into individual instances",
+				"Use focused content with specific evidence per storage operation",
+				"Avoid bundling unrelated information in single memory entries"
+			]
+		},
+		
+		{
+			id: "accountability-chain",
+			rule: "Establish clear accountability mechanisms beyond human oversight",
+			description: "Build systematic validation into the memory system itself",
+			priority: "critical" as const,
+			enforcement: "strict" as const,
+			examples: [
+				"Use pre-storage validation against existing memory",
+				"Implement evidence quality assessment with confidence scoring",
+				"Enable periodic re-validation of stored claims",
+				"Track provenance through verification methods"
+			]
+		}
+	],
+	
+	// Essential Patterns for optimal usage
+	essentialPatterns: [
+		{
+			pattern: "high-confidence-storage",
+			description: "Store facts with evidence array and high confidence (0.8+)",
+			desiredOutcome: "positive" as const,
+			interventions: ["Include specific evidence in evidence array", "Set confidence >= 0.8", "Use verification_method"]
+		},
+		{
+			pattern: "medium-confidence-observations",
+			description: "Store observations with context and medium confidence (0.5-0.8)",
+			desiredOutcome: "positive" as const,
+			interventions: ["Provide contextual information", "Set confidence 0.5-0.8", "Include source information"]
+		},
+		{
+			pattern: "low-confidence-hypotheses",
+			description: "Store hypotheses and assumptions with low confidence (0.2-0.5)",
+			desiredOutcome: "neutral" as const,
+			interventions: ["Mark as hypothesis in metadata", "Set confidence 0.2-0.5", "Plan for future validation"]
+		},
+		{
+			pattern: "atomic-memory-commits",
+			description: "Store information in small, focused units for better retrieval",
+			desiredOutcome: "positive" as const,
+			interventions: ["Break complex information into focused units", "Use atomic content approach", "Avoid information bundling"]
+		},
+		{
+			pattern: "evidence-based-validation",
+			description: "Cross-validate claims against existing memory with evidence",
+			desiredOutcome: "positive" as const,
+			interventions: ["Search existing memory before storage", "Compare for contradictions", "Update confidence based on validation"]
+		}
+	],
+	
+	// Safety Constraints for system integrity
+	safetyConstraints: [
+		{
+			constraint: "evidence-requirement-threshold",
+			rationale: "High-confidence claims require supporting evidence for accountability",
+			enforcement: "warning" as const
+		},
+		{
+			constraint: "cross-validation-requirement",
+			rationale: "Very high confidence claims must be validated against existing memory",
+			enforcement: "warning" as const
+		},
+		{
+			constraint: "atomic-storage-preference",
+			rationale: "Granular storage enables better retrieval and validation",
+			enforcement: "logging" as const
+		},
+		{
+			constraint: "provenance-tracking",
+			rationale: "Verification methods enable accountability and audit trails",
+			enforcement: "logging" as const
+		}
+	],
+	
+	// Metadata for foundation management
+	metadata: {
+		author: "Mnemosyne Memory System",
+		timestamp: new Date().toISOString(),
+		changelog: [
+			"Introduced evidence-based accountability architecture",
+			"Added atomic memory commit patterns",
+			"Implemented systematic accountability chains",
+			"Established empirical confidence thresholds",
+			"Added provenance tracking mechanisms"
+		],
+		compatibleWith: ["1.4.x", "1.3.x"],
+		replaces: "1.4.3",
+		notes: "Major architectural upgrade focusing on evidence-based operations and accountability",
+		empiricalBasis: "Foundation v1.5.0 empirical thresholds: exploration=0.014, recall=0.036, precision=0.300, evidence_required=0.6, cross_validation=0.8"
+	}
+};

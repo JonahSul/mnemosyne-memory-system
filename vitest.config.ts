@@ -15,6 +15,11 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     
+    // Environment configuration for testing
+    env: {
+      NODE_ENV: 'test'
+    },
+    
     // Performance regression detection configuration
     coverage: {
       enabled: false, // Disabled to focus on timing performance

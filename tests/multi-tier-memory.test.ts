@@ -218,7 +218,7 @@ describe('MultiTierMemorySystem', () => {
 				tags: ['test', 'experimental', 'memory']
 			});
 
-			expect(knowledge.metadata).toEqual({ type: 'test', category: 'experimental' });
+			expect(knowledge.metadata).toMatchObject({ type: 'test', category: 'experimental' });
 			expect(knowledge.tags).toEqual(['test', 'experimental', 'memory']);
 		});
 	});

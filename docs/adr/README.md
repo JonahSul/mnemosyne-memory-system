@@ -7,7 +7,7 @@ This index lists accepted and proposed architectural decisions for the Mnemosyne
 The Mnemosyne ADRs are organized in four architectural layers, from foundational infrastructure to advanced federation capabilities.
 
 ### Layer 1: Core Architecture
-- **ADR-006**: [Distributed Knowledge Network Architecture](ADR-006-distributed-knowledge-network-architecture.md) - Foundation distributed system with Arbiter/Collection/Archivist roles
+- **ADR-006**: [Distributed Knowledge Network Architecture](ADR-006-distributed-knowledge-network-architecture.md) - Foundation distributed system with Agent/Arbiter/Archivist/Curator/Custodian roles
 - **ADR-009**: [Worker Identity and Authentication](ADR-009-worker-identity-authentication.md) - Decentralized identity using DIDs with cryptographic authentication
 - **ADR-010**: [Blockchain-of-Blockchains Federation Events](ADR-010-blockchain-federation-events.md) - Multi-tier event processing with intelligent routing
 

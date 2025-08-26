@@ -40,7 +40,16 @@ export class BehavioralRuleManager implements BehavioralRuleOperations {
 	getFoundationRules(): BehavioralRule[] {
 		// Return all rules that are marked as foundation rules
 		return Array.from(this.rules.values()).filter(rule => 
-			['no-unverified-claims', 'systematic-approach', 'consult-memory-before-response'].includes(rule.id)
+			[
+				// Legacy v1.4.3 rules
+				'no-unverified-claims', 
+				'systematic-approach', 
+				'consult-memory-before-response',
+				// New v1.5.0 evidence-based rules
+				'evidence-first-principle',
+				'atomic-commit-pattern',
+				'accountability-chain'
+			].includes(rule.id)
 		);
 	}
 

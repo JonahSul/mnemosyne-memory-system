@@ -1,49 +1,69 @@
 /**
  * Copyright © 2025, Jonah Sullivan
+ * Foundation v1.8.0 Memory System Tests - Updated for mcp-tools architecture
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MnemosyneMemorySystem } from '../src/memory-tool.js';
-import { memoryTools } from '../src/tools/registry.js';
+import { initializeWithEnv } from '../src/tools/simplified-registry.js';
 
-describe('Memory System', () => {
+describe('Memory System - Foundation v1.8.0', () => {
   let memorySystem: MnemosyneMemorySystem;
 
   beforeEach(() => {
+    // Initialize with mock environment for testing
+    initializeWithEnv({
+      MEMORY_KV: null, // Mock KV for testing
+      VECTORIZE_INDEX: null, // Mock vectorize for testing
+      AI: null // Mock AI for testing
+    });
+    
     memorySystem = new MnemosyneMemorySystem();
     // Set up global memory instance for tool handlers
     (globalThis as any).getMemoryInstance = () => memorySystem;
   });
 
-  describe('Claim Management', () => {
-    it('should log and track claims', async () => {
-      const claim = "Territory coverage tool is working correctly";
-      const context = { test: "After fixing API response handling" };
+  describe('Foundation v1.8.0 Memory Storage', () => {
+    it('should store memory with evidence using Foundation v1.8.0 patterns', async () => {
+      const content = "Memory system integration test successful";
+      const evidence = ["Test execution completed", "No errors detected"];
       
-      const claimId = await memorySystem.logClaim(claim, context);
+      // Use the memory storage directly instead of old claim/verification pattern
+      const result = await memorySystem.storeMemory(content, {
+        source: "test_suite",
+        evidence: evidence,
+        confidence: 0.9,
+        importance: 0.8
+      });
       
-      const unverifiedClaims = memorySystem.getUnverifiedClaims();
-      expect(unverifiedClaims).toHaveLength(1);
-      expect(unverifiedClaims[0].content).toBe(claim);
-      expect(unverifiedClaims[0].id).toBe(claimId);
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
     });
 
-    it('should verify claims and update status', async () => {
-      const claim = "API returns expected response format";
+    it('should search stored memories', async () => {
+      // Store a memory first
+      await memorySystem.storeMemory("Test memory for search", {
+        source: "test_search",
+        evidence: ["Search test evidence"],
+        confidence: 0.9
+      });
       
-      const claimId = await memorySystem.logClaim(claim, { test: "context" });
-      await memorySystem.verifyClaim(claimId, true, "Confirmed by test results");
-      
-      const unverifiedClaims = memorySystem.getUnverifiedClaims();
-      expect(unverifiedClaims).toHaveLength(0);
+      // Search for it
+      const results = await memorySystem.searchMemory("test memory");
+      expect(results.length).toBeGreaterThan(0);
     });
 
-    it('should track behavioral violations', () => {
-      memorySystem.recordViolation("no-unverified-claims", "Made claim without verification");
+    it('should track behavioral patterns in Foundation v1.8.0', () => {
+      // Test that behavioral system is working
+      const rules = memorySystem.getFoundationRules();
+      expect(rules.length).toBeGreaterThan(0);
       
-      const status = memorySystem.getBehavioralStatus();
-      expect(status.recentViolations).toHaveLength(1);
-      expect(status.recentViolations[0].rule).toContain("Never claim something is \"fixed\"");
+      // Foundation v1.8.0 should have evidence-based rules
+      const evidenceRule = rules.find(rule => 
+        rule.rule.toLowerCase().includes('evidence') || 
+        rule.rule.toLowerCase().includes('verifiable')
+      );
+      expect(evidenceRule).toBeDefined();
     });
   });
 
@@ -55,7 +75,7 @@ describe('Memory System', () => {
       expect(memoryTools.find(t => t.name === 'memory_check_behavioral_status')).toBeDefined();
       expect(memoryTools.find(t => t.name === 'memory_view_foundation')).toBeDefined();
       expect(memoryTools.find(t => t.name === 'memory_record_violation')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_update_foundation')).toBeDefined();
+      expect(memoryTools.find(t => t.name === 'memory_admin')).toBeDefined();
       expect(memoryTools.find(t => t.name === 'memory_export_state')).toBeDefined();
       // Vector tools
       expect(memoryTools.find(t => t.name === 'memory_store_knowledge')).toBeDefined();

@@ -139,10 +139,12 @@ export class PersistentCoreMemoryManager implements PersistentCoreMemoryOperatio
 		}
 
 		if (!memory) {
-			// Fallback: search vector store
-			// Try semantic search fallback (best-effort). Prefer KV for exact retrieval.
-			const searchResults = await this.vectorStore.searchSimilar(claimId, { limit: 1 });
-			if (searchResults.length === 0) {
+			// Fallback: first try direct id lookup on vector store (if implemented), then semantic search
+			let searchResults = await (this.vectorStore as any).getById ? await (this.vectorStore as any).getById(claimId) : [];
+			if (!searchResults || searchResults.length === 0) {
+				searchResults = await this.vectorStore.searchSimilar(claimId, { limit: 1 });
+			}
+			if (!searchResults || searchResults.length === 0) {
 				throw new MemoryNotFoundError(claimId, 'Claim');
 			}
 			const first = searchResults[0];

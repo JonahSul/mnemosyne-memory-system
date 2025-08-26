@@ -75,7 +75,7 @@ export const foundationMigrationAutoRAG = {
 	
 	// NOTE: This migration should NOT be deployed until it's committed to repository
 	// Following repository-first deployment discipline mandated by user
-	deploymentNote: "This foundation version must be committed to repository before deployment via memory_update_foundation"
+	deploymentNote: "This foundation version must be committed to repository before deployment via memory_admin tool"
 };
 
 export default foundationMigrationAutoRAG;

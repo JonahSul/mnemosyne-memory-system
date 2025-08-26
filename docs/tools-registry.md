@@ -78,7 +78,7 @@ try {
 
 ### Advanced Features
 - **Dynamic Optimization**: `memory_tune_search_thresholds`
-- **Foundation Management**: `memory_view_foundation`, `memory_update_foundation`
+- **Foundation Management**: `memory_admin`
 
 ## 🎛️ Dynamic Threshold Tuning System
 
