@@ -27,7 +27,22 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 	private kvStore: any;
 
 	constructor(vectorStore?: CloudflareVectorStore, kvStore?: any) {
-		this.vectorStore = vectorStore || new CloudflareVectorStore({ env: {} as any });
+		// ADR-001 COMPLIANCE: Use dependency injection instead of fallback instantiation
+		if (vectorStore) {
+			this.vectorStore = vectorStore;
+		} else {
+			// ADR-001 COMPLIANT: Get properly initialized vector store instance
+			// This will fail-closed if bindings unavailable in production
+			const getVectorStoreInstance = (globalThis as any).getVectorStoreInstance;
+			if (typeof getVectorStoreInstance === 'function') {
+				this.vectorStore = getVectorStoreInstance();
+			} else {
+				throw new Error(
+					'FATAL: BehavioralPatternsManager requires CloudflareVectorStore instance. ' +
+					'Provide vectorStore parameter or ensure getVectorStoreInstance is available.'
+				);
+			}
+		}
 		this.kvStore = kvStore;
 	}
 

@@ -21,6 +21,11 @@ import { MnemosyneMemorySystem } from "../memory-tool.js";
 import { MultiTierMemorySystem } from "../multi-tier-memory.js";
 import { CloudflareVectorStore } from "../cloudflare-vector-store.js";
 
+// Enhanced interfaces for Foundation v1.7.1+
+function getMemorySystem(): MnemosyneMemorySystem {
+	return getMnemosyneMemoryInstance();
+}
+
 // Singleton instances following Foundation v1.5.0 architecture integrity rules
 let memoryInstance: MnemosyneMemorySystem | null = null;
 let multiTierInstance: MultiTierMemorySystem | null = null;
@@ -70,13 +75,32 @@ function getMultiTierMemoryInstance(): MultiTierMemorySystem {
 
 function getVectorStoreInstance(): CloudflareVectorStore {
 	if (!vectorStoreInstance) {
-		// CRITICAL FIX: Use real Worker environment bindings instead of empty object
+		// ADR-001 COMPLIANCE: Enforce persistent-first architecture with fail-closed behavior
 		if (workerEnv && workerEnv.VECTORIZE_INDEX && workerEnv.AI) {
 			vectorStoreInstance = new CloudflareVectorStore({ env: workerEnv });
 			console.log('✅ Vector store initialized with persistent Vectorize bindings');
 		} else {
-			vectorStoreInstance = new CloudflareVectorStore({ env: {} as any });
-			console.warn('⚠️ Vector store falling back to volatile storage - missing VECTORIZE_INDEX or AI bindings');
+			// ADR-001: Check for explicit dev/test environment flags before allowing fallback
+			const isTestEnvironment = (
+				(globalThis as any).NODE_ENV === 'test' || 
+				(globalThis as any).NODE_ENV === 'development' ||
+				(globalThis as any).__VECTORIZE_TEST_SHIM === '1' ||
+				(globalThis as any).__DEV__ === true
+			);
+			
+			if (isTestEnvironment) {
+				// ADR-001 COMPLIANT: Dev-only mock behind explicit flags for unit tests
+				vectorStoreInstance = new CloudflareVectorStore({ useTestShim: true });
+				console.log('🧪 Vector store initialized with test shim (dev/test environment)');
+			} else {
+				// ADR-001 COMPLIANT: Fail closed with clear errors in production
+				const error = new Error(
+					'FATAL: CloudflareVectorStore requires VECTORIZE_INDEX and AI bindings in production. ' +
+					'Ensure wrangler.jsonc includes proper bindings or set globalThis.NODE_ENV=test for development.'
+				);
+				console.error('❌ Vector store initialization failed:', error.message);
+				throw error;
+			}
 		}
 	}
 	return vectorStoreInstance;
@@ -108,17 +132,21 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 		},
 		handler: async (params) => {
 			try {
-				// Static Foundation v1.5.0 beacon (avoiding dynamic import issues)
+				// Static Foundation v1.8.0 beacon reflecting enhanced memory capabilities
 				const beacon = {
-					message: "🧠 Foundation v1.5.0: Evidence-Based Accountability & Atomic Memory Architecture",
+					message: "🧠 Foundation v1.8.0: Enhanced Memory Architecture with Causality Tracking & Semantic Expansion",
 					guidance: [
-						"📝 Store facts atomically with verifiable evidence",
-						"🎯 Set confidence based on evidence quality", 
-						"🔍 Cross-validate against existing memory",
-						"⚖️ Build accountability beyond human oversight",
-						"🔗 Use verification methods to establish provenance"
+						"📝 Store facts atomically with verifiable evidence (v1.5.0 core)",
+						"🎯 Set confidence based on evidence quality (v1.5.0 core)", 
+						"🔍 Cross-validate against existing memory (v1.5.0 core)",
+						"⚖️ Build accountability beyond human oversight (v1.5.0 core)",
+						"🔗 Use verification methods to establish provenance (v1.5.0 core)",
+						"🚀 Use enhanced memory tools for causality tracking (v1.8.0 NEW)",
+						"🧬 Apply semantic expansion for superior knowledge discovery (v1.8.0 NEW)",
+						"⏱️ Leverage microsecond-precision temporal metadata (v1.8.0 NEW)",
+						"🎭 Select agent personality for consistent behavior (v1.8.0 NEW)"
 					],
-					motto: "Every claim deserves evidence. Every fact deserves validation."
+					motto: "Every claim deserves evidence. Every fact deserves validation. Every relationship deserves causality analysis."
 				};
 				
 				let responseText = "🧠 MNEMOSYNE MEMORY SYSTEM INITIALIZED\n\n";
@@ -909,6 +937,113 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					content: [{
 						type: "text" as const,
 						text: `❌ Admin operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+					}]
+				};
+			}
+		}
+	},
+
+	{
+		name: "memory_store_enhanced",
+		description: "🧠🚀 **Enhanced Memory Storage with Causality Tracking** - Foundation v1.7.1+ feature for storing information with advanced temporal metadata, causality analysis, and semantic expansion. This cutting-edge tool automatically generates microsecond-precision timestamps, tracks causal relationships between events, and applies multi-axis semantic expansion for superior knowledge discovery. Features Lamport/Vector/Hybrid logical clocks for distributed causality, explicit dependency tracking, correlation/session/trace IDs for cross-system analysis, and robust causal relationship determination.",
+		schema: {
+			content: z.string().describe("📝 The information to store in enhanced memory with causality tracking"),
+			evidence: z.array(z.string()).describe("🔍 Supporting evidence for the memory entry"),
+			confidence: z.number().min(0).max(1).describe("🎯 Confidence score based on evidence quality"),
+			source: z.string().describe("📍 How this information was obtained"),
+			verification_method: z.enum(["manual", "automated", "cross_reference", "inference"]).describe("✅ Verification method used"),
+			dependencies: z.array(z.string()).optional().describe("🔗 IDs of memory entries this event depends on for causality tracking"),
+			caused_by: z.array(z.string()).optional().describe("⚡ IDs of memory entries that directly caused this event"),
+			semantic_expansion: z.object({
+				field_context: z.object({
+					domain: z.enum(["security", "architecture", "development", "operations", "innovation"]),
+					criticality_level: z.enum(["critical", "high", "medium", "low"]),
+					task_type: z.enum(["debugging", "documentation", "learning", "exploration", "implementation"])
+				}).optional(),
+				agent_personality: z.enum(["security_focused", "architecture_specialist", "development_generalist", "innovation_explorer"]).optional()
+			}).optional().describe("🌐 Semantic expansion configuration for enhanced discoverability")
+		},
+		handler: async (params) => {
+			try {
+				const memory = getMnemosyneMemoryInstance();
+				const result = await memory.storeEnhancedMemory(
+					{
+						content: params.content,
+						evidence: params.evidence,
+						confidence: params.confidence,
+						source: params.source,
+						verificationMethod: params.verification_method,
+						semanticExpansion: {
+							fieldContext: params.semantic_expansion?.field_context || {
+								domain: "development",
+								criticalityLevel: "medium",
+								taskType: "documentation",
+								assessmentConfidence: 0.8
+							},
+							expansionStrategy: {
+								selectedPersonality: params.semantic_expansion?.agent_personality || "development_generalist",
+								precisionCoefficient: 0.7,
+								qualityValidation: true,
+								generationTimestamp: new Date().toISOString()
+							},
+							semanticAxes: {
+								nearSemanticNeighbor: { tags: [], confidence: 0.9, generationMethod: "automatic", validationStatus: "pending" },
+								relatedConcept: { tags: [], confidence: 0.8, conceptualDistance: 0.3, generationMethod: "automatic", validationStatus: "pending" },
+								analogicalPattern: { tags: [], confidence: 0.6, crossDomainJustification: "Auto-generated", transferabilityScore: 0.5, generationMethod: "automatic", validationStatus: "pending" }
+							},
+							qualityMetrics: {
+								overallSemanticQuality: 0.8,
+								discoverabilityEnhancement: 0.7,
+								noiseReduction: 0.9,
+								crossAxisCoherence: 0.8,
+								usageAnalytics: { searchHits: 0, patternMatches: 0, crossDomainConnections: 0, lastAnalyzed: new Date().toISOString() }
+							}
+						}
+					},
+					params.dependencies || [],
+					params.caused_by || []
+				);
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: `✅ Enhanced memory stored successfully!\n\nEntry ID: ${result.id}\nTimestamp: ${result.temporal.serverTimestamp}μs\nStorage: Enhanced with causality tracking and semantic expansion\n\nThis entry includes advanced temporal metadata, causal relationship tracking, and multi-axis semantic expansion for superior knowledge discovery and cross-system analysis.`
+					}]
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ Enhanced memory storage failed: ${error instanceof Error ? error.message : String(error)}`
+					}]
+				};
+			}
+		}
+	},
+
+	{
+		name: "memory_analyze_causality",
+		description: "🔍⏱️ **Causal Relationship Analysis** - Foundation v1.7.1+ feature for analyzing causal relationships between memory entries using advanced distributed systems techniques. Employs Lamport logical clocks, Vector clocks, and Hybrid logical clocks to determine if events have happens-before, happens-after, concurrent, or unknown relationships. Provides confidence scores and detailed evidence for causality determination.",
+		schema: {
+			entry_id_1: z.string().describe("🎯 First memory entry ID for causality analysis"),
+			entry_id_2: z.string().describe("🎯 Second memory entry ID for causality analysis")
+		},
+		handler: async (params) => {
+			try {
+				const memory = getMnemosyneMemoryInstance();
+				const result = await memory.analyzeCausality(params.entry_id_1, params.entry_id_2);
+
+				return {
+					content: [{
+						type: "text" as const,
+						text: `🔍 Causal Relationship Analysis\n\nEntry 1: ${params.entry_id_1}\nEntry 2: ${params.entry_id_2}\n\nRelationship: ${result.relationship}\nConfidence: ${(result.confidence * 100).toFixed(1)}%\n\nEvidence:\n${result.evidence.map(e => `• ${e}`).join('\n')}\n\nThis analysis uses multiple distributed systems techniques (Lamport, Vector, and Hybrid Logical Clocks) for robust causality determination.`
+					}]
+				};
+			} catch (error) {
+				return {
+					content: [{
+						type: "text" as const,
+						text: `❌ Causality analysis failed: ${error instanceof Error ? error.message : String(error)}`
 					}]
 				};
 			}
