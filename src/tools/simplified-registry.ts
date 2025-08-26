@@ -1,24 +1,26 @@
 /**
- * 🧠 **Simplified Memory Tools Registry - Foundation v1.5.0 Implementation**
+ * 🧠 **Simplified Memory Tools Registry - Foundation v1.8.0 Implementation**
  * 
- * This sophisticated registry implements the 5 core memory tools with full Foundation v1.5.0 
- * behavioral compliance and evidence-based accountability architecture:
+ * This sophisticated registry implements the 5 core memory tools with full Foundation v1.8.0 
+ * behavioral compliance and persistent storage architecture:
  * 
  * 🚀 **memory_init** - Foundation beacon and system initialization with guidance display
- * 🧠 **memory_store** - Intelligent semantic storage with automatic tier placement and evidence tracking
+ * 🧠 **memory_store** - Intelligent semantic storage with KV-first persistence and tier placement
  * 🔍 **memory_search** - Advanced search with Foundation-optimized thresholds and confidence filtering  
  * 📊 **memory_stats** - Comprehensive system analytics and architecture integrity monitoring
  * ⚙️ **memory_admin** - Advanced administrative operations and foundation management
  * 
- * Features evidence-based accountability, empirically-tuned thresholds, write-through persistence, 
- * semantic deduplication, multi-tier memory architecture, and deployment-resilient state management.
+ * Features evidence-based accountability, empirically-tuned thresholds, KV-first write-through persistence, 
+ * semantic deduplication, persistent multi-tier memory architecture, and deployment-resilient state management.
+ * 
+ * ARCHITECTURE v1.8.0: Eliminates volatile storage, implements KV-first with Vector backup.
  */
 
 import { z } from "zod";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { MnemosyneMemorySystem } from "../memory-tool.js";
-import { MultiTierMemorySystem } from "../multi-tier-memory.js";
+import { PersistentMultiTierMemorySystem, createPersistentMultiTierMemorySystem, type TieredKnowledgeItem } from "../modules/persistent-tier-integration.js";
 import { CloudflareVectorStore } from "../cloudflare-vector-store.js";
 
 // Enhanced interfaces for Foundation v1.7.1+
@@ -26,9 +28,9 @@ function getMemorySystem(): MnemosyneMemorySystem {
 	return getMnemosyneMemoryInstance();
 }
 
-// Singleton instances following Foundation v1.5.0 architecture integrity rules
+// Singleton instances following Foundation v1.8.0 architecture integrity rules
 let memoryInstance: MnemosyneMemorySystem | null = null;
-let multiTierInstance: MultiTierMemorySystem | null = null;
+let multiTierInstance: PersistentMultiTierMemorySystem | null = null;
 let vectorStoreInstance: CloudflareVectorStore | null = null;
 let workerEnv: any = null; // Store the actual Worker environment bindings
 
@@ -61,14 +63,20 @@ function getMnemosyneMemoryInstance(): MnemosyneMemorySystem {
 	return memoryInstance;
 }
 
-function getMultiTierMemoryInstance(): MultiTierMemorySystem {
+function getMultiTierMemoryInstance(): PersistentMultiTierMemorySystem {
 	if (!multiTierInstance) {
-		// Configure MultiTierMemorySystem with persistence layer integration
-		// Note: This currently uses volatile storage - needs persistent backend integration
-		multiTierInstance = new MultiTierMemorySystem();
-		
-		// TODO: Wire to persistent storage layer (KV + Vectorize write-through)
-		// This would require extending MultiTierMemorySystem to accept persistence adapters
+		// Foundation v1.8.0: Use persistent KV-first architecture
+		if (workerEnv && workerEnv.MEMORY_KV && workerEnv.VECTORIZE_INDEX && workerEnv.AI) {
+			multiTierInstance = createPersistentMultiTierMemorySystem({
+				kv: workerEnv.MEMORY_KV,
+				vectorStore: getVectorStoreInstance(),
+				keyPrefix: 'persistent_tier:'
+			});
+			console.log('✅ Persistent multi-tier memory initialized with KV + Vector storage');
+		} else {
+			console.error('❌ CRITICAL: Persistent multi-tier memory requires MEMORY_KV, VECTORIZE_INDEX, and AI bindings');
+			throw new Error('FATAL: PersistentMultiTierMemorySystem requires KV and Vector bindings for operation');
+		}
 	}
 	return multiTierInstance;
 }
@@ -113,7 +121,7 @@ export interface SimplifiedToolImplementation {
 	handler: (params: any) => Promise<{ content: Array<{ type: "text"; text: string }> }>;
 }
 
-// Foundation v1.5.0 Empirical Thresholds
+// Foundation v1.8.0 Empirical Thresholds (preserved for compatibility)
 const EMPIRICAL_THRESHOLDS = {
 	exploration: 0.014,
 	recall: 0.036,
@@ -126,7 +134,7 @@ const EMPIRICAL_THRESHOLDS = {
 export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 	{
 		name: "memory_init",
-		description: "🚀 **Foundation Beacon & System Initialization** - Initialize the memory system and display the current Foundation guidance for optimal usage. This essential tool surfaces the Foundation v1.5.0 principles including evidence-based accountability, atomic memory patterns, and accountability protocols. Perfect for onboarding, refreshing system knowledge, and ensuring compliance with best practices. Displays the Foundation beacon with core principles, usage patterns, evidence standards, and accountability mechanisms.",
+		description: "🚀 **Foundation Beacon & System Initialization** - Initialize the memory system and display the current Foundation guidance for optimal usage. This essential tool surfaces the Foundation v1.8.0 principles including evidence-based accountability, persistent memory architecture, and KV-first storage patterns. Perfect for onboarding, refreshing system knowledge, and ensuring compliance with best practices. Displays the Foundation beacon with core principles, usage patterns, evidence standards, and persistent storage mechanisms.",
 		schema: {
 			display_full: z.boolean().optional().describe("🔍 Display complete Foundation details (default: beacon summary only)")
 		},
@@ -229,9 +237,9 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 			const memory = getMnemosyneMemoryInstance();
 			const multiTier = getMultiTierMemoryInstance();
 			
-			// Get stats before storage (Foundation v1.5.0 architecture integrity)
-			const statsBefore = multiTier.getMemoryStats();
-			const totalBefore = Object.values(statsBefore).reduce((sum: number, tier: any) => sum + (tier.count || 0), 0);
+			// Get stats before storage (Foundation v1.8.0 architecture integrity)
+			const statsBefore = await multiTier.getStats();
+			const totalBefore = statsBefore.totalKnowledge;
 			
 			try {
 				// Auto-calculate confidence from evidence if not provided
@@ -274,8 +282,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					confidence > 0.7 ? "high" : confidence > 0.4 ? "medium" : "low"
 				);
 				
-				// Store in tiered memory (WARNING: Currently volatile - not persisted to KV/Vectorize)
-				// TODO: MultiTierMemorySystem needs persistence layer integration
+				// Store in persistent tiered memory (Foundation v1.8.0: KV-first with Vector backup)
 				await multiTier.storeKnowledge({
 					content: params.content,
 					metadata: {
@@ -283,32 +290,18 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						memoryId,
 						importance,
 						foundationCompliant: true,
-						// Add warning about persistence
-						volatile_storage_warning: "This data is not persisted beyond worker restart"
+						// Foundation v1.8.0: Persistent storage confirmation
+						persistent_storage: "kv_first_vector_backup",
+						architecture_version: "v1.8.0"
 					},
 					tags: params.tags || [],
 					importance,
-					targetTier: tier
+					...(tier !== 'auto' && { targetTier: tier as 'axiom' | 'long' | 'intermediate' | 'short' })
 				});
 				
-				// WORKAROUND: Also store to vector store directly for persistence
-				const vectorStore = getVectorStoreInstance();
-				try {
-					await vectorStore.storeKnowledge({
-						content: params.content,
-						metadata: {
-							...semanticMetadata,
-							tier: tier,
-							memory_id: memoryId,
-							storage_type: "semantic_tiered"
-						},
-						tags: [...(params.tags || []), `tier_${tier}`, "semantic_storage"]
-					});
-				} catch (vectorError) {
-					console.warn("Failed to store to vector store for persistence:", vectorError);
-				}				// Verify stats after storage (Foundation v1.5.0 critical rule)
-				const statsAfter = multiTier.getMemoryStats();
-				const totalAfter = Object.values(statsAfter).reduce((sum: number, tier: any) => sum + (tier.count || 0), 0);
+				// Verify stats after storage (Foundation v1.8.0 critical rule)
+				const statsAfter = await multiTier.getStats();
+				const totalAfter = statsAfter.totalKnowledge;
 				
 				const storageSuccessful = totalAfter > totalBefore;
 				
@@ -395,10 +388,10 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 			}
 			
 			try {
-				// Search across memory systems
-				const tieredResults = await multiTier.searchSimilar(params.query, {
-					tierPreference: params.tierPreference || "all",
-					limit: (params.limit || 8) * 2, // Get more results for filtering
+				// Search across memory systems using Foundation v1.8.0 persistent search
+				const tieredResults = await multiTier.search({
+					query: params.query,
+					maxResults: (params.limit || 8) * 2, // Get more results for filtering
 					threshold
 				});
 				
@@ -480,7 +473,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					resultsText += "=== TIERED MEMORY RESULTS ===\n";
 					filteredTieredResults.forEach((result, index) => {
 						const metadata = result.metadata || {};
-						resultsText += `${index + 1}. [${result.tier.toUpperCase()}] ${(result.similarity * 100).toFixed(1)}%`;
+						resultsText += `${index + 1}. [${result.tier.toUpperCase()}] ${(result.importance * 100).toFixed(1)}%`;
 						if (typeof metadata.confidence === 'number') {
 							resultsText += ` (conf: ${metadata.confidence.toFixed(2)})`;
 						}
@@ -556,7 +549,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 			
 			try {
 				// Get comprehensive memory statistics
-				const tieredStats = multiTier.getMemoryStats(params.includeTestingData);
+				const tieredStats = await multiTier.getStats();
 				const memoryStats = await memory.getMemoryStats();
 				const unverifiedClaims = await memory.getUnverifiedClaims();
 				const behavioralStatus = memory.getBehavioralStatus();
@@ -626,17 +619,34 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 				statsText += `  Unverified Claims: ${persistentCounts.unverified_claims} pending\n`;
 				statsText += `  TOTAL PERSISTENT: ${persistentCounts.behavioral_memory + persistentCounts.vector_store} items\n\n`;
 				
-				// Volatile Tier Memory Stats (Secondary Information)
-				statsText += "⚡ VOLATILE TIER MEMORY (Resets on Deploy):\n";
-				Object.entries(tieredStats).forEach(([tier, stats]: [string, any]) => {
-					if (stats.count !== undefined) {
-						const utilization = stats.utilizationPercent ?? 0;
-						statsText += `  ${tier.toUpperCase()}: ${stats.count}/${stats.capacity || 'unlimited'} items (${utilization.toFixed(1)}%)\n`;
-						if (stats.testingItems) {
-							statsText += `    Testing items: ${stats.testingItems}\n`;
+				// Persistent Tier Memory Stats (Foundation v1.8.0)
+				statsText += "🗄️ PERSISTENT TIER MEMORY (KV-First Architecture):\n";
+				
+				// Handle new PersistentMultiTierMemorySystem.getStats() format
+				if (tieredStats.tiers && Array.isArray(tieredStats.tiers)) {
+					tieredStats.tiers.forEach((tierStat: any) => {
+						const utilization = tierStat.itemCount && tierStat.config?.maxItems 
+							? (tierStat.itemCount / tierStat.config.maxItems * 100).toFixed(1)
+							: '0.0';
+						const capacity = tierStat.config?.maxItems === Infinity ? 'unlimited' : tierStat.config?.maxItems;
+						statsText += `  ${tierStat.name.toUpperCase()}: ${tierStat.itemCount || 0}/${capacity} items (${utilization}%)\n`;
+						if (tierStat.config?.persistenceLevel) {
+							statsText += `    Persistence: ${tierStat.config.persistenceLevel}\n`;
 						}
-					}
-				});
+					});
+					statsText += `  TOTAL TIER STORAGE: ${tieredStats.totalKnowledge || 0} items\n`;
+				} else {
+					// Fallback to old format if needed
+					Object.entries(tieredStats).forEach(([tier, stats]: [string, any]) => {
+						if (stats.count !== undefined) {
+							const utilization = stats.utilizationPercent ?? 0;
+							statsText += `  ${tier.toUpperCase()}: ${stats.count}/${stats.capacity || 'unlimited'} items (${utilization.toFixed(1)}%)\n`;
+							if (stats.testingItems) {
+								statsText += `    Testing items: ${stats.testingItems}\n`;
+							}
+						}
+					});
+				}
 				
 				// Behavioral Memory Stats
 				statsText += `\nBEHAVIORAL STATUS:\n`;
@@ -646,18 +656,21 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 				if (params.healthCheck) {
 					statsText += "\n=== ARCHITECTURE HEALTH CHECK ===\n";
 					
-					// Check persistent storage health instead of volatile tiers
+					// Check persistent tier health instead of volatile tiers
 					const totalPersistent = persistentCounts.behavioral_memory + persistentCounts.vector_store;
-					const totalVolatile = Object.values(tieredStats).reduce((sum: number, tier: any) => sum + (tier.count || 0), 0);
+					const totalTierStorage = tieredStats.totalKnowledge || 0;
 					
-					if (totalPersistent === 0) {
+					if (totalPersistent === 0 && totalTierStorage === 0) {
 						statsText += "❌ CRITICAL: No items in persistent storage - data loss detected\n";
 					} else {
 						statsText += `✅ Persistent storage operational: ${totalPersistent} items\n`;
+						if (totalTierStorage > 0) {
+							statsText += `✅ Persistent tier storage operational: ${totalTierStorage} items\n`;
+						}
 					}
 					
-					if (totalVolatile === 0 && totalPersistent > 0) {
-						statsText += "⚠️  INFO: Volatile tiers empty but persistent storage intact (expected after deployment)\n";
+					if (totalTierStorage === 0 && totalPersistent > 0) {
+						statsText += "⚠️  INFO: Tier storage empty but behavioral storage intact (expected after deployment)\n";
 					}
 					
 					if (unverifiedClaims.length > memoryStats.total * 0.5) {
@@ -674,8 +687,8 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					statsText += "✅ Persistent storage integrity check complete\n";
 				}
 				
-				// Foundation v1.5.0 Threshold Information
-				statsText += "\n=== FOUNDATION v1.5.0 THRESHOLDS ===\n";
+				// Foundation v1.8.0 Threshold Information
+				statsText += "\n=== FOUNDATION v1.8.0 THRESHOLDS ===\n";
 				Object.entries(EMPIRICAL_THRESHOLDS).forEach(([type, threshold]) => {
 					statsText += `  ${type}: ${threshold}\n`;
 				});
@@ -739,7 +752,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						
 						const exportData = {
 							timestamp: new Date().toISOString(),
-							tieredMemory: multiTier.getMemoryStats(true),
+							tieredMemory: await multiTier.getStats(),
 							behavioralMemory: {
 								total: (await memory.getMemoryStats()).total,
 								unverifiedClaims: (await memory.getUnverifiedClaims()).length,
@@ -771,7 +784,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					
 					case "sanity_check":
 						// Perform comprehensive system sanity check
-						const tieredStats = multiTier.getMemoryStats();
+						const tieredStats = await multiTier.getStats();
 						const totalItems = Object.values(tieredStats).reduce((sum: number, tier: any) => sum + (tier.count || 0), 0);
 						const behavioralStatus = memory.getBehavioralStatus();
 						
@@ -875,7 +888,8 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							const memoryStats = await memory.getMemoryStats();
 							extractText += `📊 Memory Statistics:\n`;
 							extractText += `- Total entries: ${memoryStats.total}\n`;
-							extractText += `- Long-term memory: ${multiTier.getMemoryStats().long.count} entries\n\n`;
+							const stats = await multiTier.getStats();
+							extractText += `- Long-term memory: ${stats.totalKnowledge} entries\n\n`;
 							
 							// TODO: Implement differential extraction logic
 							// 1. Query long-term memory for high-confidence entries (>0.7)
