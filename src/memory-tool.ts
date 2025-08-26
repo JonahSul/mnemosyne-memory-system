@@ -15,6 +15,17 @@ import { PersistentCoreMemoryOperations, PersistentCoreMemoryManager } from './m
 import { CloudflareVectorStore } from './cloudflare-vector-store';
 import { BehavioralRuleOperations, BehavioralRuleManager } from './modules/behavioral-rules';
 
+// Enhanced Memory Interfaces and Causality Analysis
+import { 
+	EnhancedMemoryEntry, 
+	TemporalUtils, 
+	AgentPersonality,
+	TemporalMetadata,
+	CausalContext,
+	EnhancedTemporalMetadata
+} from './modules/enhanced-memory-interfaces';
+import { CausalityAnalyzer } from './modules/causality-analyzer';
+
 // Specialized Operations
 import { VectorPrewarmingOperations, VectorPrewarmingManager } from './modules/vector-prewarming';
 import { CheckpointOperations, CheckpointManager } from './modules/checkpoint-management';
@@ -90,12 +101,52 @@ export class MnemosyneMemorySystem {
 	// Foundation tracking
 	private currentFoundation?: { version: string; timestamp: string };
 
-	constructor() {
+	constructor(config: { persistentMemoryManager?: PersistentCoreMemoryOperations } = {}) {
 		// Initialize all modular components
-	// Initialize persistent vector store (worker env will supply real bindings at runtime)
-	const vectorStore = new CloudflareVectorStore({ env: {} as any });
-	this.coreMemory = new PersistentCoreMemoryManager(vectorStore);
+		// CRITICAL FIX: Use properly initialized vector store instead of creating new one with empty env
+		let vectorStore: CloudflareVectorStore;
+
+		if (config.persistentMemoryManager) {
+			this.coreMemory = config.persistentMemoryManager;
+		} else {
+			// Try to get properly initialized vector store from global scope
+			if ((globalThis as any).getVectorStoreInstance) {
+				try {
+					vectorStore = (globalThis as any).getVectorStoreInstance();
+					console.log('✅ Using properly initialized vector store from global scope');
+				} catch (error) {
+					console.error('Failed to get vector store from global scope:', error);
+					// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
+					const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
+					if (isDevOrTest) {
+						vectorStore = new CloudflareVectorStore({ env: {} as any });
+						console.warn('⚠️ DEV/TEST: Using empty env fallback - data will be volatile');
+					} else {
+						throw new Error('Production vector store initialization failed - cannot proceed with volatile storage');
+					}
+				}
+			} else {
+				// Fallback: Try to get Worker environment from global scope
+				const workerEnv = (globalThis as any).getWorkerEnvironment?.();
+				if (workerEnv && workerEnv.VECTORIZE_INDEX && workerEnv.AI) {
+					vectorStore = new CloudflareVectorStore({ env: workerEnv });
+					console.log('✅ Created vector store with Worker environment bindings');
+				} else {
+					// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
+					const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
+					if (isDevOrTest) {
+						vectorStore = new CloudflareVectorStore({ env: {} as any });
+						console.warn('⚠️ DEV/TEST: Using empty env fallback - data will be volatile');
+					} else {
+						throw new Error('Production vector store initialization failed - cannot proceed with volatile storage');
+					}
+				}
+			}
+			
+			this.coreMemory = new PersistentCoreMemoryManager(vectorStore, (globalThis as any).MEMORY_KV);
+		}
 		this.behavioralRules = new BehavioralRuleManager();
+
 
 		// Initialize specialized modules
 		const vectorPrewarming = new VectorPrewarmingManager();
@@ -157,8 +208,7 @@ export class MnemosyneMemorySystem {
 			fallbackHandler: this.handleFallback.bind(this)
 		});
 
-		// Initialize foundational behavioral rules
-		this.initializeFoundation();
+		// Foundation will be applied by agent.ts - no hardcoded initialization
 	}
 
 	private handleFallback(methodName: string, args: any[]): any {
@@ -248,16 +298,105 @@ export class MnemosyneMemorySystem {
 		await this.coreMemory.storeMemory(entry, testing);
 	}
 
+	/**
+	 * Enhanced memory storage with causality tracking and temporal metadata
+	 * Foundation v1.7.1+ feature for advanced memory systems
+	 */
+	async storeEnhancedMemory(
+		entry: Omit<EnhancedMemoryEntry, "id" | "temporal" | "timestamp" | "systemMetadata">,
+		dependencies: string[] = [],
+		causedBy: string[] = [],
+		testing?: boolean
+	): Promise<EnhancedMemoryEntry> {
+		// Generate enhanced temporal metadata with causality
+		const temporal = TemporalUtils.createTemporalMetadata();
+		const causalContext = CausalityAnalyzer.generateCausalContext(dependencies, causedBy);
+		
+		const enhancedTemporal: EnhancedTemporalMetadata = {
+			...temporal,
+			causalContext,
+			correlationId: crypto.randomUUID(),
+			sessionId: (globalThis as any).sessionId || crypto.randomUUID(),
+			traceId: (globalThis as any).traceId || crypto.randomUUID()
+		};
+
+		const enhancedEntry: EnhancedMemoryEntry = {
+			...entry,
+			id: crypto.randomUUID(),
+			temporal: enhancedTemporal,
+			timestamp: TemporalUtils.microsToISOString(enhancedTemporal.serverTimestamp),
+			systemMetadata: {
+				tier: "intermediate", // Default tier, can be adjusted by importance
+				importance: entry.confidence || 0.5,
+				accessCount: 0,
+				lastAccessed: enhancedTemporal.serverTimestamp,
+				relationshipCount: dependencies.length + causedBy.length,
+				storageBackend: "both", // Store in both KV and vector for full persistence
+				createdAt: enhancedTemporal.serverTimestamp,
+				lastModified: enhancedTemporal.serverTimestamp,
+				accessHistory: []
+			}
+		};
+
+		// Store in both enhanced format and legacy format for compatibility
+		const legacyEntry: MemoryEntry = {
+			id: enhancedEntry.id,
+			timestamp: enhancedEntry.timestamp,
+			type: "pattern", // Default type for enhanced entries
+			content: enhancedEntry.content,
+			status: "verified",
+			evidence: enhancedEntry.evidence.join("; "),
+			context: {
+				enhanced: true,
+				temporal: enhancedTemporal,
+				...(testing && { testing: true })
+			}
+		};
+
+		await this.coreMemory.storeMemory(legacyEntry, testing);
+		return enhancedEntry;
+	}
+
+	/**
+	 * Analyze causal relationships between memory entries
+	 * Foundation v1.7.1+ feature for advanced memory analysis
+	 */
+	async analyzeCausality(entryId1: string, entryId2: string): Promise<{
+		relationship: any; // CausalRelationship type
+		confidence: number;
+		evidence: string[];
+	}> {
+		// Retrieve enhanced temporal metadata from entries
+		const entry1Data = await this.coreMemory.searchMemory(entryId1, true);
+		const entry2Data = await this.coreMemory.searchMemory(entryId2, true);
+		
+		if (!entry1Data.length || !entry2Data.length) {
+			throw new Error(`Memory entries not found: ${entryId1}, ${entryId2}`);
+		}
+
+		const entry1Enhanced = entry1Data[0]?.context?.temporal as EnhancedTemporalMetadata;
+		const entry2Enhanced = entry2Data[0]?.context?.temporal as EnhancedTemporalMetadata;
+
+		if (!entry1Enhanced || !entry2Enhanced) {
+			throw new Error("Entries do not contain enhanced temporal metadata for causality analysis");
+		}
+
+		// Perform causality analysis
+		const relationship = CausalityAnalyzer.analyzeCausalRelationship(entry1Enhanced, entry2Enhanced);
+		
+		return {
+			relationship: relationship.type,
+			confidence: relationship.confidence,
+			evidence: relationship.evidence
+		};
+	}
+
 	async searchMemory(query: string, includeTestingData: boolean = false): Promise<MemoryEntry[]> {
 		return await this.coreMemory.searchMemory(query, includeTestingData) as any;
 	}
 
-	async getMemoryStats(): Promise<{ total: number; recentEntries: number }> {
-		const stats = await this.coreMemory.getMemoryStats();
-		return {
-			total: stats.totalMemories || 0,
-			recentEntries: stats.recentEntries || 0
-		};
+	async getMemoryStats(): Promise<any> {
+		return await this.coreMemory.getMemoryStats();
 	}
 
 	async exportMemory(includeTestingData: boolean = false): Promise<MemoryEntry[]> {
@@ -330,6 +469,13 @@ export class MnemosyneMemorySystem {
 				timestamp: new Date().toISOString()
 			};
 		}
+	}
+
+	setFoundationMetadata(metadata: { version: string; timestamp: string }): void {
+		this.currentFoundation = {
+			version: metadata.version,
+			timestamp: metadata.timestamp
+		};
 	}
 
 	// Public API Methods for Tests
@@ -598,11 +744,7 @@ export class MnemosyneMemorySystem {
 
 		foundationRules.forEach(rule => this.behavioralRules.addBehavioralRule(rule));
 		
-		// Set initial foundation metadata
-		this.currentFoundation = {
-			version: '1.0.0',
-			timestamp: new Date().toISOString()
-		};
+		// Foundation metadata will be set by Foundation migration during initialization
 	}
 
 	// =============================================================================
