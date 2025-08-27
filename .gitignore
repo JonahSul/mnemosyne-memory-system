@@ -20,3 +20,7 @@ staging.log
 
 # Wrangler build artifacts
 .wrangler/tmp
+
+# Docusaurus build artifacts
+build/
+.docusaurus/
