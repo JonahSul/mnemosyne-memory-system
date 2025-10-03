@@ -3,17 +3,7 @@
  * 
  * Mnemosyne Memory System MCP Agent
  * 
- * Implements MC			// CRITICAL FIX: Initialize tools with real Worker environment bindings FIRST
-			const { initializeWithEnv } = await import('./tools/simplified-registry.js');
-			initializeWithEnv(this.env);
-			console.log('✅ Tools initialized with Worker environment bindings');
-			
-			// CRITICAL FIX: Create memory system AFTER environment bindings are initialized
-			this.memory = new MnemosyneMemorySystem();
-			console.log('✅ Memory system created with proper environment bindings');
-			
-			// Check for existing foundation
-			const existingFoundation = this.memory.getFoundationInfo();server using the standard MCP SDK for proper transport handling.
+ * Implements MCP server using the standard MCP SDK for proper transport handling.
  * Provides cognitive enhancement and behavioral regulation through persistent memory.
  */
 
