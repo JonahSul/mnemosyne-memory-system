@@ -61,14 +61,11 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 			if ((globalThis as any).getVectorStoreInstance) {
 				try {
 					this.vectorStore = (globalThis as any).getVectorStoreInstance();
-					console.log('✅ VectorPrewarmingManager using properly initialized vector store from global scope');
 				} catch (error) {
-					console.error('VectorPrewarmingManager failed to get vector store from global scope:', error);
 					// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
 					const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
 					if (isDevOrTest) {
 						this.vectorStore = new CloudflareVectorStore({ env: {} as any });
-						console.warn('⚠️ VectorPrewarmingManager DEV/TEST: Using empty env fallback - data will be volatile');
 					} else {
 						throw new Error('VectorPrewarmingManager production vector store initialization failed - cannot proceed with volatile storage');
 					}
@@ -78,7 +75,6 @@ export class VectorPrewarmingManager implements VectorPrewarmingOperations {
 				const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
 				if (isDevOrTest) {
 					this.vectorStore = new CloudflareVectorStore({ env: {} as any });
-					console.warn('⚠️ VectorPrewarmingManager DEV/TEST: Using empty env fallback - data will be volatile');
 				} else {
 					throw new Error('VectorPrewarmingManager production vector store initialization failed - cannot proceed with volatile storage');
 				}

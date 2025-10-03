@@ -48,15 +48,12 @@ export function initializeWithEnv(env: any) {
 
 function getMnemosyneMemoryInstance(): MnemosyneMemorySystem {
 	if (!memoryInstance) {
-		// CRITICAL FIX: Wire KV storage if available
 		if (workerEnv && workerEnv.MEMORY_KV) {
-			console.log('✅ Memory system initialized with persistent KV storage');
 			// TODO: Pass KV binding to MnemosyneMemorySystem constructor when it supports it
 			memoryInstance = new MnemosyneMemorySystem();
 			// For now, store KV reference globally for PersistentCoreMemoryManager
 			(globalThis as any).MEMORY_KV = workerEnv.MEMORY_KV;
 		} else {
-			console.warn('⚠️ Memory system falling back to volatile storage - missing MEMORY_KV binding');
 			memoryInstance = new MnemosyneMemorySystem();
 		}
 	}
@@ -72,9 +69,7 @@ function getMultiTierMemoryInstance(): PersistentMultiTierMemorySystem {
 				vectorStore: getVectorStoreInstance(),
 				keyPrefix: 'persistent_tier:'
 			});
-			console.log('✅ Persistent multi-tier memory initialized with KV + Vector storage');
 		} else {
-			console.error('❌ CRITICAL: Persistent multi-tier memory requires MEMORY_KV, VECTORIZE_INDEX, and AI bindings');
 			throw new Error('FATAL: PersistentMultiTierMemorySystem requires KV and Vector bindings for operation');
 		}
 	}
@@ -86,7 +81,6 @@ function getVectorStoreInstance(): CloudflareVectorStore {
 		// ADR-001 COMPLIANCE: Enforce persistent-first architecture with fail-closed behavior
 		if (workerEnv && workerEnv.VECTORIZE_INDEX && workerEnv.AI) {
 			vectorStoreInstance = new CloudflareVectorStore({ env: workerEnv });
-			console.log('✅ Vector store initialized with persistent Vectorize bindings');
 		} else {
 			// ADR-001: Check for explicit dev/test environment flags before allowing fallback
 			const isTestEnvironment = (
@@ -99,15 +93,12 @@ function getVectorStoreInstance(): CloudflareVectorStore {
 			if (isTestEnvironment) {
 				// ADR-001 COMPLIANT: Dev-only mock behind explicit flags for unit tests
 				vectorStoreInstance = new CloudflareVectorStore({ useTestShim: true });
-				console.log('🧪 Vector store initialized with test shim (dev/test environment)');
 			} else {
 				// ADR-001 COMPLIANT: Fail closed with clear errors in production
-				const error = new Error(
+				throw new Error(
 					'FATAL: CloudflareVectorStore requires VECTORIZE_INDEX and AI bindings in production. ' +
 					'Ensure wrangler.jsonc includes proper bindings or set globalThis.NODE_ENV=test for development.'
 				);
-				console.error('❌ Vector store initialization failed:', error.message);
-				throw error;
 			}
 		}
 	}
@@ -562,17 +553,9 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					unverified_claims: unverifiedClaims.length
 				};
 				
-				// DEBUG: Check vector store configuration status
+				// Check vector store configuration status
 				const vectorStats = vectorStore.getStats();
 				const isConfigured = vectorStore.isConfigured();
-				
-				console.log('DEBUG Vector Store Status:', {
-					configured: isConfigured,
-					localItems: vectorStats.localItems,
-					hasVectorizeIndex: !!(workerEnv && workerEnv.VECTORIZE_INDEX),
-					hasAI: !!(workerEnv && workerEnv.AI),
-					useFallbackLocal: (vectorStore as any).useFallbackLocal
-				});
 				
 				// CRITICAL FIX: Use proper Vectorize query limits (max topK=50)
 				try {
@@ -601,12 +584,11 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						}
 					}
 				} catch (vectorError) {
-					console.warn("Could not get vector store count:", vectorError);
 					// Fallback to local stats if available
 					try {
 						persistentCounts.vector_store = vectorStats?.localItems || 0;
 					} catch (statsError) {
-						console.warn("Could not get vector stats:", statsError);
+						// Could not get stats, use 0
 					}
 				}
 				
@@ -874,11 +856,6 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						// Secured knowledge extraction to R2 for AutoRAG integration
 						try {
 							// TODO: Implement role-based authorization check
-							// Verify requester has cluster delegate privileges
-							// const isAuthorized = await validateClusterDelegateRole(requestorId);
-							// if (!isAuthorized) {
-							//   return { content: [{ type: "text", text: "❌ Access denied: Requires cluster delegate authorization" }] };
-							// }
 							
 							let extractText = "=== R2 KNOWLEDGE EXTRACTION ===\n\n";
 							extractText += "🔒 Security: Role-based authorization (TODO: Identity registry integration)\n";

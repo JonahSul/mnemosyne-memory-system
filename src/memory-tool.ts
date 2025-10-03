@@ -113,14 +113,11 @@ export class MnemosyneMemorySystem {
 			if ((globalThis as any).getVectorStoreInstance) {
 				try {
 					vectorStore = (globalThis as any).getVectorStoreInstance();
-					console.log('✅ Using properly initialized vector store from global scope');
 				} catch (error) {
-					console.error('Failed to get vector store from global scope:', error);
 					// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
 					const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
 					if (isDevOrTest) {
 						vectorStore = new CloudflareVectorStore({ env: {} as any });
-						console.warn('⚠️ DEV/TEST: Using empty env fallback - data will be volatile');
 					} else {
 						throw new Error('Production vector store initialization failed - cannot proceed with volatile storage');
 					}
@@ -130,13 +127,11 @@ export class MnemosyneMemorySystem {
 				const workerEnv = (globalThis as any).getWorkerEnvironment?.();
 				if (workerEnv && workerEnv.VECTORIZE_INDEX && workerEnv.AI) {
 					vectorStore = new CloudflareVectorStore({ env: workerEnv });
-					console.log('✅ Created vector store with Worker environment bindings');
 				} else {
 					// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
 					const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
 					if (isDevOrTest) {
 						vectorStore = new CloudflareVectorStore({ env: {} as any });
-						console.warn('⚠️ DEV/TEST: Using empty env fallback - data will be volatile');
 					} else {
 						throw new Error('Production vector store initialization failed - cannot proceed with volatile storage');
 					}

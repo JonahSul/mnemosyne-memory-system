@@ -3,17 +3,7 @@
  * 
  * Mnemosyne Memory System MCP Agent
  * 
- * Implements MC			// CRITICAL FIX: Initialize tools with real Worker environment bindings FIRST
-			const { initializeWithEnv } = await import('./tools/simplified-registry.js');
-			initializeWithEnv(this.env);
-			console.log('✅ Tools initialized with Worker environment bindings');
-			
-			// CRITICAL FIX: Create memory system AFTER environment bindings are initialized
-			this.memory = new MnemosyneMemorySystem();
-			console.log('✅ Memory system created with proper environment bindings');
-			
-			// Check for existing foundation
-			const existingFoundation = this.memory.getFoundationInfo();server using the standard MCP SDK for proper transport handling.
+ * Implements MCP server using the standard MCP SDK for proper transport handling.
  * Provides cognitive enhancement and behavioral regulation through persistent memory.
  */
 
@@ -43,12 +33,6 @@ export class MnemosyneMemoryMCP {
 	private initialized = false;
 
 	constructor(private state: DurableObjectState, private env: any) {
-		console.log('DEBUG: MnemosyneMemoryMCP constructor starting...');
-		console.log('DEBUG: env.VECTORIZE_INDEX available:', !!env.VECTORIZE_INDEX);
-		console.log('DEBUG: env.AI available:', !!env.AI);
-		
-		// CRITICAL FIX: Defer memory system creation until after environment bindings are initialized
-		// this.memory = new MnemosyneMemorySystem(); // Moved to initialization method
 		this.server = new Server({
 			name: "mnemosyne-memory-system",
 			version: "1.0.0",
@@ -61,27 +45,19 @@ export class MnemosyneMemoryMCP {
 		// Initialize KV Memory Layer as foundation
 		if (env.MEMORY_KV) {
 			try {
-				console.log('DEBUG: Initializing KV Memory Layer...');
 				this.kvMemory = getKVMemoryLayer({ MEMORY_KV: env.MEMORY_KV });
-				console.log('DEBUG: KV Memory Layer initialized successfully');
 			} catch (error) {
-				console.error('DEBUG: Error initializing KV Memory Layer:', error);
+				console.error('Error initializing KV Memory Layer:', error);
 			}
-		} else {
-			console.warn('KV Memory Layer not initialized - missing MEMORY_KV binding');
 		}
 		
 		// Initialize CloudflareVectorStore with Worker environment bindings
 		if (env.VECTORIZE_INDEX && env.AI) {
 			try {
-				console.log('DEBUG: Creating CloudflareVectorStore instance...');
 				const vectorStore = new CloudflareVectorStore({ env });
-				console.log('DEBUG: CloudflareVectorStore instance created successfully');
 			} catch (error) {
-				console.error('DEBUG: Error creating CloudflareVectorStore:', error);
+				console.error('Error creating CloudflareVectorStore:', error);
 			}
-		} else {
-			console.warn('CloudflareVectorStore not initialized - missing VECTORIZE_INDEX or AI bindings');
 		}
 	}
 
@@ -111,14 +87,12 @@ export class MnemosyneMemoryMCP {
 		if (this.initialized) return;
 		
 		try {
-			// CRITICAL FIX: Initialize environment bindings FIRST
+			// Initialize environment bindings FIRST
 			const { initializeWithEnv } = await import('./tools/simplified-registry.js');
 			initializeWithEnv(this.env);
-			console.log('✅ Tools initialized with Worker environment bindings');
 			
-			// CRITICAL FIX: Create memory system AFTER environment bindings are initialized
+			// Create memory system AFTER environment bindings are initialized
 			this.memory = new MnemosyneMemorySystem();
-			console.log('✅ Memory system created with proper environment bindings');
 			
 			// =====================================================================================
 			// FOUNDATION VERSION MANAGEMENT: v1.8.0 System-Wide Enhanced Memory Implementation
@@ -139,22 +113,12 @@ export class MnemosyneMemoryMCP {
 			// =====================================================================================
 			
 			// Apply Foundation v1.8.0 System-Wide Enhanced Memory Implementation
-			console.log('Applying Foundation v1.8.0 - Enhanced Memory Architecture with Causality Tracking');
-			
 			// Apply the complete v1.8.0 foundation (includes all previous capabilities)
 			// Foundation v1.8.0 maintains full backward compatibility
 			this.memory.setFoundationMetadata({
 				version: FOUNDATION_V18_IMPLEMENTATION.version,
 				timestamp: new Date().toISOString()
 			});
-			
-			// Log Foundation v1.8.0 implementation details
-			console.log('✅ Foundation v1.8.0 enhanced memory architecture initialized');
-			console.log(`📋 Implementation scope: ${FOUNDATION_V18_IMPLEMENTATION.implementationScope}`);
-			console.log(`🚀 Features: ${FOUNDATION_V18_IMPLEMENTATION.completedFeatures.length} enhanced capabilities`);
-			console.log(`⬆️ Agent changes: ${FOUNDATION_V18_IMPLEMENTATION.agentPerspectiveChanges.length} new/enhanced features`);
-			console.log(`👤 User changes: ${FOUNDATION_V18_IMPLEMENTATION.userPerspectiveChanges.length} new/enhanced capabilities`);
-			console.log(`🔄 Backward compatibility: ${FOUNDATION_V18_IMPLEMENTATION.backwardCompatibility}`);
 			
 			// Set up global memory instance getter for tools
 			(globalThis as any).getMemoryInstance = () => this.memory;
@@ -167,34 +131,7 @@ export class MnemosyneMemoryMCP {
 			// Environment bindings already initialized above
 			// (Removed duplicate initializeWithEnv call)
 			
-			// Install persistence wrappers (disabled - module not found)
-			// try {
-			// 	const { installPersistenceWrappers } = await import('./modules/persistence-installer.js');
-			// 	await installPersistenceWrappers(this);
-			// } catch (e) {
-			// 	console.warn('Failed to install persistence wrappers:', e);
-			// }
-
-			// Initialize CloudflareVectorStore with Worker environment bindings
-			console.log('DEBUG: Checking CloudflareVectorStore initialization...');
-			console.log('DEBUG: env.VECTORIZE_INDEX available:', !!this.env.VECTORIZE_INDEX);
-			console.log('DEBUG: env.AI available:', !!this.env.AI);
-			
-			if (this.env.VECTORIZE_INDEX && this.env.AI) {
-				try {
-					console.log('DEBUG: Creating CloudflareVectorStore instance...');
-					const vectorStore = new CloudflareVectorStore({ env: this.env });
-					console.log('DEBUG: CloudflareVectorStore instance created successfully');
-					console.log('DEBUG: CloudflareVectorStore configured:', vectorStore.isConfigured());
-				} catch (error) {
-					console.error('DEBUG: Error creating CloudflareVectorStore:', error);
-				}
-			} else {
-				console.warn('DEBUG: CloudflareVectorStore not initialized - missing VECTORIZE_INDEX or AI bindings');
-			}
-			
 			this.initialized = true;
-			console.log('Mnemosyne Memory System initialized successfully with Foundation v1.8.0');
 		} catch (error) {
 			console.error('Failed to initialize Mnemosyne Memory System:', error);
 			throw error;

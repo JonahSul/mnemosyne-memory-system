@@ -40,7 +40,6 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 				// Check for test/dev environment before failing
 				const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
 				if (isDevOrTest) {
-					console.warn('⚠️ BehavioralPatternsManager DEV/TEST: Using empty env fallback - data will be volatile');
 					// Create minimal test shim for behavioral patterns
 					this.vectorStore = {
 						upsert: async () => ({ upsertedCount: 0 }),
@@ -79,8 +78,6 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 				});
 			} catch (e) {
 				// Best-effort persistence; keep in-memory as fallback
-				// eslint-disable-next-line no-console
-				console.warn('Failed to persist pattern immediately:', e);
 			}
 			this.learnedPatterns.set(pattern.id, pattern);
 		}
@@ -280,7 +277,6 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 	private async applyBehavioralAdjustment(adjustment: {action: string; reason: string}): Promise<void> {
 		// Apply the behavioral adjustment
 		// In a real implementation, this would modify system behavior
-		console.log(`Applying adjustment: ${adjustment.action} - ${adjustment.reason}`);
 	}
 
 	private extractTrendKey(interaction: Record<string, unknown>): string {

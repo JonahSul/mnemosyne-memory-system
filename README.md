@@ -61,24 +61,10 @@ Add to your MCP client configuration:
 
 ### Core Memory Operations
 
-- `memory_log_claim` - Track claims and assertions for later verification
-- `memory_verify_claim` - Verify previously logged claims with evidence  
-- `memory_record_violation` - Log behavioral rule violations for learning
-- `memory_check_behavioral_status` - Monitor behavioral performance and compliance
-- `memory_export_state` - Export complete memory system state for analysis
-
-### Semantic Knowledge Management
-
-- `memory_store_knowledge` - Store information with semantic embeddings for RAG retrieval
-- `memory_search_knowledge` - Perform semantic similarity search across knowledge base
-- `memory_store_tiered` - Store knowledge in multi-tier system with automatic placement
-- `memory_search_tiered` - Search across memory tiers with tier-aware ranking
-- `memory_stats_tiered` - Get memory utilization statistics across all tiers
-- `memory_tune_search_thresholds` - **🎯 NEW:** Dynamically optimize search thresholds
-
-### Foundation Management  
-
-- `memory_admin` - **⭐ ADVANCED:** Administrative operations and foundation management
+- `memory_store` - Store knowledge with semantic embeddings, confidence scoring, and evidence tracking
+- `memory_search` - Semantic similarity search across memory tiers with confidence filtering
+- `memory_stats` - Get comprehensive memory system statistics and health metrics
+- `memory_admin` - Administrative operations including foundation management and state export
 
 ## 🔄 Runtime Foundation Management
 
@@ -98,23 +84,9 @@ await agent.callTool('memory_admin', {
 });
 ```
 
-### Foundation Management via HTTP API
-
-Direct HTTP access for foundation management:
-
-```bash
-# Get current foundation status
-curl https://your-worker.workers.dev/foundation
-
-# Deploy new foundation
-curl -X POST https://your-worker.workers.dev/foundation \
-  -H "Content-Type: application/json" \
-  -d '{"migration": {...}, "options": {"mergeRules": true}}'
-```
-
 ### Creating Custom Foundations
 
-Create domain-specific foundations by extending the base migration structure found in `migrations/foundation-v1.5.0-fixed.ts`. The current system uses **Foundation v1.5.0** as the single source of truth for all behavioral rules and patterns.
+Create domain-specific foundations by extending the base migration structure found in `migrations/`. The current system uses **Foundation v1.8.0** which includes enhanced memory architecture with causality tracking and microsecond-precision temporal metadata.
 
 ## 📋 Foundation Rules System
 
@@ -126,7 +98,7 @@ Mnemosyne includes foundational behavioral rules that promote reliable AI behavi
 4. **Systematic Debugging** (High) - Break complex problems into verifiable steps
 5. **Progressive Disclosure** (Medium) - Present information in digestible layers
 
-**Start with `memory_view_foundation` to understand the complete behavioral framework.**
+**Use `memory_admin` with operation `view_foundation` to understand the complete behavioral framework.**
 
 ## 🤝 Contributing
 

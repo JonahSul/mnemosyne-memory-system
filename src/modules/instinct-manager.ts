@@ -117,9 +117,6 @@ export class InstinctManager {
 		const contextHooks = this.hooks.get(hook.context) || [];
 		contextHooks.push({...hook, triggered: false});
 		this.hooks.set(hook.context, contextHooks);
-		
-		// Phase 1: Log registration for validation
-		console.log(`[InstinctManager] Registered hook: ${hook.context} -> ${hook.action}`);
 	}
 	
 	/**
@@ -127,7 +124,6 @@ export class InstinctManager {
 	 */
 	public async checkInstincts(context: string, tags: string[]): Promise<InstinctHook[]> {
 		if (!this.enabled) {
-			console.log(`[InstinctManager] Instinct check bypassed (disabled): ${context}`);
 			return [];
 		}
 		
@@ -164,16 +160,8 @@ export class InstinctManager {
 				
 				triggeredHooks.push(hook);
 				
-				// Priority override hooks surface first and log prominently
-				if (hook.priority_override) {
-					console.log(`🚨 [InstinctManager] PRIORITY OVERRIDE: ${hook.context} -> ${hook.action}`);
-				} else {
-					console.log(`[InstinctManager] Instinct triggered: ${hook.context} -> ${hook.action}`);
-				}
-				
 				// If blocking behavior, stop processing and require acknowledgment
 				if (hook.blocking_behavior) {
-					console.log(`⛔ [InstinctManager] ACTION BLOCKED - Acknowledgment required for: ${hook.action}`);
 					break;
 				}
 			}
@@ -238,15 +226,13 @@ export class InstinctManager {
 	 * Acknowledge instinct requirements to proceed with action
 	 */
 	public acknowledgeInstincts(instinctIds: string[]): boolean {
-		console.log(`[InstinctManager] Acknowledged instincts: ${instinctIds.join(", ")}`);
-		return true; // In Phase 2, this would validate actual acknowledgment
+		return true;
 	}
 	/**
 	 * Enable/disable instinct system (safety toggle)
 	 */
 	public setEnabled(enabled: boolean): void {
 		this.enabled = enabled;
-		console.log(`[InstinctManager] System ${enabled ? 'enabled' : 'disabled'}`);
 	}
 	
 	/**

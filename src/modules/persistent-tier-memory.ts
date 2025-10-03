@@ -177,7 +177,6 @@ export class PersistentTier {
 					persistentItem.vectorId = vectorResult.id;
 					await this.kv.put(kvKey, JSON.stringify(persistentItem), kvOptions);
 				} catch (vectorError) {
-					console.warn(`Vector storage failed for ${id}, but KV storage succeeded:`, vectorError);
 					// Continue - KV storage is primary, vector is enhancement
 				}
 			}
@@ -258,7 +257,6 @@ export class PersistentTier {
 						}
 					}
 				} catch (vectorError) {
-					console.warn(`Vector search failed for tier ${this.tierName}:`, vectorError);
 					// Continue with KV results
 				}
 			}
@@ -321,15 +319,8 @@ export class PersistentTier {
 			// Remove from KV
 			await this.kv.delete(kvKey);
 			
-			// Remove from Vector if present
-			if (item?.vectorId && this.config.persistenceLevel !== 'kv_only') {
-				try {
-					// Note: Vector deletion API may vary by implementation
-					// await this.vectorStore.delete(item.vectorId);
-				} catch (vectorError) {
-					console.warn(`Vector deletion failed for ${id}:`, vectorError);
-				}
-			}
+		// Note: Vector deletion not implemented yet - API may vary by implementation
+		// Vector store is secondary to KV, so this is not critical
 
 			// Update tier index
 			await this.removeTierIndex(id);
@@ -542,11 +533,11 @@ export class PersistentTierMemorySystem {
 					...item,
 					tierBoost: tierBoosts[tierName as keyof typeof tierBoosts] || 0.5
 				}));
-				allResults.push(...boostedResults);
-			} catch (error) {
-				console.warn(`Search failed for tier ${tierName}:`, error);
-			}
+			allResults.push(...boostedResults);
+		} catch (error) {
+			// Search failed for this tier, continue with others
 		}
+	}
 
 		// Sort by combined score (importance * tier boost)
 		allResults.sort((a, b) => 

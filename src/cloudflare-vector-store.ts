@@ -122,7 +122,6 @@ export class CloudflareVectorStore {
 		) as any;
 
 		if (!response.data || !response.data[0]) {
-			console.warn('Cloudflare AI returned no embeddings; falling back to mock embeddings');
 			return this.generateMockEmbeddings(text);
 		}
 		return response.data[0];
@@ -207,13 +206,7 @@ export class CloudflareVectorStore {
 			try {
 				await (this.env.VECTORIZE_INDEX as any).upsert([vectorizeRecord]);
 			} catch (error) {
-				console.warn('Vectorize storage upsert failed; falling back to local cache:', error);
 				// Fall through to local cache result below
-			}
-		} else {
-			// No Vectorize binding available; mark as fallback-only usage
-			if (!this.useFallbackLocal) {
-				console.warn('Vectorize binding missing in non-dev environment; local storage will be used as fallback (NOT persistent)');
 			}
 		}
 
@@ -249,7 +242,6 @@ export class CloudflareVectorStore {
 		try {
 			queryEmbedding = await this.generateEmbeddings(query);
 		} catch (error) {
-			console.error('Failed to generate query embedding:', error);
 			return [];
 		}
 
@@ -278,11 +270,11 @@ export class CloudflareVectorStore {
 					}
 				}
 
-				return results;
-			} catch (error) {
-				console.warn('Vectorize query failed, falling back to local search:', error);
-				return this.searchLocal(query, queryEmbedding, options);
-			}
+			return results;
+		} catch (error) {
+			// Vectorize query failed, fall back to local search
+			return this.searchLocal(query, queryEmbedding, options);
+		}
 		}
 
 		// No Vectorize binding available: use local search fallback
@@ -327,7 +319,6 @@ export class CloudflareVectorStore {
 					similarity: match.score
 				}));
 			} catch (error) {
-				console.warn('Vectorize getById fallback failed:', error);
 				return [];
 			}
 		}

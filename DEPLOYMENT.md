@@ -36,10 +36,10 @@ npx wrangler tail
 ### Staging Deployment
 ```bash
 # Deploy to staging environment
-npx wrangler deploy --e staging
+npx wrangler deploy -e staging
 
 # View staging logs
-npx wrangler tail --e staging
+npx wrangler tail -e staging
 
 # Test staging deployment
 # (Your staging worker will be available at mnemosyne-memory-system-stage.<your-subdomain>.workers.dev)
