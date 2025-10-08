@@ -5,7 +5,7 @@
  * for never forgetting these learnings. Implements repository-first deployment discipline.
  */
 
-import { MnemosyneMemorySystem } from "../src/memory-tool.js";
+import { MnemosyneMemorySystem } from "../memory-tool.js";
 
 export const foundationMigrationAutoRAG = {
 	name: "AutoRAG Pattern Integration Foundation",

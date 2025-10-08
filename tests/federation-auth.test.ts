@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { generateKeyPair, exportJWK, SignJWT } from 'jose';
-import { AgentRole, FederationAuth, ROLE_CAPABILITIES, type FederationIdentity } from '../src/modules/federation-auth.js';
+import { AgentRole, FederationAuth, ROLE_CAPABILITIES, type FederationIdentity } from '../packages/mnemosyne/src/modules/federation-auth';
 
 describe('FederationAuth', () => {
 	let auth: FederationAuth;

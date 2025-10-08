@@ -208,7 +208,6 @@ export const systemAxiomsMigrationV1_0: FoundationMigration = {
 			"Defined terminal output accessibility as critical system requirement"
 		],
 		compatibleWith: ["1.0.0", "1.1.0", "1.2.0"],
-		replaces: undefined,
 		notes: "Hard-coded technical realities discovered through empirical testing",
 		empiricalBasis: "Vector similarity testing: 2025-08-23T06:24:00.000Z, Memory architecture discovery: 2025-08-23T06:32:00.000Z, Deployment boundary violation: 2025-08-23T06:15:00.000Z, Project type detection: 2025-08-23T06:20:00.000Z"
 	}

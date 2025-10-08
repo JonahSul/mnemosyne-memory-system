@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { MultiTierMemorySystem, DEFAULT_TIER_CONFIG } from '../src/multi-tier-memory';
+import { MultiTierMemorySystem, DEFAULT_TIER_CONFIG } from '../packages/mnemosyne/src/multi-tier-memory';
 
 describe('Memory Garbage Collection', () => {
 	let memorySystem: MultiTierMemorySystem;

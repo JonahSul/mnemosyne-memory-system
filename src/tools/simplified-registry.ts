@@ -19,9 +19,9 @@
 import { z } from "zod";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { MnemosyneMemorySystem } from "../memory-tool.js";
-import { PersistentMultiTierMemorySystem, createPersistentMultiTierMemorySystem, type TieredKnowledgeItem } from "../modules/persistent-tier-integration.js";
-import { CloudflareVectorStore } from "../cloudflare-vector-store.js";
+import { MnemosyneMemorySystem } from "@mnemosyne/memory-tool";
+import { PersistentMultiTierMemorySystem, createPersistentMultiTierMemorySystem, type TieredKnowledgeItem } from "@mnemosyne/modules/persistent-tier-integration";
+import { CloudflareVectorStore } from "@mnemosyne-cloudflare/vector-store";
 
 // Enhanced interfaces for Foundation v1.7.1+
 function getMemorySystem(): MnemosyneMemorySystem {
@@ -48,17 +48,20 @@ export function initializeWithEnv(env: any) {
 
 function getMnemosyneMemoryInstance(): MnemosyneMemorySystem {
 	if (!memoryInstance) {
-		// CRITICAL FIX: Wire KV storage if available
-		if (workerEnv && workerEnv.MEMORY_KV) {
+		const vectorStore = getVectorStoreInstance();
+		const kvStore = workerEnv?.MEMORY_KV;
+		if (kvStore) {
 			console.log('✅ Memory system initialized with persistent KV storage');
-			// TODO: Pass KV binding to MnemosyneMemorySystem constructor when it supports it
-			memoryInstance = new MnemosyneMemorySystem();
-			// For now, store KV reference globally for PersistentCoreMemoryManager
-			(globalThis as any).MEMORY_KV = workerEnv.MEMORY_KV;
+			// Maintain global reference for any legacy modules still consulting it during transition
+			(globalThis as any).MEMORY_KV = kvStore;
 		} else {
-			console.warn('⚠️ Memory system falling back to volatile storage - missing MEMORY_KV binding');
-			memoryInstance = new MnemosyneMemorySystem();
+			console.warn('⚠️ Memory system starting without MEMORY_KV binding; persistent tier features will be limited');
 		}
+
+		memoryInstance = new MnemosyneMemorySystem({
+			vectorStore,
+			kvStore
+		});
 	}
 	return memoryInstance;
 }
@@ -829,8 +832,8 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							resetText += `Current Foundation: ${currentFoundation.version || 'unknown'}\n`;
 							
 							// Import latest foundation (v1.5.0)
-							const { foundationMigrationV15 } = await import('../../migrations/foundation-v1.5.0.js');
-							const { applyFoundationMigration } = await import('../../migrations/foundation.js');
+							const { foundationMigrationV15 } = await import('@mnemosyne/migrations/foundation-v1.5.0');
+							const { applyFoundationMigration } = await import('@mnemosyne/migrations/foundation');
 							
 							resetText += `Target Foundation: ${foundationMigrationV15.version}\n\n`;
 							

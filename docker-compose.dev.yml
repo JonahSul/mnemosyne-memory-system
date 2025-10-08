@@ -76,6 +76,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
 
   # Development Server - Node.js with hot reload
   app:
@@ -94,6 +95,8 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - REDIS_URL=redis://redis:6379
       - EMBEDDING_URL=http://ollama:11434
+      - LOCAL_EMBEDDING_URL=http://embeddings:8002
+      - PORT=8000
       - DEBUG=mnemosyne:*
     depends_on:
       qdrant:
@@ -101,6 +104,8 @@ services:
       redis:
         condition: service_healthy
       ollama:
+        condition: service_healthy
+      embeddings:
         condition: service_healthy
     command: npm run dev:docker
     stdin_open: true

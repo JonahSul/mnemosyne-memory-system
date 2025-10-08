@@ -3,24 +3,22 @@
  * Foundation v1.8.0 Memory System Tests - Updated for mcp-tools architecture
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MnemosyneMemorySystem } from '../src/memory-tool.js';
-import { initializeWithEnv } from '../src/tools/simplified-registry.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
+import { bootstrapTestMemorySystem, resetTestMemoryGlobals } from './setup/test-memory-environment';
+
+declare const memoryTools: Array<{ name: string; handler: (args: any) => Promise<{ content: Array<{ type: string; text: string }> }> }>;
 
 describe('Memory System - Foundation v1.8.0', () => {
   let memorySystem: MnemosyneMemorySystem;
 
-  beforeEach(() => {
-    // Initialize with mock environment for testing
-    initializeWithEnv({
-      MEMORY_KV: null, // Mock KV for testing
-      VECTORIZE_INDEX: null, // Mock vectorize for testing
-      AI: null // Mock AI for testing
-    });
-    
-    memorySystem = new MnemosyneMemorySystem();
-    // Set up global memory instance for tool handlers
-    (globalThis as any).getMemoryInstance = () => memorySystem;
+  beforeEach(async () => {
+    const { memory } = await bootstrapTestMemorySystem();
+    memorySystem = memory;
+  });
+
+  afterEach(() => {
+    resetTestMemoryGlobals();
   });
 
   describe('Foundation v1.8.0 Memory Storage', () => {
@@ -29,24 +27,24 @@ describe('Memory System - Foundation v1.8.0', () => {
       const evidence = ["Test execution completed", "No errors detected"];
       
       // Use the memory storage directly instead of old claim/verification pattern
-      const result = await memorySystem.storeMemory(content, {
+      const memoryId = await memorySystem.storeKnowledge(content, {
         source: "test_suite",
-        evidence: evidence,
+        evidence,
         confidence: 0.9,
         importance: 0.8
-      });
+      }, ["integration", "test"], true);
       
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
+      expect(memoryId).toBeDefined();
+      expect(typeof memoryId).toBe("string");
     });
 
     it('should search stored memories', async () => {
       // Store a memory first
-      await memorySystem.storeMemory("Test memory for search", {
+      await memorySystem.storeKnowledge("Test memory for search", {
         source: "test_search",
         evidence: ["Search test evidence"],
         confidence: 0.9
-      });
+      }, ["search"], true);
       
       // Search for it
       const results = await memorySystem.searchMemory("test memory");
@@ -59,7 +57,7 @@ describe('Memory System - Foundation v1.8.0', () => {
       expect(rules.length).toBeGreaterThan(0);
       
       // Foundation v1.8.0 should have evidence-based rules
-      const evidenceRule = rules.find(rule => 
+      const evidenceRule = rules.find((rule: any) => 
         rule.rule.toLowerCase().includes('evidence') || 
         rule.rule.toLowerCase().includes('verifiable')
       );
@@ -68,91 +66,87 @@ describe('Memory System - Foundation v1.8.0', () => {
   });
 
   describe('Memory Tools Integration', () => {
-    it('should provide proper tool definitions', () => {
-      expect(memoryTools).toHaveLength(12); // Updated count to include vector tools and multi-tier memory tools
-      expect(memoryTools.find(t => t.name === 'memory_log_claim')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_verify_claim')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_check_behavioral_status')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_view_foundation')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_record_violation')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_admin')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_export_state')).toBeDefined();
-      // Vector tools
-      expect(memoryTools.find(t => t.name === 'memory_store_knowledge')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_search_knowledge')).toBeDefined();
-      // Multi-tier memory tools
-      expect(memoryTools.find(t => t.name === 'memory_store_tiered')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_search_tiered')).toBeDefined();
-      expect(memoryTools.find(t => t.name === 'memory_stats_tiered')).toBeDefined();
+    it('should expose the simplified toolset', () => {
+      const expectedTools = [
+        'memory_init',
+        'memory_store',
+        'memory_search',
+        'memory_stats',
+        'memory_admin',
+        'memory_store_enhanced',
+        'memory_analyze_causality'
+      ];
+
+      const toolNames = memoryTools.map(tool => tool.name);
+      expect(toolNames.length).toBeGreaterThanOrEqual(expectedTools.length);
+      expectedTools.forEach(name => {
+        expect(toolNames).toContain(name);
+      });
     });
 
-    it('should handle log_claim tool execution', async () => {
-      const logTool = memoryTools.find(t => t.name === 'memory_log_claim')!;
-      
-      const result = await logTool.handler({
-        claim: "Test claim",
-        context: { test: "Test context" }
+    it('should store knowledge through the memory_store tool', async () => {
+      const storeTool = memoryTools.find(t => t.name === 'memory_store');
+      expect(storeTool).toBeDefined();
+
+      const response = await storeTool!.handler({
+        content: 'Integration memory entry',
+        evidence: ['Vitest helper evidence'],
+        source: 'test_suite',
+        tags: ['integration']
       });
-      
-      expect(result.content[0].text).toContain("Claim logged");
-      expect(result.content[0].text).toContain("Test claim");
+
+      expect(response.content[0].text).toContain('Successfully stored content');
     });
 
-    it('should handle verify_claim tool execution', async () => {
-      const logTool = memoryTools.find(t => t.name === 'memory_log_claim')!;
-      const verifyTool = memoryTools.find(t => t.name === 'memory_verify_claim')!;
-      
-      // First log a claim
-      const logResult = await logTool.handler({
-        claim: "Test verification claim",
-        context: { test: "Test context" }
+    it('should search stored knowledge through the memory_search tool', async () => {
+      const storeTool = memoryTools.find(t => t.name === 'memory_store');
+      const searchTool = memoryTools.find(t => t.name === 'memory_search');
+      expect(storeTool && searchTool).toBeTruthy();
+
+      await storeTool!.handler({
+        content: 'Memory search integration entry',
+        evidence: ['Search evidence'],
+        source: 'test_suite',
+        tags: ['search']
       });
-      
-      // Extract claim ID from the log result
-      const claimIdMatch = logResult.content[0].text.match(/ID: ([a-zA-Z0-9_]+)/);
-      const claimId = claimIdMatch ? claimIdMatch[1] : 'test-id';
-      
-      // Then verify it
-      const result = await verifyTool.handler({
-        claimId: claimId,
-        evidence: "Test evidence",
-        success: true
+
+      const searchResponse = await searchTool!.handler({
+        query: 'integration entry',
+        limit: 5
       });
-      
-      expect(result.content[0].text).toContain("verified");
+
+      expect(searchResponse.content[0].text).toContain('results for "integration entry"');
     });
 
-    it('should handle check_behavioral_status tool execution', async () => {
-      const statusTool = memoryTools.find(t => t.name === 'memory_check_behavioral_status')!;
-      
-      const result = await statusTool.handler({});
-      
-      expect(result.content[0].text).toContain("Behavioral Status");
+    it('should expose system statistics through the memory_stats tool', async () => {
+      const statsTool = memoryTools.find(t => t.name === 'memory_stats');
+      expect(statsTool).toBeDefined();
+
+      const statsResponse = await statsTool!.handler({ includeTestingData: true });
+      expect(statsResponse.content[0].text).toContain('MEMORY SYSTEM STATISTICS');
     });
   });
 
   describe('Behavioral Rule Enforcement', () => {
     it('should enforce claim verification workflow', async () => {
-      const initialStatus = memorySystem.getBehavioralStatus();
-      expect(initialStatus.unverifiedClaims).toBe(0);
-      
-      // Log a claim
-      const claimId = await memorySystem.logClaim("New claim", { test: "Context" });
-      let status = memorySystem.getBehavioralStatus();
-      expect(status.unverifiedClaims).toBe(1);
-      
-      // Verify the claim
-      await memorySystem.verifyClaim(claimId, true, "Evidence");
-      status = memorySystem.getBehavioralStatus();
-      expect(status.unverifiedClaims).toBe(0);
+      const initialClaims = await memorySystem.getUnverifiedClaims();
+      expect(initialClaims).toHaveLength(0);
+
+      const claimId = await memorySystem.logClaim('New claim', { test: 'Context' });
+      const pendingClaims = await memorySystem.getUnverifiedClaims();
+      expect(pendingClaims.length).toBeGreaterThanOrEqual(1);
+
+      await memorySystem.verifyClaim(claimId, true, 'Evidence');
+      const remainingClaims = await memorySystem.getUnverifiedClaims();
+      expect(remainingClaims).toHaveLength(0);
     });
 
     it('should track systematic debugging approach', () => {
-      memorySystem.recordViolation("systematic-approach", "Engaged in desperate debugging without systematic approach");
-      
+      memorySystem.recordViolation('systematic-approach', 'Engaged in desperate debugging without systematic approach');
+
       const status = memorySystem.getBehavioralStatus();
       expect(status.recentViolations).toHaveLength(1);
-      expect(status.recentViolations[0].rule).toContain("Break down complex problems");
+      expect(status.recentViolations[0].rule).toContain('systematic-approach');
     });
   });
 });

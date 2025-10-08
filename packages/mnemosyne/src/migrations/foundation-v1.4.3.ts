@@ -5,7 +5,7 @@
  * pre-warming conventions discovered during behavioral integration testing.
  */
 
-import { MnemosyneMemorySystem } from "../src/memory-tool.js";
+import { MnemosyneMemorySystem } from "../memory-tool.js";
 
 export const foundationMigrationMemoryOptimization = {
 	name: "Memory Architecture & Pre-Warming Optimization Foundation",

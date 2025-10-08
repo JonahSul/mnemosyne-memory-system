@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { InstinctManager } from '../src/modules/instinct-manager';
+import { InstinctManager } from '../packages/mnemosyne/src/modules/instinct-manager';
 
 describe('InstinctManager - Foundation v1.6.0 Instinctual Behavioral Priority System', () => {
   let manager: InstinctManager;

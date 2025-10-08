@@ -250,7 +250,6 @@ export const userAxiomsMigrationV1_1: FoundationMigration = {
 			"Added project context awareness requirements",
 			"Added absolute deployment boundary enforcement"
 		],
-		compatibleWith: ["1.0.0"],
-		replaces: undefined
+		compatibleWith: ["1.0.0"]
 	}
 };

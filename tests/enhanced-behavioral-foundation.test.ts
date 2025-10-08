@@ -2,23 +2,20 @@
  * Tests for Foundation v1.8.0 behavioral patterns and enhanced memory capabilities
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MnemosyneMemorySystem } from '../src/memory-tool.js';
-import { initializeWithEnv } from '../src/tools/simplified-registry.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
+import { bootstrapTestMemorySystem, resetTestMemoryGlobals } from './setup/test-memory-environment';
 
 describe('Enhanced Behavioral Foundation v1.8.0', () => {
   let memorySystem: MnemosyneMemorySystem;
 
-  beforeEach(() => {
-    // Initialize with mock environment
-    initializeWithEnv({
-      MEMORY_KV: null,
-      VECTORIZE_INDEX: null,
-      AI: null
-    });
-    
-    memorySystem = new MnemosyneMemorySystem();
-    (globalThis as any).getMemoryInstance = () => memorySystem;
+  beforeEach(async () => {
+    const { memory } = await bootstrapTestMemorySystem();
+    memorySystem = memory;
+  });
+
+  afterEach(() => {
+    resetTestMemoryGlobals();
   });
 
   describe('Foundation v1.8.0 Behavioral Rules', () => {
@@ -27,7 +24,7 @@ describe('Enhanced Behavioral Foundation v1.8.0', () => {
       expect(rules.length).toBeGreaterThan(0);
       
       // Foundation v1.8.0 should emphasize evidence-based patterns
-      const evidenceRules = rules.filter(rule => 
+      const evidenceRules = rules.filter((rule: any) => 
         rule.rule.toLowerCase().includes('evidence') ||
         rule.rule.toLowerCase().includes('verifiable') ||
         rule.rule.toLowerCase().includes('accountability')

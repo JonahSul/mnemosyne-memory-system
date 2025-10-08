@@ -20,8 +20,13 @@
 		"isolatedModules": true,
 		"types": ["@cloudflare/workers-types"],
 		"resolveJsonModule": true,
-		"downlevelIteration": true
+		"downlevelIteration": true,
+		"baseUrl": ".",
+		"paths": {
+			"@mnemosyne/*": ["packages/mnemosyne/src/*"],
+			"@mnemosyne-cloudflare/*": ["packages/mnemosyne-cloudflare/src/*"]
+		}
 	},
-	"include": ["src/**/*"],
+	"include": ["src/**/*", "packages/mnemosyne/src/**/*", "packages/mnemosyne-cloudflare/src/**/*", "tests/**/*"],
 	"exclude": ["node_modules", "dist"]
 }

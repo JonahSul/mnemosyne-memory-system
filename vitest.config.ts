@@ -1,6 +1,13 @@
+import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@mnemosyne': path.resolve(__dirname, 'packages/mnemosyne/src'),
+      '@mnemosyne-cloudflare': path.resolve(__dirname, 'packages/mnemosyne-cloudflare/src')
+    }
+  },
   test: {
     // Enable timing measurement for performance regression testing
     reporters: ['default'],

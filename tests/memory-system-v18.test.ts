@@ -3,25 +3,21 @@
  * Foundation v1.8.0 Memory System Tests - Updated for mcp-tools architecture
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MnemosyneMemorySystem } from '../src/memory-tool.js';
-import { initializeWithEnv } from '../src/tools/simplified-registry.js';
-import type { MemoryEntry } from '../src/modules/memory-interfaces.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
+import { bootstrapTestMemorySystem, resetTestMemoryGlobals } from './setup/test-memory-environment';
+import type { MemoryEntry } from '../packages/mnemosyne/src/modules/memory-interfaces';
 
 describe('Memory System - Foundation v1.8.0', () => {
   let memorySystem: MnemosyneMemorySystem;
 
-  beforeEach(() => {
-    // Initialize with mock environment for testing
-    initializeWithEnv({
-      MEMORY_KV: null, // Mock KV for testing
-      VECTORIZE_INDEX: null, // Mock vectorize for testing
-      AI: null // Mock AI for testing
-    });
-    
-    memorySystem = new MnemosyneMemorySystem();
-    // Set up global memory instance for tool handlers
-    (globalThis as any).getMemoryInstance = () => memorySystem;
+  beforeEach(async () => {
+    const { memory } = await bootstrapTestMemorySystem();
+    memorySystem = memory;
+  });
+
+  afterEach(() => {
+    resetTestMemoryGlobals();
   });
 
   describe('Foundation v1.8.0 Memory Storage', () => {
@@ -62,7 +58,7 @@ describe('Memory System - Foundation v1.8.0', () => {
       expect(rules.length).toBeGreaterThan(0);
       
       // Foundation v1.8.0 should have evidence-based rules
-      const evidenceRule = rules.find(rule => 
+      const evidenceRule = rules.find((rule: any) => 
         rule.rule.toLowerCase().includes('evidence') || 
         rule.rule.toLowerCase().includes('verifiable')
       );

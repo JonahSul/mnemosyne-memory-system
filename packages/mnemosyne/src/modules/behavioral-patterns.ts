@@ -1,5 +1,5 @@
 import type { BehaviorPattern, InteractionPattern } from './memory-interfaces';
-import { CloudflareVectorStore } from '../cloudflare-vector-store';
+import type { KeyValueStoreAdapter, VectorStoreAdapter } from '../interfaces/storage';
 
 /**
  * Behavioral Pattern Learning Module
@@ -23,39 +23,16 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 	private interactionHistory: Array<Record<string, unknown>> = [];
 	private patternEvolution: Map<string, Array<{timestamp: string; effectiveness: number}>> = new Map();
 	private adaptationHistory: Array<{timestamp: string; adjustment: string; reason: string}> = [];
-	private vectorStore: CloudflareVectorStore;
-	private kvStore: any;
+	private vectorStore?: VectorStoreAdapter;
+	private kvStore?: KeyValueStoreAdapter;
 
-	constructor(vectorStore?: CloudflareVectorStore, kvStore?: any) {
-		// ADR-001 COMPLIANCE: Use dependency injection instead of fallback instantiation
+	constructor(vectorStore?: VectorStoreAdapter, kvStore?: KeyValueStoreAdapter) {
 		if (vectorStore) {
 			this.vectorStore = vectorStore;
-		} else {
-			// ADR-001 COMPLIANT: Get properly initialized vector store instance
-			// This will fail-closed if bindings unavailable in production
-			const getVectorStoreInstance = (globalThis as any).getVectorStoreInstance;
-			if (typeof getVectorStoreInstance === 'function') {
-				this.vectorStore = getVectorStoreInstance();
-			} else {
-				// Check for test/dev environment before failing
-				const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
-				if (isDevOrTest) {
-					console.warn('⚠️ BehavioralPatternsManager DEV/TEST: Using empty env fallback - data will be volatile');
-					// Create minimal test shim for behavioral patterns
-					this.vectorStore = {
-						upsert: async () => ({ upsertedCount: 0 }),
-						query: async () => ({ matches: [] }),
-						deleteMany: async () => ({ deletedCount: 0 })
-					} as any;
-				} else {
-					throw new Error(
-						'FATAL: BehavioralPatternsManager requires CloudflareVectorStore instance. ' +
-						'Provide vectorStore parameter or ensure getVectorStoreInstance is available.'
-					);
-				}
-			}
 		}
-		this.kvStore = kvStore;
+		if (kvStore) {
+			this.kvStore = kvStore;
+		}
 	}
 
 	async learnFromInteractionPatterns(interactions: Array<Record<string, unknown>>): Promise<BehaviorPattern[]> {
@@ -72,11 +49,13 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 				if (this.kvStore) {
 					await this.kvStore.put(`pattern:${pattern.id}`, JSON.stringify(pattern));
 				}
-				await this.vectorStore.storeKnowledge({
-					content: JSON.stringify(pattern),
-					metadata: { id: pattern.id, type: pattern.type, successRate: pattern.successRate, frequency: pattern.frequency, timestamp: new Date().toISOString() },
-					tags: [pattern.type]
-				});
+				if (this.vectorStore) {
+					await this.vectorStore.storeKnowledge({
+						content: JSON.stringify(pattern),
+						metadata: { id: pattern.id, type: pattern.type, successRate: pattern.successRate, frequency: pattern.frequency, timestamp: new Date().toISOString() },
+						tags: [pattern.type]
+					});
+				}
 			} catch (e) {
 				// Best-effort persistence; keep in-memory as fallback
 				// eslint-disable-next-line no-console

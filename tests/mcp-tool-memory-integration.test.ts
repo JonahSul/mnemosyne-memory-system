@@ -1,11 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MnemosyneMemorySystem } from '../src/memory-tool';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
+import { bootstrapTestMemorySystem, resetTestMemoryGlobals } from './setup/test-memory-environment';
 
 describe('MCP Tool Memory Integration', () => {
   let memorySystem: MnemosyneMemorySystem;
 
-  beforeEach(() => {
-    memorySystem = new MnemosyneMemorySystem();
+  beforeEach(async () => {
+    const { memory } = await bootstrapTestMemorySystem();
+    memorySystem = memory;
+  });
+
+  afterEach(() => {
+    resetTestMemoryGlobals();
   });
 
   describe('Tool Call Pre-processing', () => {
@@ -25,7 +31,7 @@ describe('MCP Tool Memory Integration', () => {
       
       expect(queryId).toBeDefined();
       expect(enrichedRecommendations.length).toBeGreaterThan(0);
-      expect(enrichedRecommendations.some(rec => rec.includes('authentication'))).toBe(true);
+  expect(enrichedRecommendations.some((rec: string) => rec.includes('authentication'))).toBe(true);
     });
 
     it('should track memory consultation compliance for tool usage', () => {
@@ -34,11 +40,9 @@ describe('MCP Tool Memory Integration', () => {
         'Used semantic_search tool without first consulting memory for related context'
       );
       
-      const status = memorySystem.getBehavioralStatus();
-      expect(status.recentViolations).toHaveLength(1);
-      expect(status.recommendations.some(rec => 
-        rec.includes('unverified') || rec.includes('violations')
-      )).toBe(true);
+  const status = memorySystem.getBehavioralStatus();
+  expect(status.recentViolations).toHaveLength(1);
+  expect(status.recentViolations[0].rule).toContain('Always consult memory systems');
     });
   });
 
@@ -77,7 +81,7 @@ describe('MCP Tool Memory Integration', () => {
       
       const recommendations = memorySystem.getRecommendedMemorySearches('React component optimization');
       
-      expect(recommendations.some(rec => rec.includes('react'))).toBe(true);
+  expect(recommendations.some((rec: string) => rec.includes('react'))).toBe(true);
       
       const logs = memorySystem.getContextLogs();
       const reactQueries = logs.filter(log => log.query.toLowerCase().includes('react'));
@@ -103,7 +107,7 @@ describe('MCP Tool Memory Integration', () => {
       );
       
       expect(proactiveRecommendations.length).toBeGreaterThan(0);
-      expect(proactiveRecommendations.some(rec => 
+      expect(proactiveRecommendations.some((rec: string) => 
         rec.includes('session') || rec.includes('management') || rec.includes('user')
       )).toBe(true);
     });

@@ -1,11 +1,11 @@
-h# Agent Orientation
+# Agent Orientation
 
 Audience: All collaborating agents (Arch, Memory, Tools, etc.)
-Status: Current for Foundation v1.2.0
+Status: Current for Foundation v1.8.0
 
 1) Quickstart
 - Verify foundation and health:
-  - memory_view_foundation → expect Version: 1.2.0
+  - memory_view_foundation → expect Version: 1.8.0
   - memory_sanity_check → expect HEALTHY
 - Retrieve orientation materials:
   - memory_search_tiered query="orientation" tierPreference="long-term" threshold=0.01 limit=50

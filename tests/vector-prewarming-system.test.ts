@@ -1,11 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MnemosyneMemorySystem } from '../src/memory-tool';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
+import { bootstrapTestMemorySystem, resetTestMemoryGlobals } from './setup/test-memory-environment';
 
 describe('Vector Pre-warming System', () => {
   let memorySystem: MnemosyneMemorySystem;
 
-  beforeEach(() => {
-    memorySystem = new MnemosyneMemorySystem();
+  beforeEach(async () => {
+    const { memory } = await bootstrapTestMemorySystem();
+    memorySystem = memory;
+  });
+
+  afterEach(() => {
+    resetTestMemoryGlobals();
   });
 
   describe('Context Vector Analysis', () => {
@@ -84,9 +90,9 @@ describe('Vector Pre-warming System', () => {
         recentQueries: ['React', 'TypeScript', 'performance']
       });
       
-      const prioritization = memorySystem.prioritizeVectorPrewarming(
-        'React component optimization'
-      );
+      const prioritization = memorySystem.prioritizeVectorPrewarming({
+        query: 'React component optimization'
+      });
       
       expect(prioritization.domainMatch).toBe('frontend-development');
       expect(prioritization.priority).toBe(0.8);

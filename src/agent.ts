@@ -1,34 +1,25 @@
 /**
  * Copyright © 2025, Jonah Sullivan
- * 
+ *
  * Mnemosyne Memory System MCP Agent
- * 
- * Implements MC			// CRITICAL FIX: Initialize tools with real Worker environment bindings FIRST
-			const { initializeWithEnv } = await import('./tools/simplified-registry.js');
-			initializeWithEnv(this.env);
-			console.log('✅ Tools initialized with Worker environment bindings');
-			
-			// CRITICAL FIX: Create memory system AFTER environment bindings are initialized
-			this.memory = new MnemosyneMemorySystem();
-			console.log('✅ Memory system created with proper environment bindings');
-			
-			// Check for existing foundation
-			const existingFoundation = this.memory.getFoundationInfo();server using the standard MCP SDK for proper transport handling.
+ *
+ * Implements MCP server using the standard MCP SDK for transport handling.
  * Provides cognitive enhancement and behavioral regulation through persistent memory.
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
-import { MnemosyneMemorySystem } from "./memory-tool.js";
-import { MemoryNotFoundError } from "./modules/core-memory.js";
-import { foundationMigrationV15, applyFoundationMigration } from "../migrations/foundation.js";
-import FOUNDATION_V18_IMPLEMENTATION from "../migrations/foundation-v1.8.0.js";
-import { registerSimplifiedMemoryTools } from "./tools/simplified-registry.js";
-import { CloudflareVectorStore } from "./cloudflare-vector-store.js";
-import { KVMemoryLayer, getKVMemoryLayer } from "./modules/kv-memory-layer.js";
-import { processFederationOperation } from "./modules/federation-rag.js";
-import { getFederationAuth, AgentRole } from "./modules/federation-auth.js";
+import { MnemosyneMemorySystem, type MnemosyneConfig } from "@mnemosyne/memory-tool";
+import type { KeyValueStoreAdapter } from "@mnemosyne/interfaces/storage";
+import { MemoryNotFoundError } from "@mnemosyne/modules/core-memory";
+import { foundationMigrationV15, applyFoundationMigration } from "@mnemosyne/migrations/foundation";
+import FOUNDATION_V18_IMPLEMENTATION from "@mnemosyne/migrations/foundation-v1.8.0";
+import { registerSimplifiedMemoryTools } from "./tools/simplified-registry";
+import { CloudflareVectorStore } from "@mnemosyne-cloudflare/vector-store";
+import { KVMemoryLayer, getKVMemoryLayer } from "@mnemosyne/modules/kv-memory-layer";
+import { processFederationOperation } from "@mnemosyne/modules/federation-rag";
+import { getFederationAuth, AgentRole } from "@mnemosyne/modules/federation-auth";
 
 /**
  * Mnemosyne Memory System MCP Agent
@@ -40,6 +31,8 @@ export class MnemosyneMemoryMCP {
 	private memory: MnemosyneMemorySystem | null = null;
 	private server: Server;
 	private kvMemory: KVMemoryLayer | null = null;
+	private vectorStore?: CloudflareVectorStore;
+	private kvBinding?: KVNamespace;
 	private initialized = false;
 
 	constructor(private state: DurableObjectState, private env: any) {
@@ -63,6 +56,7 @@ export class MnemosyneMemoryMCP {
 			try {
 				console.log('DEBUG: Initializing KV Memory Layer...');
 				this.kvMemory = getKVMemoryLayer({ MEMORY_KV: env.MEMORY_KV });
+				this.kvBinding = env.MEMORY_KV;
 				console.log('DEBUG: KV Memory Layer initialized successfully');
 			} catch (error) {
 				console.error('DEBUG: Error initializing KV Memory Layer:', error);
@@ -75,7 +69,7 @@ export class MnemosyneMemoryMCP {
 		if (env.VECTORIZE_INDEX && env.AI) {
 			try {
 				console.log('DEBUG: Creating CloudflareVectorStore instance...');
-				const vectorStore = new CloudflareVectorStore({ env });
+				this.vectorStore = new CloudflareVectorStore({ env });
 				console.log('DEBUG: CloudflareVectorStore instance created successfully');
 			} catch (error) {
 				console.error('DEBUG: Error creating CloudflareVectorStore:', error);
@@ -104,6 +98,22 @@ export class MnemosyneMemoryMCP {
 		return this.kvMemory;
 	}
 
+	private getKvAdapter(): KeyValueStoreAdapter | undefined {
+		if (!this.kvBinding) {
+			return undefined;
+		}
+		const binding = this.kvBinding;
+		return {
+			put: (key, value, options) => binding.put(key, value, options as any),
+			get: (key) => binding.get(key),
+			delete: (key) => binding.delete(key),
+			list: async (options?: Record<string, unknown>) => {
+				const result = await binding.list(options as any);
+				return result.keys.map((entry) => entry.name);
+			}
+		};
+	}
+
 	/**
 	 * Initialize all memory tools using the modular registry
 	 */
@@ -112,12 +122,24 @@ export class MnemosyneMemoryMCP {
 		
 		try {
 			// CRITICAL FIX: Initialize environment bindings FIRST
-			const { initializeWithEnv } = await import('./tools/simplified-registry.js');
+			const { initializeWithEnv } = await import('./tools/simplified-registry');
 			initializeWithEnv(this.env);
 			console.log('✅ Tools initialized with Worker environment bindings');
 			
 			// CRITICAL FIX: Create memory system AFTER environment bindings are initialized
-			this.memory = new MnemosyneMemorySystem();
+			if (!this.vectorStore) {
+				if (this.env.VECTORIZE_INDEX && this.env.AI) {
+					this.vectorStore = new CloudflareVectorStore({ env: this.env });
+				} else {
+					throw new Error('MnemosyneMemorySystem requires VECTORIZE_INDEX and AI bindings to initialize the vector store.');
+				}
+			}
+			const kvAdapter = this.getKvAdapter();
+			const memoryConfig: MnemosyneConfig = { vectorStore: this.vectorStore };
+			if (kvAdapter) {
+				memoryConfig.kvStore = kvAdapter;
+			}
+			this.memory = new MnemosyneMemorySystem(memoryConfig);
 			console.log('✅ Memory system created with proper environment bindings');
 			
 			// =====================================================================================
@@ -169,7 +191,7 @@ export class MnemosyneMemoryMCP {
 			
 			// Install persistence wrappers (disabled - module not found)
 			// try {
-			// 	const { installPersistenceWrappers } = await import('./modules/persistence-installer.js');
+			// 	const { installPersistenceWrappers } = await import('./modules/persistence-installer');
 			// 	await installPersistenceWrappers(this);
 			// } catch (e) {
 			// 	console.warn('Failed to install persistence wrappers:', e);
@@ -379,7 +401,7 @@ export class MnemosyneMemoryMCP {
 			
 			// Handle tools list
 			if (body.method === 'tools/list') {
-				const { simplifiedMemoryTools } = await import('./tools/simplified-registry.js');
+				const { simplifiedMemoryTools } = await import('./tools/simplified-registry');
 				
 				return new Response(JSON.stringify({
 					jsonrpc: "2.0",
@@ -423,7 +445,7 @@ export class MnemosyneMemoryMCP {
 				}
 				
 				// Find tool in registry
-				const { simplifiedMemoryTools } = await import('./tools/simplified-registry.js');
+				const { simplifiedMemoryTools } = await import('./tools/simplified-registry');
 				const tool = simplifiedMemoryTools.find(t => t.name === toolName);
 				
 				if (!tool) {

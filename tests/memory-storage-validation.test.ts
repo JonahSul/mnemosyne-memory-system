@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
-import { CloudflareVectorStore } from '../src/cloudflare-vector-store';
+import { CloudflareVectorStore, type CloudflareSearchResult } from '@mnemosyne-cloudflare/vector-store';
 import { PersistentCoreMemoryManager } from '../packages/mnemosyne/src/modules/persistent-core-memory';
 import { applyFoundationForTests, resetTestMemoryGlobals } from './setup/test-memory-environment';
 
@@ -93,9 +93,9 @@ describe('Memory Storage and Retrieval Validation', () => {
         expect(kvStore.getSize()).toBeGreaterThan(0);
 
         // 3. Verify Vectorize Storage
-    const vectorResults = await vectorStore.searchSimilar(content, { limit: 5, threshold: 0 });
-    expect(vectorResults.length).toBeGreaterThan(0);
-    expect(vectorResults.some(result => result.metadata?.id === memoryId)).toBe(true);
+        const vectorResults: CloudflareSearchResult[] = await vectorStore.searchSimilar(content, { limit: 5, threshold: 0 });
+        expect(vectorResults.length).toBeGreaterThan(0);
+        expect(vectorResults.some(result => result.metadata?.id === memoryId)).toBe(true);
 
         // 4. Retrieve the memory to ensure it can be read back
         const searchResults = await memorySystem.searchMemory(content);
@@ -120,7 +120,7 @@ describe('Memory Storage and Retrieval Validation', () => {
 
         // Also check the underlying mock stores directly
         expect(kvStore.getSize()).toBeGreaterThan(0);
-    const vectorSearchResults = await vectorStore.searchSimilar("Stats test item 1", { limit: 5, threshold: 0 });
-    expect(vectorSearchResults.length).toBeGreaterThan(0);
+        const vectorSearchResults: CloudflareSearchResult[] = await vectorStore.searchSimilar('Stats test item 1', { limit: 5, threshold: 0 });
+        expect(vectorSearchResults.length).toBeGreaterThan(0);
     });
 });

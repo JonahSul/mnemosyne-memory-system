@@ -1,11 +1,11 @@
-ge/**
+/**
  * Foundation Migration v1.4.0 - Terminal Handling Protocols
  *
  * Formalizes terminal handling (ephemeral lifecycle, safe naming, no interference,
  * cleanup discipline, and preference for sendCommand) as foundation rules.
  */
 
-import { MnemosyneMemorySystem } from "../src/memory-tool.js";
+import { MnemosyneMemorySystem } from "../memory-tool.js";
 
 export const foundationMigrationV14 = {
 	version: "1.4.0",

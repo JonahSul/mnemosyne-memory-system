@@ -1,11 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MnemosyneMemorySystem } from '../src/memory-tool';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
+import { bootstrapTestMemorySystem, resetTestMemoryGlobals } from './setup/test-memory-environment';
 
 describe('Memory Consultation Integration', () => {
   let memorySystem: MnemosyneMemorySystem;
 
-  beforeEach(() => {
-    memorySystem = new MnemosyneMemorySystem();
+  beforeEach(async () => {
+    const { memory } = await bootstrapTestMemorySystem();
+    memorySystem = memory;
+  });
+
+  afterEach(() => {
+    resetTestMemoryGlobals();
   });
 
   describe('Pre-Response Memory Consultation', () => {
@@ -48,9 +54,9 @@ describe('Memory Consultation Integration', () => {
         'Responded to user query without checking memory for related context or previous implementations'
       );
       
-      const status = memorySystem.getBehavioralStatus();
-      expect(status.recentViolations.length).toBeGreaterThan(0);
-      expect(status.recentViolations[0].id).toBe('consult-memory-before-response');
+  const status = memorySystem.getBehavioralStatus();
+  expect(status.recentViolations.length).toBeGreaterThan(0);
+	expect(status.recentViolations[0].rule).toContain('Always consult memory systems');
     });
   });
 
@@ -70,7 +76,7 @@ describe('Memory Consultation Integration', () => {
       );
       
       expect(recommendations.length).toBeGreaterThan(0);
-      expect(recommendations.some(rec => 
+      expect(recommendations.some((rec: string) => 
         rec.includes('deployment') || rec.includes('pipeline')
       )).toBe(true);
     });
@@ -85,7 +91,7 @@ describe('Memory Consultation Integration', () => {
         'tests are failing'
       );
       
-      expect(recommendations.some(rec => 
+      expect(recommendations.some((rec: string) => 
         rec.includes('compliance') || rec.includes('no-unverified-claims')
       )).toBe(true);
     });

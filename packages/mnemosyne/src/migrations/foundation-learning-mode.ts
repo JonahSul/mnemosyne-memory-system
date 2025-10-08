@@ -1,11 +1,11 @@
-t in/**
+/**
  * Foundation Migration - Learning Mode (v1.4.1)
  *
  * Crystallizes 'learning mode' as an immutable, top-priority behavioral determiner
  * that must be consulted and cannot be overridden by future foundation updates.
  */
 
-import { MnemosyneMemorySystem } from "../src/memory-tool.js";
+import { MnemosyneMemorySystem } from "../memory-tool.js";
 
 export const foundationMigrationLearningMode = {
 	version: "1.4.1-learning-mode",

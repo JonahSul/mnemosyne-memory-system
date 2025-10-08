@@ -12,8 +12,9 @@
 
 // Core Memory Operations
 import { PersistentCoreMemoryOperations, PersistentCoreMemoryManager } from './modules/persistent-core-memory';
-import { CloudflareVectorStore } from './cloudflare-vector-store';
 import { BehavioralRuleOperations, BehavioralRuleManager } from './modules/behavioral-rules';
+import type { KeyValueStoreAdapter, VectorStoreAdapter } from './interfaces/storage';
+import { InMemoryKeyValueStore, InMemoryVectorStoreAdapter } from './modules/in-memory-adapters';
 
 // Enhanced Memory Interfaces and Causality Analysis
 import { 
@@ -91,72 +92,70 @@ const OPTIMIZED_MEMORY_THRESHOLDS = {
 	debugging: 0.08,            // Error and issue investigation
 };
 
+export interface MnemosyneModuleOverrides {
+	vectorPrewarming?: VectorPrewarmingOperations;
+	checkpointManager?: CheckpointOperations;
+	workflowAnalysis?: WorkflowAnalysisOperations;
+	workflowIntegration?: WorkflowIntegrationOperations;
+	prewarmingStrategy?: PrewarmingOperations;
+	patternAnalysis?: PatternAnalysisOperations;
+	contextQuery?: ContextQueryOperations;
+	behavioralPatterns?: BehavioralPatternOperations;
+}
+
+export interface MnemosyneConfig {
+	/** Provide an already constructed persistent memory manager */
+	persistentMemoryManager?: PersistentCoreMemoryOperations;
+	/** Provide a vector store adapter to back the default persistent memory manager */
+	vectorStore?: VectorStoreAdapter;
+	/** Optional KV persistence adapter for the default persistent manager */
+	kvStore?: KeyValueStoreAdapter;
+	/** Override the behavioral rules manager */
+	behavioralRules?: BehavioralRuleOperations;
+	/** Override core module implementations */
+	modules?: MnemosyneModuleOverrides;
+}
+
 export class MnemosyneMemorySystem {
 	private delegator: Delegator;
 	
 	// Core modules (direct access when needed)
 	private coreMemory: PersistentCoreMemoryOperations;
 	private behavioralRules: BehavioralRuleOperations;
+	private vectorStore: VectorStoreAdapter;
+	private kvStore?: KeyValueStoreAdapter;
 	
 	// Foundation tracking
 	private currentFoundation?: { version: string; timestamp: string };
 
-	constructor(config: { persistentMemoryManager?: PersistentCoreMemoryOperations } = {}) {
-		// Initialize all modular components
-		// CRITICAL FIX: Use properly initialized vector store instead of creating new one with empty env
-		let vectorStore: CloudflareVectorStore;
-
+	constructor(config: MnemosyneConfig = {}) {
+		// Initialize all modular components via explicit dependency injection
 		if (config.persistentMemoryManager) {
+			this.vectorStore = config.vectorStore ?? new InMemoryVectorStoreAdapter();
+			this.kvStore = config.kvStore ?? new InMemoryKeyValueStore();
 			this.coreMemory = config.persistentMemoryManager;
 		} else {
-			// Try to get properly initialized vector store from global scope
-			if ((globalThis as any).getVectorStoreInstance) {
-				try {
-					vectorStore = (globalThis as any).getVectorStoreInstance();
-					console.log('✅ Using properly initialized vector store from global scope');
-				} catch (error) {
-					console.error('Failed to get vector store from global scope:', error);
-					// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
-					const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
-					if (isDevOrTest) {
-						vectorStore = new CloudflareVectorStore({ env: {} as any });
-						console.warn('⚠️ DEV/TEST: Using empty env fallback - data will be volatile');
-					} else {
-						throw new Error('Production vector store initialization failed - cannot proceed with volatile storage');
-					}
-				}
-			} else {
-				// Fallback: Try to get Worker environment from global scope
-				const workerEnv = (globalThis as any).getWorkerEnvironment?.();
-				if (workerEnv && workerEnv.VECTORIZE_INDEX && workerEnv.AI) {
-					vectorStore = new CloudflareVectorStore({ env: workerEnv });
-					console.log('✅ Created vector store with Worker environment bindings');
-				} else {
-					// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
-					const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
-					if (isDevOrTest) {
-						vectorStore = new CloudflareVectorStore({ env: {} as any });
-						console.warn('⚠️ DEV/TEST: Using empty env fallback - data will be volatile');
-					} else {
-						throw new Error('Production vector store initialization failed - cannot proceed with volatile storage');
-					}
-				}
-			}
-			
-			this.coreMemory = new PersistentCoreMemoryManager(vectorStore, (globalThis as any).MEMORY_KV);
+			this.vectorStore = config.vectorStore ?? new InMemoryVectorStoreAdapter();
+			this.kvStore = config.kvStore ?? new InMemoryKeyValueStore();
+			this.coreMemory = new PersistentCoreMemoryManager(this.vectorStore, this.kvStore);
 		}
-		this.behavioralRules = new BehavioralRuleManager();
+		this.behavioralRules = config.behavioralRules ?? new BehavioralRuleManager();
 
 
 		// Initialize specialized modules
-		const vectorPrewarming = new VectorPrewarmingManager();
-		const checkpointManager = new CheckpointManager();
-		const workflowAnalysis = new WorkflowAnalysisManager();
-		const workflowIntegration = new WorkflowIntegrationManager();
-		const prewarmingStrategy = new PrewarmingManager();
-		const patternAnalysis = new PatternAnalysisManager();
-		const contextQuery = new ContextQueryManager();
-		const behavioralPatterns = new BehavioralPatternLearner();
+		const overrides = config.modules ?? {};
+		const adapterConfig: { vectorStore?: VectorStoreAdapter; kvStore?: KeyValueStoreAdapter } = {
+			...(this.vectorStore && { vectorStore: this.vectorStore }),
+			...(this.kvStore && { kvStore: this.kvStore })
+		};
+		const vectorPrewarming = overrides.vectorPrewarming ?? new VectorPrewarmingManager(adapterConfig);
+		const checkpointManager = overrides.checkpointManager ?? new CheckpointManager();
+		const workflowAnalysis = overrides.workflowAnalysis ?? new WorkflowAnalysisManager();
+		const workflowIntegration = overrides.workflowIntegration ?? new WorkflowIntegrationManager();
+		const prewarmingStrategy = overrides.prewarmingStrategy ?? new PrewarmingManager();
+		const patternAnalysis = overrides.patternAnalysis ?? new PatternAnalysisManager();
+		const contextQuery = overrides.contextQuery ?? new ContextQueryManager(this.vectorStore, this.kvStore);
+		const behavioralPatterns = overrides.behavioralPatterns ?? new BehavioralPatternLearner(this.vectorStore, this.kvStore);
 
 		// Set up delegation targets
 		const delegationTargets: DelegationTarget[] = [
@@ -557,7 +556,7 @@ export class MnemosyneMemorySystem {
 		return this.delegator.getTarget('getTriggeredMemorySearches').getTriggeredMemorySearches(checkpointId);
 	}
 
-	trackWorkflowExecution(workflowEvents: Array<Record<string, unknown>>): void {
+	trackWorkflowExecution(workflowEvents: Array<Record<string, unknown>>): string {
 		return this.delegator.getTarget('trackWorkflowExecution').trackWorkflowExecution(workflowEvents);
 	}
 
@@ -868,9 +867,9 @@ export class MnemosyneMemorySystem {
 						if (currentRules.length < expectedRules) {
 							// Restore foundation rules
 							try {
-								const { foundationMigrationV1_2 } = await import('../migrations/foundation.js');
+								const { foundationMigrationV1_2 } = await import('./migrations/foundation');
 								if (foundationMigrationV1_2) {
-									foundationMigrationV1_2.coreRules.forEach(rule => {
+									foundationMigrationV1_2.coreRules.forEach((rule: { id: string; rule: string; description: string; priority: 'low' | 'medium' | 'high' | 'critical' }) => {
 										this.addBehavioralRule({
 											id: rule.id,
 											rule: rule.rule,
@@ -988,9 +987,9 @@ export class MnemosyneMemorySystem {
 			// 3. Restore foundation rules if needed and requested (fallback)
 			if (restoreFoundation && ruleCount < 3) {
 				try {
-					const { foundationMigrationV1_2 } = await import('../migrations/foundation.js');
+					const { foundationMigrationV1_2 } = await import('./migrations/foundation');
 					if (foundationMigrationV1_2) {
-						foundationMigrationV1_2.coreRules.forEach(rule => {
+						foundationMigrationV1_2.coreRules.forEach((rule: { id: string; rule: string; description: string; priority: 'low' | 'medium' | 'high' | 'critical' }) => {
 							this.addBehavioralRule({
 								id: rule.id,
 								rule: rule.rule,

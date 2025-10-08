@@ -8,8 +8,7 @@
  * Ensures "crystallized state amid the chaos" for consciousness continuity.
  */
 
-import type { KVNamespace } from '@cloudflare/workers-types';
-import { CloudflareVectorStore } from '../cloudflare-vector-store';
+import type { KeyValueStoreAdapter, VectorStoreAdapter } from '../interfaces/storage';
 
 export interface PersistentTierItem {
 	id: string;
@@ -46,8 +45,8 @@ export interface PersistentTierItem {
 }
 
 export interface TierStorageConfig {
-	kv: KVNamespace;
-	vectorStore: CloudflareVectorStore;
+	kv: KeyValueStoreAdapter;
+	vectorStore: VectorStoreAdapter;
 	keyPrefix: string;
 }
 
@@ -97,8 +96,8 @@ export const PERSISTENT_TIER_CONFIG: Record<string, TierLimits> = {
  * Individual persistent tier - eliminates volatile Map storage
  */
 export class PersistentTier {
-	private kv: KVNamespace;
-	private vectorStore: CloudflareVectorStore;
+	private kv: KeyValueStoreAdapter;
+	private vectorStore: VectorStoreAdapter;
 	private tierName: string;
 	private config: TierLimits;
 	private keyPrefix: string;
@@ -173,9 +172,11 @@ export class PersistentTier {
 						tags: [...item.tags, `tier_${this.tierName}`, 'persistent_storage']
 					});
 					
-					// Update KV with vector ID for cross-reference
-					persistentItem.vectorId = vectorResult.id;
-					await this.kv.put(kvKey, JSON.stringify(persistentItem), kvOptions);
+					// Update KV with vector ID for cross-reference when available
+					if (vectorResult.id) {
+						persistentItem.vectorId = vectorResult.id;
+						await this.kv.put(kvKey, JSON.stringify(persistentItem), kvOptions);
+					}
 				} catch (vectorError) {
 					console.warn(`Vector storage failed for ${id}, but KV storage succeeded:`, vectorError);
 					// Continue - KV storage is primary, vector is enhancement

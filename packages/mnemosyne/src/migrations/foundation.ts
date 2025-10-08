@@ -14,7 +14,7 @@
  * administrative operations and foundation management.
  */
 
-import { MnemosyneMemorySystem } from "../src/memory-tool.js";
+import { MnemosyneMemorySystem } from "../memory-tool.js";
 
 export interface FoundationMigration {
 	version: string;

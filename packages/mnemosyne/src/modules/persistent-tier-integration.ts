@@ -9,8 +9,7 @@
  */
 
 import { PersistentTierMemorySystem, type PersistentTierItem, type TierStorageConfig } from './persistent-tier-memory';
-import type { KVNamespace } from '@cloudflare/workers-types';
-import { CloudflareVectorStore } from '../cloudflare-vector-store';
+import type { KeyValueStoreAdapter, VectorStoreAdapter } from '../interfaces/storage';
 
 /**
  * Drop-in replacement interface matching original MultiTierMemorySystem
@@ -290,8 +289,8 @@ export class PersistentMultiTierMemorySystem {
  * Factory function for creating persistent tier system
  */
 export function createPersistentMultiTierMemorySystem(params: {
-	kv: KVNamespace;
-	vectorStore: CloudflareVectorStore;
+	kv: KeyValueStoreAdapter;
+	vectorStore: VectorStoreAdapter;
 	keyPrefix?: string;
 }): PersistentMultiTierMemorySystem {
 	const storage: TierStorageConfig = {

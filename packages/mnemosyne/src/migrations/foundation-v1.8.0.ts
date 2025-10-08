@@ -37,9 +37,9 @@
  * - Distributed causality consensus mechanisms operational
  */
 
-import type { 
+import type {
     MemoryEntry
-} from '../types.js';
+} from '../modules/memory-interfaces';
 
 // Enhanced interfaces from Foundation v1.7.1 - now fully implemented system-wide
 export interface EnhancedMemoryEntry extends MemoryEntry {

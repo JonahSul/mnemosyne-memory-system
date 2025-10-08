@@ -1,5 +1,5 @@
 import type { ContextQuery } from './memory-interfaces';
-import { CloudflareVectorStore } from '../cloudflare-vector-store';
+import type { KeyValueStoreAdapter, VectorStoreAdapter } from '../interfaces/storage';
 
 /**
  * Context & Query Management Module
@@ -25,42 +25,16 @@ export class ContextQueryManager implements ContextQueryOperations {
 	private queries: ContextQuery[] = [];
 	private knowledgeStore: Map<string, any> = new Map();
 	private tieredKnowledge: Map<string, any> = new Map();
-	private vectorStore: CloudflareVectorStore;
-	private kvStore: any;
+	private vectorStore?: VectorStoreAdapter;
+	private kvStore?: KeyValueStoreAdapter;
 
-	constructor(vectorStore?: CloudflareVectorStore, kvStore?: any) {
-		// ADR-001 COMPLIANCE: Use dependency injection or fail-closed behavior
+	constructor(vectorStore?: VectorStoreAdapter, kvStore?: KeyValueStoreAdapter) {
 		if (vectorStore) {
 			this.vectorStore = vectorStore;
-		} else {
-			// Try to get properly initialized vector store from global scope
-			if ((globalThis as any).getVectorStoreInstance) {
-				try {
-					this.vectorStore = (globalThis as any).getVectorStoreInstance();
-					console.log('✅ ContextQueryManager using properly initialized vector store from global scope');
-				} catch (error) {
-					console.error('ContextQueryManager failed to get vector store from global scope:', error);
-					// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
-					const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
-					if (isDevOrTest) {
-						this.vectorStore = new CloudflareVectorStore({ env: {} as any });
-						console.warn('⚠️ ContextQueryManager DEV/TEST: Using empty env fallback - data will be volatile');
-					} else {
-						throw new Error('ContextQueryManager production vector store initialization failed - cannot proceed with volatile storage');
-					}
-				}
-			} else {
-				// ADR-001 COMPLIANCE: Fail-closed behavior - do not create empty env fallback
-				const isDevOrTest = (globalThis as any).FORCE_DEV_MODE || (globalThis as any).NODE_ENV === 'test';
-				if (isDevOrTest) {
-					this.vectorStore = new CloudflareVectorStore({ env: {} as any });
-					console.warn('⚠️ ContextQueryManager DEV/TEST: Using empty env fallback - data will be volatile');
-				} else {
-					throw new Error('ContextQueryManager production vector store initialization failed - cannot proceed with volatile storage');
-				}
-			}
 		}
-		this.kvStore = kvStore;
+		if (kvStore) {
+			this.kvStore = kvStore;
+		}
 	}
 
 	logContextQuery(query: string, context?: Record<string, unknown>): string {
@@ -174,14 +148,18 @@ export class ContextQueryManager implements ContextQueryOperations {
 		this.queries.push(contextQuery);
 
 		// Use Vectorize for semantic search
-		const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
-		return vectorResults.map(r => ({
-			id: r.id,
-			content: r.content,
-			similarity: r.similarity,
-			metadata: r.metadata,
-			tags: r.tags
-		}));
+		if (this.vectorStore) {
+			const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
+			return vectorResults.map(r => ({
+				id: r.id,
+				content: r.content,
+				similarity: r.similarity ?? 0,
+				metadata: r.metadata,
+				tags: r.tags
+			}));
+		}
+
+		return this.performSemanticSearch(query, limit, threshold, includeTestingData);
 	}
 
 	async searchTiered(
@@ -203,22 +181,26 @@ export class ContextQueryManager implements ContextQueryOperations {
 		this.queries.push(contextQuery);
 
 		// Use Vectorize and filter by tier metadata when available
-		const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
-		const filtered = vectorResults.filter(r => {
-			const meta = r.metadata as any;
-			if (!meta) return false;
-			if (tierPreference === 'all') return true;
-			return meta.tier === tierPreference;
-		}).slice(0, limit);
+		if (this.vectorStore) {
+			const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
+			const filtered = vectorResults.filter(r => {
+				const meta = r.metadata as any;
+				if (!meta) return false;
+				if (tierPreference === 'all') return true;
+				return meta.tier === tierPreference;
+			}).slice(0, limit);
 
-		return filtered.map(r => ({
-			id: r.id,
-			content: r.content,
-			similarity: r.similarity,
-			tier: (r.metadata as any)?.tier,
-			metadata: r.metadata,
-			tags: r.tags
-		}));
+			return filtered.map(r => ({
+				id: r.id,
+				content: r.content,
+				similarity: r.similarity ?? 0,
+				tier: (r.metadata as any)?.tier,
+				metadata: r.metadata,
+				tags: r.tags
+			}));
+		}
+
+		return this.performTieredSearch(query, tierPreference, limit, threshold, includeTestingData);
 	}
 
 	async storeKnowledge(content: string, metadata?: Record<string, unknown>, tags?: string[], testing?: boolean): Promise<string> {
@@ -240,7 +222,9 @@ export class ContextQueryManager implements ContextQueryOperations {
 		if (this.kvStore) {
 			await this.kvStore.put(`knowledge:${knowledgeId}`, JSON.stringify(knowledgeEntry));
 		}
-		await this.vectorStore.storeKnowledge({ content, metadata: knowledgeEntry.metadata, tags: knowledgeEntry.tags });
+		if (this.vectorStore) {
+			await this.vectorStore.storeKnowledge({ content, metadata: knowledgeEntry.metadata, tags: knowledgeEntry.tags });
+		}
 		this.knowledgeStore.set(knowledgeId, knowledgeEntry);
 		return knowledgeId;
 	}
@@ -282,7 +266,9 @@ export class ContextQueryManager implements ContextQueryOperations {
 		if (this.kvStore) {
 			await this.kvStore.put(`tiered:${knowledgeId}`, JSON.stringify(knowledgeEntry));
 		}
-		await this.vectorStore.storeKnowledge({ content, metadata: knowledgeEntry.metadata, tags: [...(tags||[]), tier] });
+		if (this.vectorStore) {
+			await this.vectorStore.storeKnowledge({ content, metadata: { ...knowledgeEntry.metadata, tier }, tags: [...(tags||[]), tier] });
+		}
 		this.tieredKnowledge.set(knowledgeId, knowledgeEntry);
 		return knowledgeId;
 	}
@@ -292,7 +278,10 @@ export class ContextQueryManager implements ContextQueryOperations {
 		const tieredStats = this.calculateTieredStats();
 		const queryStats = this.calculateQueryStats();
 		const contextStats = this.calculateContextStats();
-		const vectorStats = this.vectorStore.getStats ? this.vectorStore.getStats() : { localItems: 0 };
+		const vectorStoreWithStats = this.vectorStore as unknown as { getStats?: () => Promise<unknown> | unknown } | undefined;
+		const vectorStats = vectorStoreWithStats?.getStats
+			? await vectorStoreWithStats.getStats()
+			: { localItems: this.knowledgeStore.size + this.tieredKnowledge.size };
 
 		return {
 			knowledge: knowledgeStats,
@@ -343,23 +332,56 @@ export class ContextQueryManager implements ContextQueryOperations {
 	// Private helper methods
 	private async performSemanticSearch(query: string, limit: number, threshold: number, includeTestingData: boolean = false): Promise<any[]> {
 		const queryEmbeddings = this.generateEmbeddings(query);
-	// Fallback: use vector store if available
-	const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
-	return vectorResults.map(r => ({ id: r.id, content: r.content, similarity: r.similarity, metadata: r.metadata, tags: r.tags }));
+		// If a vector store is available, we already delegated to it earlier; this fallback uses in-memory data
+		const entries = Array.from(this.knowledgeStore.values());
+		const ranked = entries.map(entry => ({
+			entry,
+			similarity: this.calculateSimilarity(queryEmbeddings, entry.embeddings)
+		}))
+		.filter(({ entry }) => includeTestingData || !entry.metadata?.testing)
+		.sort((a, b) => b.similarity - a.similarity)
+		.slice(0, limit)
+		.filter(r => r.similarity >= threshold);
+
+		return ranked.map(({ entry, similarity }) => ({
+			id: entry.id,
+			content: entry.content,
+			similarity,
+			metadata: entry.metadata,
+			tags: entry.tags
+		}));
 	}
 
 	private async performTieredSearch(query: string, tierPreference: string, limit: number, threshold: number, includeTestingData: boolean = false): Promise<any[]> {
 		const queryEmbeddings = this.generateEmbeddings(query);
-	const vectorResults = await this.vectorStore.searchSimilar(query, { limit: 100, threshold });
-	const mapped = vectorResults.map(r => ({ id: r.id, content: r.content, similarity: r.similarity, tier: (r.metadata as any)?.tier, metadata: r.metadata, tags: r.tags }));
-	// Apply tier filtering and ranking
-	const filtered = mapped.filter(e => tierPreference === 'all' ? true : e.tier === tierPreference);
-	return filtered.slice(0, limit);
+		const entries = Array.from(this.tieredKnowledge.values());
+		const ranked = entries.map(entry => ({
+			entry,
+			similarity: this.calculateSimilarity(queryEmbeddings, entry.embeddings)
+		}))
+		.filter(({ entry }) => includeTestingData || !entry.metadata?.testing)
+		.filter(({ entry }) => tierPreference === 'all' ? true : entry.tier === tierPreference)
+		.sort((a, b) => {
+			const tierBoostDiff = this.getTierBoost(b.entry.tier) - this.getTierBoost(a.entry.tier);
+			if (tierBoostDiff !== 0) return tierBoostDiff;
+			return b.similarity - a.similarity;
+		})
+		.slice(0, limit)
+		.filter(r => r.similarity >= threshold);
+
+		return ranked.map(({ entry, similarity }) => ({
+			id: entry.id,
+			content: entry.content,
+			similarity,
+			tier: entry.tier,
+			metadata: entry.metadata,
+			tags: entry.tags
+		}));
 	}
 
 	private generateEmbeddings(content: string): number[] {
 		// Simulate embedding generation - in practice would use real embedding model
-		const words = content.toLowerCase().split(/\s+/);
+		const words = content.toLowerCase().split(/\s+/).filter(word => word.length > 0);
 		const embeddings: number[] = [];
 		
 		for (let i = 0; i < 384; i++) { // Standard embedding dimension
