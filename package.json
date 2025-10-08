@@ -4,6 +4,11 @@
 	"description": "Mnemosyne Memory System for AI behavior regulation and cognitive enhancement - Enhanced with empirically optimized search thresholds",
 	"main": "src/index.ts",
 	"type": "module",
+	"private": true,
+	"workspaces": [
+		"packages/mnemosyne",
+		"packages/mnemosyne-cloudflare"
+	],
 	"scripts": {
 		"dev": "wrangler dev -e staging",
 		"dev:local": "docker-compose -f docker-compose.dev.yml up -d",
@@ -19,6 +24,8 @@
 		"upgrade-vectors": "node scripts/upgrade-vector-dimensions.mjs"
 	},
 	"dependencies": {
+		"@mnemosyne/cloudflare": "file:packages/mnemosyne-cloudflare",
+		"@mnemosyne/core": "file:packages/mnemosyne",
 		"@modelcontextprotocol/sdk": "^1.17.3",
 		"@qdrant/js-client-rest": "^1.9.0",
 		"cors": "^2.8.5",

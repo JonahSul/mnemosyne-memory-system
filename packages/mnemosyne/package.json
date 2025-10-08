@@ -1,0 +1,19 @@
+{
+	"name": "@mnemosyne/core",
+	"version": "1.0.0",
+	"description": "Core Mnemosyne memory system modules and utilities.",
+	"type": "module",
+	"main": "dist/library.js",
+	"module": "dist/library.js",
+	"types": "dist/library.d.ts",
+	"exports": {
+		"./*": {
+			"import": "./dist/*.js",
+			"types": "./dist/*.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json"
+	},
+	"sideEffects": false
+}

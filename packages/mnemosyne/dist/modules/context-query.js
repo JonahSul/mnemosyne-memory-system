@@ -1,0 +1,494 @@
+export class ContextQueryManager {
+    // PERSISTENCE: Use Vectorize for semantic storage + optional KV for rapid-access
+    contexts = new Map();
+    queries = [];
+    knowledgeStore = new Map();
+    tieredKnowledge = new Map();
+    vectorStore;
+    kvStore;
+    constructor(vectorStore, kvStore) {
+        if (vectorStore) {
+            this.vectorStore = vectorStore;
+        }
+        if (kvStore) {
+            this.kvStore = kvStore;
+        }
+    }
+    logContextQuery(query, context) {
+        const queryId = `mem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const contextQuery = {
+            id: queryId,
+            timestamp: new Date().toISOString(),
+            query,
+            context: context || {}
+        };
+        this.queries.push(contextQuery);
+        return queryId;
+    }
+    getContextLogs() {
+        return [...this.queries];
+    }
+    getRecommendedMemorySearches(query) {
+        // Generate memory search recommendations based on query patterns
+        const recommendations = [];
+        const queryLower = query.toLowerCase();
+        // Pattern-based recommendations
+        if (queryLower.includes('debug') || queryLower.includes('error') || queryLower.includes('fix')) {
+            recommendations.push('Search for similar debugging sessions');
+            recommendations.push('Look for error patterns in recent memory');
+        }
+        if (queryLower.includes('test') || queryLower.includes('spec')) {
+            recommendations.push('Review testing strategies from memory');
+            recommendations.push('Search for test setup patterns');
+        }
+        if (queryLower.includes('deploy') || queryLower.includes('production')) {
+            recommendations.push('Search deployment-related memories');
+            recommendations.push('Review production issue patterns');
+        }
+        if (queryLower.includes('performance') || queryLower.includes('optimize')) {
+            recommendations.push('Search performance optimization memories');
+            recommendations.push('Review profiling and analysis patterns');
+        }
+        if (queryLower.includes('authentication') || queryLower.includes('auth') || queryLower.includes('secure') || queryLower.includes('jwt') || queryLower.includes('api')) {
+            recommendations.push('Search authentication implementation memories');
+            recommendations.push('Review security pattern documentation');
+            recommendations.push('Look for JWT and API security examples');
+        }
+        if (queryLower.includes('react') || queryLower.includes('component') || queryLower.includes('frontend') || queryLower.includes('ui')) {
+            recommendations.push('Search react component patterns');
+            recommendations.push('Review frontend development memories');
+            recommendations.push('Look for react optimization examples');
+        }
+        if (queryLower.includes('compliance') || queryLower.includes('no-unverified-claims') || queryLower.includes('behavioral')) {
+            recommendations.push('Search compliance verification memories');
+            recommendations.push('Review no-unverified-claims patterns');
+            recommendations.push('Look for behavioral rule examples');
+        }
+        if ((queryLower.includes('test') && queryLower.includes('fail')) || queryLower.includes('violation') || queryLower.includes('rule')) {
+            recommendations.push('Review compliance and behavioral patterns');
+            recommendations.push('Search no-unverified-claims guidance');
+            recommendations.push('Look for testing and verification patterns');
+        }
+        if (queryLower.includes('session') || queryLower.includes('management') || queryLower.includes('user')) {
+            recommendations.push('Search session management patterns');
+            recommendations.push('Review user interaction memories');
+            recommendations.push('Look for management strategy examples');
+        }
+        // Add context-based recommendations from recent queries
+        const recentQueries = this.queries.slice(-5);
+        for (const recentQuery of recentQueries) {
+            if (this.queriesAreSimilar(query, recentQuery.query)) {
+                recommendations.push(`Follow up on recent query: "${recentQuery.query}"`);
+            }
+        }
+        return recommendations;
+    }
+    async storeContext(context) {
+        const contextId = `context_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const entry = { id: contextId, context, timestamp: new Date().toISOString() };
+        // Write-through to KV for rapid access
+        if (this.kvStore) {
+            await this.kvStore.put(`context:${contextId}`, JSON.stringify(entry));
+        }
+        // Keep a small in-memory index for quick reads (non-authoritative)
+        this.contexts.set(contextId, entry.context);
+        return contextId;
+    }
+    async searchKnowledge(query, limit = 5, threshold = 0.1, includeTestingData = false) {
+        const queryId = `query_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const contextQuery = {
+            id: queryId,
+            timestamp: new Date().toISOString(),
+            query,
+            context: { limit, threshold, includeTestingData }
+        };
+        this.queries.push(contextQuery);
+        // Use Vectorize for semantic search
+        if (this.vectorStore) {
+            const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
+            return vectorResults.map(r => ({
+                id: r.id,
+                content: r.content,
+                similarity: r.similarity ?? 0,
+                metadata: r.metadata,
+                tags: r.tags
+            }));
+        }
+        return this.performSemanticSearch(query, limit, threshold, includeTestingData);
+    }
+    async searchTiered(query, tierPreference = 'all', limit = 5, threshold = 0.1, includeTestingData = false) {
+        const queryId = `tiered_query_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const contextQuery = {
+            id: queryId,
+            timestamp: new Date().toISOString(),
+            query,
+            context: { tierPreference, limit, threshold, includeTestingData }
+        };
+        this.queries.push(contextQuery);
+        // Use Vectorize and filter by tier metadata when available
+        if (this.vectorStore) {
+            const vectorResults = await this.vectorStore.searchSimilar(query, { limit, threshold });
+            const filtered = vectorResults.filter(r => {
+                const meta = r.metadata;
+                if (!meta)
+                    return false;
+                if (tierPreference === 'all')
+                    return true;
+                return meta.tier === tierPreference;
+            }).slice(0, limit);
+            return filtered.map(r => ({
+                id: r.id,
+                content: r.content,
+                similarity: r.similarity ?? 0,
+                tier: r.metadata?.tier,
+                metadata: r.metadata,
+                tags: r.tags
+            }));
+        }
+        return this.performTieredSearch(query, tierPreference, limit, threshold, includeTestingData);
+    }
+    async storeKnowledge(content, metadata, tags, testing) {
+        const knowledgeId = `knowledge_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const knowledgeEntry = {
+            id: knowledgeId,
+            content,
+            metadata: {
+                ...(metadata || {}),
+                ...(testing && { testing: true })
+            },
+            tags: tags || [],
+            timestamp: new Date().toISOString(),
+            embeddings: this.generateEmbeddings(content)
+        };
+        // Persist to KV (rapid access) and vector store (semantic)
+        if (this.kvStore) {
+            await this.kvStore.put(`knowledge:${knowledgeId}`, JSON.stringify(knowledgeEntry));
+        }
+        if (this.vectorStore) {
+            await this.vectorStore.storeKnowledge({ content, metadata: knowledgeEntry.metadata, tags: knowledgeEntry.tags });
+        }
+        this.knowledgeStore.set(knowledgeId, knowledgeEntry);
+        return knowledgeId;
+    }
+    async storeTieredKnowledge(content, importance = 0.5, metadata, tags, targetTier, testing) {
+        const knowledgeId = `tiered_knowledge_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        // Determine tier based on importance if not explicitly specified
+        let tier = targetTier;
+        if (!tier) {
+            if (importance < 0.3)
+                tier = 'short';
+            else if (importance < 0.7)
+                tier = 'intermediate';
+            else
+                tier = 'long';
+        }
+        const knowledgeEntry = {
+            id: knowledgeId,
+            content,
+            metadata: {
+                ...(metadata || {}),
+                ...(testing && { testing: true })
+            },
+            tags: tags || [],
+            timestamp: new Date().toISOString(),
+            tier,
+            importance,
+            embeddings: this.generateEmbeddings(content),
+            accessCount: 0,
+            lastAccessed: new Date().toISOString()
+        };
+        if (this.kvStore) {
+            await this.kvStore.put(`tiered:${knowledgeId}`, JSON.stringify(knowledgeEntry));
+        }
+        if (this.vectorStore) {
+            await this.vectorStore.storeKnowledge({ content, metadata: { ...knowledgeEntry.metadata, tier }, tags: [...(tags || []), tier] });
+        }
+        this.tieredKnowledge.set(knowledgeId, knowledgeEntry);
+        return knowledgeId;
+    }
+    async getStats() {
+        const knowledgeStats = this.calculateKnowledgeStats();
+        const tieredStats = this.calculateTieredStats();
+        const queryStats = this.calculateQueryStats();
+        const contextStats = this.calculateContextStats();
+        const vectorStoreWithStats = this.vectorStore;
+        const vectorStats = vectorStoreWithStats?.getStats
+            ? await vectorStoreWithStats.getStats()
+            : { localItems: this.knowledgeStore.size + this.tieredKnowledge.size };
+        return {
+            knowledge: knowledgeStats,
+            tiered: tieredStats,
+            queries: queryStats,
+            contexts: contextStats,
+            totalEntries: this.knowledgeStore.size + this.tieredKnowledge.size,
+            vectorStore: vectorStats,
+            timestamp: new Date().toISOString()
+        };
+    }
+    async exportState(filterType = 'all', format = 'summary', includeMetadata) {
+        const knowledge = Array.from(this.knowledgeStore.values());
+        const tieredKnowledge = Array.from(this.tieredKnowledge.values());
+        const contexts = Array.from(this.contexts.entries());
+        const queries = [...this.queries];
+        let filteredData = {
+            knowledge,
+            tieredKnowledge,
+            contexts,
+            queries
+        };
+        // Apply filtering based on filterType
+        if (filterType !== 'all') {
+            filteredData = this.applyFilter(filteredData, filterType);
+        }
+        // Format the data based on format preference
+        switch (format) {
+            case 'summary':
+                return this.formatSummary(filteredData, includeMetadata);
+            case 'detailed':
+                return this.formatDetailed(filteredData, includeMetadata);
+            case 'raw':
+                return this.formatRaw(filteredData, includeMetadata);
+            default:
+                return filteredData;
+        }
+    }
+    // Private helper methods
+    async performSemanticSearch(query, limit, threshold, includeTestingData = false) {
+        const queryEmbeddings = this.generateEmbeddings(query);
+        // If a vector store is available, we already delegated to it earlier; this fallback uses in-memory data
+        const entries = Array.from(this.knowledgeStore.values());
+        const ranked = entries.map(entry => ({
+            entry,
+            similarity: this.calculateSimilarity(queryEmbeddings, entry.embeddings)
+        }))
+            .filter(({ entry }) => includeTestingData || !entry.metadata?.testing)
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, limit)
+            .filter(r => r.similarity >= threshold);
+        return ranked.map(({ entry, similarity }) => ({
+            id: entry.id,
+            content: entry.content,
+            similarity,
+            metadata: entry.metadata,
+            tags: entry.tags
+        }));
+    }
+    async performTieredSearch(query, tierPreference, limit, threshold, includeTestingData = false) {
+        const queryEmbeddings = this.generateEmbeddings(query);
+        const entries = Array.from(this.tieredKnowledge.values());
+        const ranked = entries.map(entry => ({
+            entry,
+            similarity: this.calculateSimilarity(queryEmbeddings, entry.embeddings)
+        }))
+            .filter(({ entry }) => includeTestingData || !entry.metadata?.testing)
+            .filter(({ entry }) => tierPreference === 'all' ? true : entry.tier === tierPreference)
+            .sort((a, b) => {
+            const tierBoostDiff = this.getTierBoost(b.entry.tier) - this.getTierBoost(a.entry.tier);
+            if (tierBoostDiff !== 0)
+                return tierBoostDiff;
+            return b.similarity - a.similarity;
+        })
+            .slice(0, limit)
+            .filter(r => r.similarity >= threshold);
+        return ranked.map(({ entry, similarity }) => ({
+            id: entry.id,
+            content: entry.content,
+            similarity,
+            tier: entry.tier,
+            metadata: entry.metadata,
+            tags: entry.tags
+        }));
+    }
+    generateEmbeddings(content) {
+        // Simulate embedding generation - in practice would use real embedding model
+        const words = content.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+        const embeddings = [];
+        for (let i = 0; i < 384; i++) { // Standard embedding dimension
+            let value = 0;
+            for (const word of words) {
+                value += word.charCodeAt(i % word.length) * 0.001;
+            }
+            embeddings.push(Math.sin(value) * 0.5 + 0.5); // Normalize to 0-1
+        }
+        return embeddings;
+    }
+    calculateSimilarity(embeddings1, embeddings2) {
+        // Cosine similarity calculation
+        let dotProduct = 0;
+        let norm1 = 0;
+        let norm2 = 0;
+        for (let i = 0; i < Math.min(embeddings1.length, embeddings2.length); i++) {
+            const val1 = embeddings1[i] ?? 0;
+            const val2 = embeddings2[i] ?? 0;
+            dotProduct += val1 * val2;
+            norm1 += val1 * val1;
+            norm2 += val2 * val2;
+        }
+        norm1 = Math.sqrt(norm1);
+        norm2 = Math.sqrt(norm2);
+        if (norm1 === 0 || norm2 === 0)
+            return 0;
+        return dotProduct / (norm1 * norm2);
+    }
+    getTierBoost(tier) {
+        const tierBoosts = {
+            'long': 1.3, // Long-term memory gets highest boost
+            'intermediate': 1.1, // Intermediate gets moderate boost
+            'short': 1.0 // Short-term gets no boost
+        };
+        return tierBoosts[tier] || 1.0;
+    }
+    calculateKnowledgeStats() {
+        const entries = Array.from(this.knowledgeStore.values());
+        return {
+            totalEntries: entries.length,
+            totalContent: entries.reduce((sum, e) => sum + e.content.length, 0),
+            averageContentLength: entries.length > 0 ? entries.reduce((sum, e) => sum + e.content.length, 0) / entries.length : 0,
+            uniqueTags: new Set(entries.flatMap(e => e.tags || [])).size
+        };
+    }
+    calculateTieredStats() {
+        const entries = Array.from(this.tieredKnowledge.values());
+        const tierCounts = { short: 0, intermediate: 0, long: 0 };
+        const tierSizes = { short: 0, intermediate: 0, long: 0 };
+        for (const entry of entries) {
+            tierCounts[entry.tier]++;
+            tierSizes[entry.tier] += entry.content.length;
+        }
+        return {
+            totalEntries: entries.length,
+            tierDistribution: tierCounts,
+            tierSizes,
+            averageImportance: entries.length > 0 ? entries.reduce((sum, e) => sum + e.importance, 0) / entries.length : 0,
+            totalAccesses: entries.reduce((sum, e) => sum + (e.accessCount || 0), 0)
+        };
+    }
+    calculateQueryStats() {
+        return {
+            totalQueries: this.queries.length,
+            recentQueries: this.queries.slice(-10),
+            queryFrequency: this.queries.length > 0 ? this.queries.length / ((Date.now() - Date.parse(this.queries[0]?.timestamp || new Date().toISOString())) / (1000 * 60 * 60)) : 0
+        };
+    }
+    calculateContextStats() {
+        return {
+            totalContexts: this.contexts.size,
+            averageContextSize: this.contexts.size > 0 ? Array.from(this.contexts.values()).reduce((sum, c) => sum + Object.keys(c).length, 0) / this.contexts.size : 0
+        };
+    }
+    applyFilter(data, filterType) {
+        // Filter data based on type
+        switch (filterType) {
+            case 'claims':
+                return {
+                    knowledge: data.knowledge.filter((k) => k.metadata?.type === 'claim'),
+                    tieredKnowledge: data.tieredKnowledge.filter((k) => k.metadata?.type === 'claim'),
+                    contexts: data.contexts,
+                    queries: data.queries.filter((q) => q.query.includes('claim'))
+                };
+            case 'violations':
+                return {
+                    knowledge: data.knowledge.filter((k) => k.metadata?.type === 'violation'),
+                    tieredKnowledge: data.tieredKnowledge.filter((k) => k.metadata?.type === 'violation'),
+                    contexts: data.contexts,
+                    queries: data.queries.filter((q) => q.query.includes('violation'))
+                };
+            case 'rules':
+                return {
+                    knowledge: data.knowledge.filter((k) => k.metadata?.type === 'rule'),
+                    tieredKnowledge: data.tieredKnowledge.filter((k) => k.metadata?.type === 'rule'),
+                    contexts: data.contexts,
+                    queries: data.queries.filter((q) => q.query.includes('rule'))
+                };
+            default:
+                return data;
+        }
+    }
+    formatSummary(data, includeMetadata) {
+        return {
+            summary: {
+                knowledgeEntries: data.knowledge.length,
+                tieredEntries: data.tieredKnowledge.length,
+                contexts: data.contexts.length,
+                queries: data.queries.length
+            },
+            metadata: includeMetadata ? {
+                timestamp: new Date().toISOString(),
+                format: 'summary'
+            } : undefined
+        };
+    }
+    formatDetailed(data, includeMetadata) {
+        return {
+            detailed: {
+                knowledge: data.knowledge.map((k) => ({
+                    id: k.id,
+                    contentLength: k.content.length,
+                    tags: k.tags,
+                    timestamp: k.timestamp
+                })),
+                tieredKnowledge: data.tieredKnowledge.map((k) => ({
+                    id: k.id,
+                    tier: k.tier,
+                    importance: k.importance,
+                    contentLength: k.content.length,
+                    accessCount: k.accessCount,
+                    lastAccessed: k.lastAccessed
+                })),
+                queryPatterns: this.analyzeQueryPatterns(data.queries)
+            },
+            metadata: includeMetadata ? {
+                timestamp: new Date().toISOString(),
+                format: 'detailed'
+            } : undefined
+        };
+    }
+    formatRaw(data, includeMetadata) {
+        return {
+            raw: data,
+            metadata: includeMetadata ? {
+                timestamp: new Date().toISOString(),
+                format: 'raw',
+                warning: 'This is raw data - handle with care'
+            } : undefined
+        };
+    }
+    analyzeQueryPatterns(queries) {
+        const patterns = {};
+        for (const query of queries) {
+            const words = query.query.toLowerCase().split(/\s+/);
+            for (const word of words) {
+                if (word.length > 3) {
+                    patterns[word] = (patterns[word] || 0) + 1;
+                }
+            }
+        }
+        return {
+            topTerms: Object.entries(patterns)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 10)
+                .map(([term, count]) => ({ term, count })),
+            totalUniqueTerms: Object.keys(patterns).length
+        };
+    }
+    queriesAreSimilar(query1, query2) {
+        const words1 = query1.toLowerCase().split(/\s+/);
+        const words2 = query2.toLowerCase().split(/\s+/);
+        const commonWords = words1.filter(word => words2.includes(word));
+        const similarity = commonWords.length / Math.max(words1.length, words2.length);
+        return similarity > 0.3; // 30% similarity threshold
+    }
+    // Utility methods
+    getContexts() {
+        return new Map(this.contexts);
+    }
+    getQueries() {
+        return [...this.queries];
+    }
+    getKnowledgeStore() {
+        return new Map(this.knowledgeStore);
+    }
+    getTieredKnowledge() {
+        return new Map(this.tieredKnowledge);
+    }
+}

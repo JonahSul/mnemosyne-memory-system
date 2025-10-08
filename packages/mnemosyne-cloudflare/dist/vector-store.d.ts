@@ -4,6 +4,7 @@
  * Production-ready vector storage using Cloudflare AI Workers for embeddings
  * and Vectorize for vector database operations.
  */
+import type { VectorStoreAdapter, VectorStoreRecord, VectorStoreSearchOptions, VectorStoreSearchResult } from '@mnemosyne/core/interfaces/storage';
 export interface CloudflareEnv {
     VECTORIZE_INDEX: Vectorize;
     AI: Ai;
@@ -22,19 +23,18 @@ export interface VectorizeMetadata {
     tags: string[];
     [key: string]: unknown;
 }
-export interface CloudflareKnowledgeItem {
+export interface CloudflareKnowledgeItem extends VectorStoreRecord {
     id: string;
-    content: string;
     embedding: number[];
     metadata: Record<string, unknown>;
     tags: string[];
     timestamp: string;
     vectorizeId: string;
 }
-export interface CloudflareSearchResult extends CloudflareKnowledgeItem {
-    similarity: number;
+export interface CloudflareSearchResult extends VectorStoreSearchResult {
+    vectorizeId: string;
 }
-export declare class CloudflareVectorStore {
+export declare class CloudflareVectorStore implements VectorStoreAdapter {
     private env;
     private indexName;
     private accountId;
@@ -43,15 +43,8 @@ export declare class CloudflareVectorStore {
     private useFallbackLocal;
     constructor(config?: CloudflareConfig);
     generateEmbeddings(text: string): Promise<number[]>;
-    storeKnowledge(knowledge: {
-        content: string;
-        metadata?: Record<string, unknown>;
-        tags?: string[];
-    }): Promise<CloudflareKnowledgeItem>;
-    searchSimilar(query: string, options?: {
-        limit?: number;
-        threshold?: number;
-    }): Promise<CloudflareSearchResult[]>;
+    storeKnowledge(record: VectorStoreRecord): Promise<CloudflareKnowledgeItem>;
+    searchSimilar(query: string, options?: VectorStoreSearchOptions): Promise<CloudflareSearchResult[]>;
     getById(id: string): Promise<CloudflareSearchResult[]>;
     isConfigured(): boolean;
     getIndexName(): string;

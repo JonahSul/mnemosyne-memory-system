@@ -242,9 +242,15 @@ export class FederationAuth {
 			throw new Error('Unsupported Ed25519 public key format');
 		}
 
+		private getNodeBuffer(): { from(value: string | Uint8Array, encoding?: string): any } | undefined {
+			const globalBuffer = typeof globalThis !== 'undefined' ? (globalThis as any).Buffer : undefined;
+			return typeof globalBuffer === 'function' ? globalBuffer : undefined;
+		}
+
 		private base64ToUint8Array(value: string): Uint8Array {
-			if (typeof Buffer !== 'undefined') {
-				return new Uint8Array(Buffer.from(value, 'base64'));
+			const bufferCtor = this.getNodeBuffer();
+			if (bufferCtor) {
+				return new Uint8Array(bufferCtor.from(value, 'base64'));
 			}
 			if (typeof globalThis.atob === 'function') {
 				const binary = globalThis.atob(value);
@@ -267,8 +273,9 @@ export class FederationAuth {
 		}
 
 		private uint8ArrayToBase64Url(bytes: Uint8Array): string {
-			if (typeof Buffer !== 'undefined') {
-				return Buffer.from(bytes).toString('base64url');
+			const bufferCtor = this.getNodeBuffer();
+			if (bufferCtor) {
+				return bufferCtor.from(bytes).toString('base64url');
 			}
 			if (typeof globalThis.btoa === 'function') {
 				let binary = '';

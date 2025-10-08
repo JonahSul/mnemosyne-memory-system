@@ -5,6 +5,13 @@
  * and Vectorize for vector database operations.
  */
 
+import type {
+	VectorStoreAdapter,
+	VectorStoreRecord,
+	VectorStoreSearchOptions,
+	VectorStoreSearchResult
+} from '@mnemosyne/core/interfaces/storage';
+
 export interface CloudflareEnv {
 	VECTORIZE_INDEX: Vectorize;
 	AI: Ai;
@@ -26,9 +33,8 @@ export interface VectorizeMetadata {
 	[key: string]: unknown;
 }
 
-export interface CloudflareKnowledgeItem {
+export interface CloudflareKnowledgeItem extends VectorStoreRecord {
 	id: string;
-	content: string;
 	embedding: number[];
 	metadata: Record<string, unknown>;
 	tags: string[];
@@ -36,11 +42,11 @@ export interface CloudflareKnowledgeItem {
 	vectorizeId: string;
 }
 
-export interface CloudflareSearchResult extends CloudflareKnowledgeItem {
-	similarity: number;
+export interface CloudflareSearchResult extends VectorStoreSearchResult {
+	vectorizeId: string;
 }
 
-export class CloudflareVectorStore {
+export class CloudflareVectorStore implements VectorStoreAdapter {
 	private env: CloudflareEnv;
 	private indexName: string | undefined;
 	private accountId: string | undefined;
@@ -103,19 +109,19 @@ export class CloudflareVectorStore {
 		return response.data[0];
 	}
 
-	async storeKnowledge(knowledge: { content: string; metadata?: Record<string, unknown>; tags?: string[] }): Promise<CloudflareKnowledgeItem> {
+	async storeKnowledge(record: VectorStoreRecord): Promise<CloudflareKnowledgeItem> {
 		const id = `vec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 		const timestamp = new Date().toISOString();
-		const embedding = await this.generateEmbeddings(knowledge.content);
+		const embedding = await this.generateEmbeddings(record.content);
 
 		const vectorizeRecord: VectorizeVector = {
 			id,
 			values: embedding,
 			metadata: {
-				content: knowledge.content,
+				content: record.content,
 				timestamp,
-				tags: knowledge.tags || [],
-				...knowledge.metadata
+				tags: record.tags || [],
+				...record.metadata
 			}
 		};
 
@@ -131,10 +137,10 @@ export class CloudflareVectorStore {
 
 		const result: CloudflareKnowledgeItem = {
 			id,
-			content: knowledge.content,
+			content: record.content,
 			embedding,
-			metadata: knowledge.metadata || {},
-			tags: knowledge.tags || [],
+			metadata: record.metadata || {},
+			tags: record.tags || [],
 			timestamp,
 			vectorizeId: id
 		};
@@ -146,7 +152,7 @@ export class CloudflareVectorStore {
 		return result;
 	}
 
-	async searchSimilar(query: string, options: { limit?: number; threshold?: number } = {}): Promise<CloudflareSearchResult[]> {
+	async searchSimilar(query: string, options: VectorStoreSearchOptions = {}): Promise<CloudflareSearchResult[]> {
 		const { limit = 5, threshold = 0.1 } = options;
 		let queryEmbedding: number[];
 		try {

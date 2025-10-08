@@ -10,16 +10,16 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
-import { MnemosyneMemorySystem, type MnemosyneConfig } from "@mnemosyne/memory-tool";
-import type { KeyValueStoreAdapter } from "@mnemosyne/interfaces/storage";
-import { MemoryNotFoundError } from "@mnemosyne/modules/core-memory";
-import { foundationMigrationV15, applyFoundationMigration } from "@mnemosyne/migrations/foundation";
-import FOUNDATION_V18_IMPLEMENTATION from "@mnemosyne/migrations/foundation-v1.8.0";
+import { MnemosyneMemorySystem, type MnemosyneConfig } from "@mnemosyne/core/memory-tool";
+import type { KeyValueStoreAdapter } from "@mnemosyne/core/interfaces/storage";
+import { MemoryNotFoundError } from "@mnemosyne/core/modules/core-memory";
+import { foundationMigrationV15, applyFoundationMigration } from "@mnemosyne/core/migrations/foundation";
+import FOUNDATION_V18_IMPLEMENTATION from "@mnemosyne/core/migrations/foundation-v1.8.0";
 import { registerSimplifiedMemoryTools } from "./tools/simplified-registry";
-import { CloudflareVectorStore } from "@mnemosyne-cloudflare/vector-store";
-import { KVMemoryLayer, getKVMemoryLayer } from "@mnemosyne/modules/kv-memory-layer";
-import { processFederationOperation } from "@mnemosyne/modules/federation-rag";
-import { getFederationAuth, AgentRole } from "@mnemosyne/modules/federation-auth";
+import { CloudflareVectorStore } from "@mnemosyne/cloudflare/vector-store";
+import { KVMemoryLayer, getKVMemoryLayer } from "@mnemosyne/core/modules/kv-memory-layer";
+import { processFederationOperation } from "@mnemosyne/core/modules/federation-rag";
+import { getFederationAuth, AgentRole } from "@mnemosyne/core/modules/federation-auth";
 
 /**
  * Mnemosyne Memory System MCP Agent

@@ -60,18 +60,18 @@ export class CloudflareVectorStore {
         }
         return response.data[0];
     }
-    async storeKnowledge(knowledge) {
+    async storeKnowledge(record) {
         const id = `vec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const timestamp = new Date().toISOString();
-        const embedding = await this.generateEmbeddings(knowledge.content);
+        const embedding = await this.generateEmbeddings(record.content);
         const vectorizeRecord = {
             id,
             values: embedding,
             metadata: {
-                content: knowledge.content,
+                content: record.content,
                 timestamp,
-                tags: knowledge.tags || [],
-                ...knowledge.metadata
+                tags: record.tags || [],
+                ...record.metadata
             }
         };
         if (this.env && this.env.VECTORIZE_INDEX && typeof this.env.VECTORIZE_INDEX.upsert === 'function') {
@@ -87,10 +87,10 @@ export class CloudflareVectorStore {
         }
         const result = {
             id,
-            content: knowledge.content,
+            content: record.content,
             embedding,
-            metadata: knowledge.metadata || {},
-            tags: knowledge.tags || [],
+            metadata: record.metadata || {},
+            tags: record.tags || [],
             timestamp,
             vectorizeId: id
         };

@@ -19,9 +19,9 @@
 import { z } from "zod";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { MnemosyneMemorySystem } from "@mnemosyne/memory-tool";
-import { PersistentMultiTierMemorySystem, createPersistentMultiTierMemorySystem, type TieredKnowledgeItem } from "@mnemosyne/modules/persistent-tier-integration";
-import { CloudflareVectorStore } from "@mnemosyne-cloudflare/vector-store";
+import { MnemosyneMemorySystem } from "@mnemosyne/core/memory-tool";
+import { PersistentMultiTierMemorySystem, createPersistentMultiTierMemorySystem, type TieredKnowledgeItem } from "@mnemosyne/core/modules/persistent-tier-integration";
+import { CloudflareVectorStore } from "@mnemosyne/cloudflare/vector-store";
 
 // Enhanced interfaces for Foundation v1.7.1+
 function getMemorySystem(): MnemosyneMemorySystem {
@@ -832,8 +832,8 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							resetText += `Current Foundation: ${currentFoundation.version || 'unknown'}\n`;
 							
 							// Import latest foundation (v1.5.0)
-							const { foundationMigrationV15 } = await import('@mnemosyne/migrations/foundation-v1.5.0');
-							const { applyFoundationMigration } = await import('@mnemosyne/migrations/foundation');
+							const { foundationMigrationV15 } = await import('@mnemosyne/core/migrations/foundation-v1.5.0');
+							const { applyFoundationMigration } = await import('@mnemosyne/core/migrations/foundation');
 							
 							resetText += `Target Foundation: ${foundationMigrationV15.version}\n\n`;
 							
