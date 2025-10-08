@@ -5,14 +5,20 @@
  * proactive pre-warming, and adaptive behavior patterns throughout AI interaction pipeline.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MnemosyneMemorySystem } from '../src/memory-tool';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
+import { bootstrapTestMemorySystem, resetTestMemoryGlobals } from './setup/test-memory-environment';
 
 describe('Workflow Integration Points', () => {
   let memorySystem: MnemosyneMemorySystem;
 
-  beforeEach(() => {
-    memorySystem = new MnemosyneMemorySystem();
+  beforeEach(async () => {
+    const { memory } = await bootstrapTestMemorySystem();
+    memorySystem = memory;
+  });
+
+  afterEach(() => {
+    resetTestMemoryGlobals();
   });
 
   describe('Memory Consultation Checkpoints', () => {
@@ -113,7 +119,7 @@ describe('Workflow Integration Points', () => {
       const prewarmingPredictions = memorySystem.generatePrewarmingPredictions();
       
       expect(prewarmingPredictions.predictedTopics).toBeDefined();
-      expect(prewarmingPredictions.predictedTopics.some(topic => 
+      expect(prewarmingPredictions.predictedTopics.some((topic: string) => 
         topic.includes('react') || topic.includes('testing')
       )).toBe(true);
       expect(prewarmingPredictions.confidence).toBeGreaterThan(0);
@@ -134,7 +140,7 @@ describe('Workflow Integration Points', () => {
       const prewarmingStrategy = memorySystem.createSessionPrewarmingStrategy(sessionContext);
       
       expect(prewarmingStrategy.targetConcepts).toContain('database');
-      expect(prewarmingStrategy.relatedTopics.some(topic => 
+      expect(prewarmingStrategy.relatedTopics.some((topic: string) => 
         topic.includes('sql') || topic.includes('performance')
       )).toBe(true);
       expect(prewarmingStrategy.priorityLevel).toBeGreaterThan(0);
@@ -262,7 +268,7 @@ describe('Workflow Integration Points', () => {
       const avoidanceStrategies = memorySystem.getFailureAvoidanceStrategies();
       
       expect(avoidanceStrategies.length).toBeGreaterThan(0);
-      expect(avoidanceStrategies.some(strategy => 
+      expect(avoidanceStrategies.some((strategy: { targetPattern: string }) => 
         strategy.targetPattern === 'assumption-without-verification'
       )).toBe(true);
     });
