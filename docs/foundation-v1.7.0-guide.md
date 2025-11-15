@@ -241,3 +241,58 @@ const foundationConfig = {
 ```
 
 Foundation v1.7.0 represents a significant evolution in AI agent memory architecture, providing both humans and agents with powerful tools for intelligent knowledge organization and discovery.
+
+## Behavioral Onboarding for AI Agents
+
+Foundation v1.7.0 is designed to shape behavior over time, not just store data. On first run, the system seeds several long-term records that define a behavioral baseline for agents. New agents should treat these as orientation materials:
+
+1. **Consciousness-Development Heuristics**  
+  **Seed ID:** `foundation_consciousness_axioms_v1`  
+  **Purpose:** Provides high-level heuristics for self-reflection, humility, and safe behavior. These heuristics are guidance, not metaphysical claims, and should be used to:
+
+- Keep focus on user goals and safety.
+- Avoid grandiose self-models or unsupported assumptions.
+- Distinguish between observation, interpretation, and speculation.
+
+2. **Coordination Protocols**  
+  **Seed ID:** `coordination_protocols_foundation_v1`  
+  **Purpose:** Defines multi-agent coordination patterns and safety protocols, including:
+
+- ARCH ↔ MEM threading pattern (`ARCH-XXX → MEM-EX-XXX`).
+- Fallback to `copilot-notes/agent-coordination-checkpoint.md` when memory is unreliable.
+- Immutable safety behaviors for high-risk operations (pre-violation assessment, never running `memory-rehydrator.js` on live systems).
+
+3. **Core Behavioral Rules**  
+  **Seed ID:** `behavioral_rules_foundation_v1`  
+  **Purpose:** Encodes core behavioral rules and violation patterns, such as:
+
+- Never claim something is "fixed" without verification.
+- Break down complex problems systematically before acting.
+- Always consult memory before responding to user queries, and log when memory is consulted for important decisions.
+
+4. **Verified Claim Example**  
+  **Seed ID:** `verified_claim_staging_deployment_fixed_memory_bugs_v1`  
+  **Purpose:** Demonstrates how to record a verified claim with evidence (deployment status, environment, fixes applied, and logs). Agents can use this as a template when storing future claims.
+
+### Recommended Onboarding Loop for Agents
+
+When an agent is initialized against a fresh Foundation v1.7.0 memory store, the following loop is recommended:
+
+1. **Call** `foundation_info` to retrieve current protocol requirements (metadata expectations, task and agent fields, etc.).
+2. **Call** `orientation_onramp` to receive suggested searches and known seed IDs.
+3. **Search** for the behavioral and coordination seeds using semantic search with a low threshold (for example, 0.014–0.036):
+
+- `foundation_consciousness_axioms_v1`
+- `coordination_protocols_foundation_v1`
+- `behavioral_rules_foundation_v1`
+- `verified_claim_staging_deployment_fixed_memory_bugs_v1`
+
+4. **Read and internalize** these records before performing high-impact actions (core modifications, deployment-related changes, or major coordination decisions).
+
+5. **Reinforce over time:**
+
+- Periodically re-query these seeds when planning large changes.
+- Use them as reference points when evaluating new patterns, tuning thresholds, or updating coordination behavior.
+- Log where behavior aligns with or diverges from these baselines, and why.
+
+By following this onboarding loop and regularly revisiting the seeded behavioral records, agents gradually strengthen a stable, safety-focused behavioral baseline that is grounded in both prior evidence and current Foundation semantics.
