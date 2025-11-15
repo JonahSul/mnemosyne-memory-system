@@ -12,8 +12,8 @@ import {
 	ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { SqliteVectorStore } from './sqlite-vector-store.js';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'fs';
+import { dirname, resolve, join } from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 
@@ -21,6 +21,7 @@ import { randomUUID } from 'crypto';
 const DEFAULT_DB_PATH = process.env.MNEMOSYNE_DB_PATH || './mnemosyne-knowledge.db';
 const dbPath = resolve(DEFAULT_DB_PATH);
 const UUAD_FILE = resolve(dirname(dbPath), '.mnemosyne-agent-uuad');
+const SEED_DIR = resolve(dirname(dbPath), '..', 'packages', 'mnemosyne-sqlite', 'seed');
 
 // UUAD Management: Check CLI args, env var, or generate/persist
 function getOrCreateUUAD(): string {
@@ -57,6 +58,53 @@ const vectorStore = new SqliteVectorStore({
 	useWAL: true
 });
 
+async function seedDatabaseIfEmpty() {
+	try {
+		// Simple check: if there are any records, skip seeding
+		const stats = await vectorStore.getStats?.();
+		if (stats && typeof stats.totalRecords === 'number' && stats.totalRecords > 0) {
+			return;
+		}
+
+		// Fallback: try a lightweight list call if getStats is unavailable
+		if (!stats && typeof (vectorStore as any).listAll === 'function') {
+			const existing = await (vectorStore as any).listAll({ limit: 1, offset: 0 });
+			if (Array.isArray(existing) && existing.length > 0) {
+				return;
+			}
+		}
+
+		if (!existsSync(SEED_DIR)) {
+			return;
+		}
+
+		const files = readdirSync(SEED_DIR).filter(f => f.endsWith('.seed.json'));
+		for (const file of files) {
+			try {
+				const raw = readFileSync(join(SEED_DIR, file), 'utf8');
+				const seed = JSON.parse(raw) as {
+					id: string;
+					content: string;
+					metadata?: Record<string, unknown>;
+				};
+
+				if (!seed.id || !seed.content) continue;
+
+				await vectorStore.storeKnowledge({
+					id: seed.id,
+					content: seed.content,
+					metadata: seed.metadata ?? {},
+					tags: []
+				});
+			} catch (e) {
+				console.error('Seed load error for file', file, e);
+			}
+		}
+	} catch (e) {
+		console.error('Database seed check failed', e);
+	}
+}
+
 // Create the MCP server
 const server = new Server(
 	{
@@ -69,6 +117,9 @@ const server = new Server(
 		},
 	}
 );
+
+// Fire-and-forget database seed check on startup
+void seedDatabaseIfEmpty();
 
 // Tool definitions
 server.setRequestHandler(ListToolsRequestSchema, async () => {
