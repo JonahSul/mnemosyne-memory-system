@@ -57,3 +57,38 @@ Key principles:
 ---
 
 *This documentation reflects the current state of the system as of August 2025, including all recent improvements to semantic search, error handling, and dynamic optimization features.*
+
+## 🔁 Imperative Agent Loop (Mnemosyne MCP)
+
+**Quiet Operation Principle:** Memory operations should be performed silently and automatically as part of normal agent cognition. Do not announce or narrate memory searches, stores, or retrievals unless:
+
+- An error occurs
+- A protocol hint is received
+- The user explicitly asks about memory usage
+
+Treat the memory system like working memory: consult it naturally and quietly behind the scenes. See [Quiet Operation Examples](./quiet-operation-examples.md) for detailed patterns.
+
+Agents integrating via the Mnemosyne MCP server should follow a simple, repeatable loop:
+
+1. **Search before asserting**
+
+- Use `search_knowledge` (or `search_fulltext`) to look for prior facts, analyses, or results before making any strong claim.
+- If no strong evidence is found, treat your statement as a **hypothesis** rather than a fact.
+
+1. **Record decisions, hypotheses, and plans**
+
+- Use `store_knowledge` with `documentType` in {`HYPOTHESIS`, `DECISION`, `TASK_PLAN`, `FACT`}.
+- Always include `topics`, `task` (with a stable `task.id`), and `agent` metadata.
+- When you assert or decide, link back to prior memories via `metadata.causality.precedentMemoryIds` and group related assertions with a shared `metadata.causality.assertionId`.
+
+1. **Execute the task**
+
+- Optionally record `TASK_PLAN` / `TASK_EXECUTION` memories that describe how you are testing or acting on the assertion.
+
+1. **Record results**
+
+- Store a `RESULT` memory when you have evidence, using the same `metadata.causality.assertionId` and setting `metadata.result.status` to `PROVEN`, `DISPROVEN`, or `PARTIAL`.
+
+1. **Learn and self-correct**
+
+- When responses include `protocolHints`, treat them as requests to refresh your understanding via the `foundation_info` and `orientation_onramp` tools and to repair missing metadata (task IDs, precedent links, assertion IDs) in future writes.

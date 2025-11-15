@@ -7,7 +7,8 @@
 	"private": true,
 	"workspaces": [
 		"packages/mnemosyne",
-		"packages/mnemosyne-cloudflare"
+		"packages/mnemosyne-cloudflare",
+		"packages/mnemosyne-sqlite"
 	],
 	"scripts": {
 		"dev": "wrangler dev -e staging",
