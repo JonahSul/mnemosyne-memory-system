@@ -9,6 +9,7 @@
 
 import { BaseManager, ManagerDependencies, PersistenceLayer, VectorUtil } from '../core/base';
 import { CoreMemoryManager, CoreMemoryConfig, CoreMemoryDependencies, TieredKnowledgeItem, MemorySearchResult, MemorySearchOptions } from '../domains/memory';
+import type { EventStream } from '@mnemosyne/pubsub';
 
 export interface MemoryServiceConfig {
 	persistenceLayer: PersistenceLayer;
@@ -17,6 +18,7 @@ export interface MemoryServiceConfig {
 	cacheTTL: number;
 	maxCacheSize: number;
 	coreMemoryConfig: CoreMemoryConfig;
+ 	eventStream?: EventStream;
 }
 
 export interface MemoryServiceDependencies extends ManagerDependencies {
@@ -44,6 +46,7 @@ export class MemoryService extends BaseManager {
 	private readonly cacheTTL: number;
 	private readonly maxCacheSize: number;
 	private readonly coreMemoryManager: CoreMemoryManager;
+	private readonly eventStream?: EventStream;
 	private cache: Map<string, { data: any; timestamp: number }> = new Map();
 
 	constructor(dependencies: MemoryServiceDependencies) {
@@ -54,6 +57,7 @@ export class MemoryService extends BaseManager {
 		this.enableCaching = dependencies.config.enableCaching;
 		this.cacheTTL = dependencies.config.cacheTTL;
 		this.maxCacheSize = dependencies.config.maxCacheSize;
+		this.eventStream = dependencies.config.eventStream;
 
 		// Initialize core memory manager
 		const coreMemoryDeps: CoreMemoryDependencies = {
@@ -300,6 +304,46 @@ export class MemoryService extends BaseManager {
 
 			// Delegate to CoreMemoryManager
 			const results = await this.coreMemoryManager.searchSimilar(query, options);
+
+			// Emit topic access event if stream configured
+			if (this.eventStream && Array.isArray(results) && results.length > 0) {
+				try {
+					const topicIds = new Set<string>();
+					const memoryIds: string[] = [];
+
+					for (const item of results) {
+						memoryIds.push(item.id);
+						const meta = item.metadata as any;
+						const topics = Array.isArray(meta?.topics) ? meta.topics : [];
+						for (const t of topics) {
+							if (typeof t === 'string') {
+								topicIds.add(t);
+							}
+						}
+					}
+
+					if (topicIds.size > 0) {
+						await this.eventStream.publish({
+							id: `evt_topic_access_${operationId}`,
+							type: 'topic.accessed' as any,
+							timestamp: Date.now(),
+							payload: {
+								topicIds: Array.from(topicIds) as any,
+								query,
+								resultCount: results.length,
+								memoryIds,
+								mode: options.tier ? 'read' : 'read',
+								source: 'memory-service'
+							},
+							source: 'memory-service',
+							priority: 1 as any,
+							retryable: false
+						});
+					}
+				} catch (eventError) {
+					this.log('warn', 'Failed to emit topic access event', eventError);
+				}
+			}
 
 			const duration = Date.now() - start;
 			this.recordMetric('timing', 'search_memory', duration);

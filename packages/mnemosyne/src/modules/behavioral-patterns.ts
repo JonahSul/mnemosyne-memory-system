@@ -57,6 +57,7 @@ export class BehavioralPatternLearner implements BehavioralPatternOperations {
 					});
 				}
 			} catch (e) {
+				// TODO: no in-memory persistence. Create local event bus, and queue for retries?
 				// Best-effort persistence; keep in-memory as fallback
 				// eslint-disable-next-line no-console
 				console.warn('Failed to persist pattern immediately:', e);
