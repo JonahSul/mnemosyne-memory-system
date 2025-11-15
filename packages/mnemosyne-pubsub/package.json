@@ -1,0 +1,61 @@
+{
+	"name": "@mnemosyne/pubsub",
+	"version": "1.0.0",
+	"description": "Event bus and pub/sub system for Mnemosyne with SSE support",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE",
+		"CHANGELOG.md"
+	],
+	"keywords": [
+		"mnemosyne",
+		"pubsub",
+		"event-bus",
+		"sse",
+		"server-sent-events",
+		"real-time",
+		"reactive",
+		"event-driven"
+	],
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./adapters": {
+			"import": "./dist/adapters.js",
+			"types": "./dist/adapters.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"dev": "tsc -p tsconfig.json --watch",
+		"prepublishOnly": "npm run build"
+	},
+	"dependencies": {
+		"@mnemosyne/core": "file:../mnemosyne"
+	},
+	"devDependencies": {
+		"@types/node": "^24.3.0",
+		"typescript": "^5.3.3"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+		"directory": "packages/mnemosyne-pubsub"
+	},
+	"bugs": {
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+	},
+	"homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-pubsub",
+	"author": "Jonah Sul",
+	"license": "MIT",
+	"engines": {
+		"node": ">=18.0.0"
+	}
+}
