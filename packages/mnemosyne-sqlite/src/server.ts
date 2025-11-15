@@ -14,6 +14,7 @@ import {
 import { SqliteVectorStore } from './sqlite-vector-store.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 
 // Configuration
@@ -392,6 +393,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 			case 'foundation_info': {
 				try {
+					const __filename = fileURLToPath(import.meta.url);
+					const __dirname = dirname(__filename);
 					const rootDir = resolve(__dirname, '../../..');
 					const foundationPath = resolve(rootDir, 'FOUNDATION.md');
 					let summary: string;
@@ -436,6 +439,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 			case 'orientation_onramp': {
 				try {
+					const __filename = fileURLToPath(import.meta.url);
+					const __dirname = dirname(__filename);
 					const rootDir = resolve(__dirname, '../../..');
 					const orientationPath = resolve(
 						rootDir,
