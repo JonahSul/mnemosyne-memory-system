@@ -1,0 +1,41 @@
+name: Release PR
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+jobs:
+  open-release-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag on dev
+        run: git branch -r --contains "${GITHUB_REF_NAME}" | grep -q 'origin/dev'
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || echo "")
+          if [ -z "$PREV" ]; then RANGE="${GITHUB_REF_NAME}"; else RANGE="$PREV..${GITHUB_REF_NAME}"; fi
+          {
+            echo "changelog<<EOF"
+            git log --pretty=format:'- %s (%h)' "$RANGE"
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open release PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main --head dev \
+            --title "Release ${GITHUB_REF_NAME}" \
+            --body "${{ steps.changelog.outputs.changelog }}" \
+            --label release
