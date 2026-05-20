@@ -38,8 +38,5 @@
 	"scripts": {
 		"build": "tsc -p tsconfig.json"
 	},
-	"dependencies": {
-		"@mnemosyne/pubsub": "file:../mnemosyne-pubsub"
-	},
 	"sideEffects": false
 }

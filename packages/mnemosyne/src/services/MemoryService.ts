@@ -9,7 +9,10 @@
 
 import { BaseManager, ManagerDependencies, PersistenceLayer, VectorUtil } from '../core/base';
 import { CoreMemoryManager, CoreMemoryConfig, CoreMemoryDependencies, TieredKnowledgeItem, MemorySearchResult, MemorySearchOptions } from '../domains/memory';
-import type { EventStream } from '@mnemosyne/pubsub';
+
+interface EventStream {
+	publish<T = unknown>(event: { type: string; payload?: T; [key: string]: unknown }): Promise<void>;
+}
 
 export interface MemoryServiceConfig {
 	persistenceLayer: PersistenceLayer;

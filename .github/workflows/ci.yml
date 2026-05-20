@@ -27,8 +27,8 @@ jobs:
 
       - name: Build packages
         run: |
-          npm run build --workspace=packages/mnemosyne-pubsub
           npm run build --workspace=packages/mnemosyne
+          npm run build --workspace=packages/mnemosyne-pubsub
           npm run build --workspace=packages/mnemosyne-cloudflare
 
       - name: Run tests
