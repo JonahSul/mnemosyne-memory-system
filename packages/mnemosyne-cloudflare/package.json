@@ -1,0 +1,40 @@
+{
+	"name": "@mnemosyne/cloudflare",
+	"version": "1.0.0",
+	"description": "Cloudflare-specific adapters and utilities for the Mnemosyne memory system.",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+		"directory": "packages/mnemosyne-cloudflare"
+	},
+	"bugs": {
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+	},
+	"homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-cloudflare",
+	"author": "Jonah Sul",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@mnemosyne/core": "file:../mnemosyne"
+	}
+}

@@ -1,0 +1,88 @@
+MIT License with Novel Process Copyright
+
+Copyright (c) 2025 Jonah Sullivan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+NOVEL PROCESS APPROACHES - ADDITIONAL COPYRIGHT NOTICE
+================================================================================
+
+The following process approaches and methodologies contained within this
+software, to the extent they may be novel and not covered by existing prior
+art or patents unknown to the author, are claimed as intellectual property
+of Jonah Sullivan:
+
+1. **Multi-Tier Memory Architecture with Intelligent Forgetting**
+   - Implementation of Ebbinghaus forgetting curves in computational memory systems
+   - Tiered memory management (axiom/long/intermediate/short) with dynamic promotion
+   - Importance-weighted retention algorithms and access pattern optimization
+
+2. **Mnemosyne Behavioral Memory System**
+   - Self-monitoring AI behavioral compliance framework
+   - Claim verification and accountability tracking systems
+   - Automated violation detection and learning mechanisms
+   - Foundation rule deployment with hot-swappable behavioral updates
+
+3. **Adaptive Semantic Search with Dynamic Threshold Tuning**
+   - Context-aware threshold adjustment based on workload characteristics
+   - Tier-aware ranking systems for hierarchical memory retrieval
+   - Precision/recall optimization through adaptive similarity scoring
+
+4. **Delegator Pattern for Memory Operations**
+   - Modular method routing across specialized memory components
+   - Decorator-based tool registry with automatic method discovery
+   - Dynamic capability reflection and introspection systems
+
+5. **Integrated Memory Testing and Validation Framework**
+   - Phase-based autonomous testing over extended time periods
+   - Comprehensive assertion validation with detailed reporting
+   - Memory health monitoring and performance analytics
+
+6. **Vector Prewarming and Performance Optimization Strategies**
+   - Predictive memory loading based on usage patterns
+   - Concurrent operation handling with garbage collection coordination
+   - Memory efficiency optimization under sustained load
+
+DISCLAIMER: The author acknowledges that similar approaches may exist in prior
+art, patents, or other works unknown at the time of development. This notice
+is intended to protect potentially novel aspects while recognizing the
+possibility of unknown prior art. Any use, adaptation, or commercialization
+of these methodologies should include appropriate patent research and legal
+review.
+
+For licensing inquiries regarding novel process approaches, contact:
+Jonah Sullivan (me@jonahsullivan.com)
+
+This copyright notice protects potentially novel aspects of this work while
+acknowledging the possibility of unknown prior art and allowing open-source
+collaboration on the implementation details.
+
+The process approaches described above are claimed as potentially novel
+contributions to AI memory system design, subject to the disclaimers above.
+
+================================================================================
+ATTRIBUTION REQUIREMENTS
+================================================================================
+
+Any derivative works, academic papers, commercial applications, or other uses
+of the novel process approaches must include proper attribution to Jonah Sullivan
+as the original inventor and copyright holder of these methodologies.
+
+Last Updated: May 20, 2026

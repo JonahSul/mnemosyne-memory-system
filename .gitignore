@@ -1,0 +1,36 @@
+*.DS_Store*
+.vscode
+node_modules
+
+# Build artifacts - generated during build, not source control
+dist/
+*.js.map
+
+# Developer notes and internal artifacts
+copilot-notes/
+.continue/
+
+# Internal agent runtime state
+.mnemosyne/
+.mnemosyne-agent-uuad
+
+# Development backups
+vector-backups/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Environment files - never commit API keys/tokens
+.env
+.env.*
+!.env.example
+
+# Test results - keep test outputs out of version control
+test-results/
+
+staging.log
+
+# Wrangler build artifacts
+.wrangler/tmp

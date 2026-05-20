@@ -1,0 +1,34 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"allowJs": true,
+		"checkJs": false,
+		"declaration": true,
+		"declarationMap": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedSideEffectImports": true,
+		"isolatedModules": true,
+		"types": ["@cloudflare/workers-types"],
+		"resolveJsonModule": true,
+		"downlevelIteration": true,
+		"baseUrl": ".",
+		"paths": {
+			"@mnemosyne/core": ["packages/mnemosyne/src/library.ts"],
+			"@mnemosyne/core/*": ["packages/mnemosyne/src/*"],
+			"@mnemosyne/cloudflare": ["packages/mnemosyne-cloudflare/src/index.ts"],
+			"@mnemosyne/cloudflare/*": ["packages/mnemosyne-cloudflare/src/*"]
+		}
+	},
+	"include": ["src/**/*", "packages/mnemosyne/src/**/*", "packages/mnemosyne-cloudflare/src/**/*", "tests/**/*"],
+	"exclude": ["node_modules", "dist"]
+}

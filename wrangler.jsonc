@@ -1,0 +1,129 @@
+{
+	// Default development environment
+	"name": "mnemosyne-memory-system-dev",
+	"main": "src/index.ts",
+	"compatibility_date": "2024-11-27",
+	"compatibility_flags": ["nodejs_compat"],
+	"migrations": [
+		{
+			"new_sqlite_classes": [
+				"MnemosyneMemoryMCP"
+			],
+			"tag": "v1"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "MnemosyneMemoryMCP",
+				"name": "MNEMOSYNE_MCP_OBJECT_DEV"
+			}
+		]
+	},
+	"ai": {
+		"binding": "AI"
+	},
+	"vectorize": [
+		{
+			"binding": "VECTORIZE_INDEX",
+			"index_name": "mnemosyne-memory-index-dev"
+		}
+	],
+	"define": {
+		"__WRANGLER_ENV__": "\"development\""
+	},
+	"observability": {
+		"logs": {
+			"enabled": true
+		}
+	},
+	
+	// Environment-specific configurations
+	"env": {
+		"staging": {
+			"name": "mnemosyne-memory-system-stage",
+			"migrations": [
+				{
+					"new_sqlite_classes": [
+						"MnemosyneMemoryMCP"
+					],
+					"tag": "v1"
+				}
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"class_name": "MnemosyneMemoryMCP",
+						"name": "MNEMOSYNE_MCP_OBJECT_STAGE"
+					}
+				]
+			},
+			"vectorize": [
+				{
+					"binding": "VECTORIZE_INDEX",
+					"index_name": "mnemosyne-memory-index-stage"
+				}
+			],
+			"ai": {
+				"binding": "AI"
+			},
+			"r2": [
+				{
+					"binding": "R2_BUCKET",
+					"bucket_name": "mnemosyne-autorag-stage"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "MEMORY_KV",
+					"id": "1de1cb5561e443a78dfb0998c3b48d11",
+					"preview_id": "cd9da4f552074660ab39c1777bc32abf"
+				}
+			],
+			"define": {
+				"__WRANGLER_ENV__": "\"staging\""
+			},
+			"observability": {
+				"logs": {
+					"enabled": true
+				}
+			}
+		},
+		
+		"production": {
+			"name": "mnemosyne-memory-system",
+			"durable_objects": {
+				"bindings": [
+					{
+						"class_name": "MnemosyneMemoryMCP",
+						"name": "MNEMOSYNE_MCP_OBJECT"
+					}
+				]
+			},
+			"vectorize": [
+				{
+					"binding": "VECTORIZE_INDEX",
+					"index_name": "mnemosyne-memory-index"
+				}
+			],
+			"ai": {
+				"binding": "AI"
+			},
+			"r2": [
+				{
+					"binding": "R2_BUCKET",
+					"bucket_name": "mnemosyne-autorag-prod"
+				}
+			],
+			"define": {
+				"__WRANGLER_ENV__": "\"production\""
+			},
+			"observability": {
+				"logs": {
+					"enabled": true,
+					"exception": true
+				}
+			}
+		}
+	}
+}

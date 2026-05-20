@@ -1,0 +1,34 @@
+{
+  "id": "verified_claim_staging_deployment_fixed_memory_bugs_v1",
+  "content": "# Verified Claim: Staging Deployment and Memory Bug Fixes (v1)\n\nThis record captures a concrete, verified claim about a staging deployment and associated memory bug fixes, including its evidence and context. It serves as an example of how to represent verified claims in the memory system.\n\n## Claim\n\nThe deployment to staging was successful and three critical memory management bugs were fixed.\n\n- **Environment:** staging\n- **Deployment status:** successful\n- **Fixes applied:**\n  - inverted_importance_thresholds\n  - double_jeopardy_removal\n  - promotion_logic_alignment\n\n## Status\n\n- **Type:** claim\n- **Status:** verified\n\nThis means the system has concrete evidence supporting the claim, rather than treating it as an unverified assumption.\n\n## Evidence\n\nDeployment output indicated:\n- Successful upload (704.42 KiB)\n- Worker startup time: 27 ms\n- Deployed to `https://mnemosyne-memory-system-stage.sprinklerblowout.workers.dev`\n- Version ID: `593d7321-d51d-48ff-90ef-1d11a541bb17`\n\n## Context\n\n- **Confidence:** medium\n- **Testing:** false (deployment-level verification, not an exhaustive test suite).\n\nThis record illustrates how to:\n- Store a claim with an explicit status (verified vs. pending).\n- Attach evidence and contextual metadata.\n- Avoid ambiguous statements like \"it should be fixed\" when evidence is not present.\n\nFuture agents can use this as a template for storing other claims with clear status and evidence.",
+  "metadata": {
+    "topics": [
+      "claims",
+      "deployment",
+      "memory-bugs",
+      "evidence"
+    ],
+    "documentType": "claim-example",
+    "task": {
+      "taskId": "verified_claim_staging_deployment_fixed_memory_bugs_v1",
+      "label": "Example of verified claim representation",
+      "mode": "read-write",
+      "topics": [
+        "claims",
+        "deployment"
+      ]
+    },
+    "agent": {
+      "uuad": "__SEED_UUAD__",
+      "agentRole": "user-teaching",
+      "federationNodeId": "local-seed"
+    },
+    "importance": 0.75,
+    "tier": "long-term",
+    "export": {
+      "source": "memory-state-export.json",
+      "description": "Verified deployment claim with context and evidence",
+      "createdAt": "2025-11-15T00:00:00.000Z"
+    }
+  }
+}

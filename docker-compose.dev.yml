@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  # Vector Database - Replaces Cloudflare Vectorize
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: mnemosyne-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"  # gRPC port
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Persistent Storage - Replaces Cloudflare Durable Objects
+  redis:
+    image: redis/redis-stack:7.2.0-v6
+    container_name: mnemosyne-redis
+    ports:
+      - "6379:6379"
+      - "8001:8001"  # RedisInsight web UI
+    volumes:
+      - redis_data:/data
+    environment:
+      - REDIS_ARGS=--save 60 1000 --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Local Embedding Service - Replaces external embedding APIs
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mnemosyne-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Uncomment if you have NVIDIA GPU support
+    # runtime: nvidia
+
+  # Alternative Python Embedding Service (if you prefer sentence-transformers)
+  embeddings:
+    build:
+      context: .
+      dockerfile: docker/embeddings.Dockerfile
+    container_name: mnemosyne-embeddings
+    ports:
+      - "8002:8002"
+    environment:
+      - MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Development Server - Node.js with hot reload
+  app:
+    build:
+      context: .
+      dockerfile: docker/dev.Dockerfile
+    container_name: mnemosyne-app
+    ports:
+      - "8000:8000"
+      - "9229:9229"  # Node.js debugging port
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - QDRANT_URL=http://qdrant:6333
+      - REDIS_URL=redis://redis:6379
+      - EMBEDDING_URL=http://ollama:11434
+      - LOCAL_EMBEDDING_URL=http://embeddings:8002
+      - PORT=8000
+      - DEBUG=mnemosyne:*
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      embeddings:
+        condition: service_healthy
+    command: npm run dev:docker
+    stdin_open: true
+    tty: true
+
+  # Database Admin UI
+  # Note: Qdrant includes a built-in web UI at http://localhost:6333/dashboard
+
+volumes:
+  qdrant_data:
+    driver: local
+  redis_data:
+    driver: local
+  ollama_data:
+    driver: local
+
+networks:
+  default:
+    name: mnemosyne-network

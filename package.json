@@ -1,0 +1,50 @@
+{
+	"name": "mnemosyne-memory-system",
+	"version": "1.1.0",
+	"description": "Mnemosyne Memory System for AI behavior regulation and cognitive enhancement - Enhanced with empirically optimized search thresholds",
+	"main": "src/index.ts",
+	"type": "module",
+	"private": true,
+	"workspaces": [
+		"packages/mnemosyne",
+		"packages/mnemosyne-cloudflare",
+		"packages/mnemosyne-mcp",
+		"packages/mnemosyne-pubsub",
+		"packages/mnemosyne-sqlite",
+		"packages/mnemosyne-sqlite-vscode"
+	],
+	"scripts": {
+		"dev": "wrangler dev -e staging",
+		"dev:local": "docker-compose -f docker-compose.dev.yml up -d",
+		"dev:stop": "docker-compose -f docker-compose.dev.yml down",
+		"dev:docker": "tsx watch --clear-screen=false src/server.ts",
+		"deploy": "wrangler deploy -e staging",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"@mnemosyne/cloudflare": "file:packages/mnemosyne-cloudflare",
+		"@mnemosyne/core": "file:packages/mnemosyne",
+		"@modelcontextprotocol/sdk": "^1.17.3",
+		"@qdrant/js-client-rest": "^1.9.0",
+		"cors": "^2.8.5",
+		"express": "^4.19.2",
+		"jose": "^6.1.0",
+		"redis": "^4.6.13",
+		"reflect-metadata": "^0.2.2",
+		"socket.io": "^4.7.5",
+		"socket.io-client": "^4.7.5",
+		"zod": "^3.22.4"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20241127.0",
+		"@types/cors": "^2.8.17",
+		"@types/express": "^4.17.21",
+		"@types/node": "^24.3.0",
+		"dotenv": "^17.2.1",
+		"tsx": "^4.7.1",
+		"typescript": "^5.3.3",
+		"vitest": "^2.1.9",
+		"wrangler": "^4.42.0"
+	}
+}

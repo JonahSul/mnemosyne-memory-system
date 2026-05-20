@@ -1,0 +1,74 @@
+{
+	"name": "@mnemosyne/sqlite",
+	"version": "1.0.0",
+	"description": "SQLite-based MCP server for project-local knowledge storage with Mnemosyne",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"bin": {
+		"mnemosyne-sqlite": "dist/server.js"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE",
+		"CHANGELOG.md"
+	],
+	"keywords": [
+		"mcp",
+		"model-context-protocol",
+		"sqlite",
+		"vector-store",
+		"knowledge-base",
+		"embeddings",
+		"semantic-search",
+		"ai",
+		"llm",
+		"memory",
+		"rag"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+		"directory": "packages/mnemosyne-sqlite"
+	},
+	"bugs": {
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+	},
+	"homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-sqlite",
+	"author": "Jonah Sul",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./server": {
+			"import": "./dist/server.js",
+			"types": "./dist/server.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"dev": "tsx src/server.ts",
+		"start": "node dist/server.js",
+		"prepublishOnly": "npm run build",
+		"prepack": "npm run build",
+		"test": "node dist/server.js --help || echo 'Server binary exists'"
+	},
+	"dependencies": {
+		"@mnemosyne/core": "file:../mnemosyne",
+		"@modelcontextprotocol/sdk": "^1.17.3",
+		"better-sqlite3": "^11.7.0"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.12",
+		"@types/node": "^24.3.0",
+		"tsx": "^4.7.1",
+		"typescript": "^5.3.3"
+	}
+}

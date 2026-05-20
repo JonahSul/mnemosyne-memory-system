@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mnemosyne-sqlite": {
+      "command": "node",
+      "args": [
+        "/path/to/mnemosyne-memory-system/packages/mnemosyne-sqlite/dist/server.js"
+      ],
+      "env": {
+        "MNEMOSYNE_DB_PATH": "./project-knowledge.db"
+      }
+    }
+  }
+}

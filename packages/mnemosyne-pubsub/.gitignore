@@ -1,0 +1,6 @@
+# mnemosyne-pubsub
+dist/
+node_modules/
+*.log
+.DS_Store
+*.tsbuildinfo
