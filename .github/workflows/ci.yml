@@ -25,8 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build packages
+        run: |
+          npm run build --workspace=packages/mnemosyne-pubsub
+          npm run build --workspace=packages/mnemosyne
+          npm run build --workspace=packages/mnemosyne-cloudflare
+
       - name: Run tests
         run: npm test
-
-      - name: Build packages
-        run: npm run build --workspace=packages/mnemosyne --workspace=packages/mnemosyne-cloudflare
