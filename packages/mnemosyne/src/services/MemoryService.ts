@@ -21,7 +21,7 @@ export interface MemoryServiceConfig {
 	cacheTTL: number;
 	maxCacheSize: number;
 	coreMemoryConfig: CoreMemoryConfig;
- 	eventStream?: EventStream;
+ 	eventStream?: EventStream | undefined;
 }
 
 export interface MemoryServiceDependencies extends ManagerDependencies {
@@ -49,7 +49,7 @@ export class MemoryService extends BaseManager {
 	private readonly cacheTTL: number;
 	private readonly maxCacheSize: number;
 	private readonly coreMemoryManager: CoreMemoryManager;
-	private readonly eventStream?: EventStream;
+	private readonly eventStream?: EventStream | undefined;
 	private cache: Map<string, { data: any; timestamp: number }> = new Map();
 
 	constructor(dependencies: MemoryServiceDependencies) {
