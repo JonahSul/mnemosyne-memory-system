@@ -14,10 +14,18 @@ describe('Memory Garbage Collection', () => {
 		memorySystem = new MultiTierMemorySystem();
 		// Mock current time for predictable tests
 		vi.useFakeTimers();
+		// Stabilize Math.random with a counter so item IDs stay unique but seeded
+		// forgetting outcomes are reproducible across test runs.
+		let counter = 0;
+		vi.spyOn(Math, 'random').mockImplementation(() => {
+			counter += 1;
+			return (counter % 1000) / 1000;
+		});
 	});
 
 	afterEach(() => {
 		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	describe('Time-Based Expiration', () => {
