@@ -5,15 +5,18 @@ import { CloudflareVectorStore } from '@mnemosyne/cloudflare/vector-store';
 describe('Cloudflare Vectorize Integration', () => {
 	let vectorStore: CloudflareVectorStore;
 
+	// Skip tests if required credentials are not provided
+	const hasCredentials = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN;
+
 	beforeEach(() => {
 		vectorStore = new CloudflareVectorStore({
 			indexName: process.env.CLOUDFLARE_VECTORIZE_INDEX || 'mnemosyne-memory-index',
-			accountId: process.env.CLOUDFLARE_ACCOUNT_ID || '55b26a9d0b923a4f304b652aaac6fc16',
-			apiToken: process.env.CLOUDFLARE_API_TOKEN || 'test-token-fallback-to-mocks'
+			accountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',
+			apiToken: process.env.CLOUDFLARE_API_TOKEN || ''
 		});
 	});
 
-	describe('Real Embeddings Generation', () => {
+	describe.skipIf(!hasCredentials)('Real Embeddings Generation', () => {
 		it('should generate embeddings using Cloudflare AI Workers', async () => {
 			const embeddings = await vectorStore.generateEmbeddings('test knowledge content');
 
@@ -31,7 +34,7 @@ describe('Cloudflare Vectorize Integration', () => {
 		});
 	});
 
-	describe('Vectorize Storage Integration', () => {
+	describe.skipIf(!hasCredentials)('Vectorize Storage Integration', () => {
 		it('should store knowledge in Cloudflare Vectorize', async () => {
 			const knowledge = {
 				content: 'Important knowledge about vector databases',

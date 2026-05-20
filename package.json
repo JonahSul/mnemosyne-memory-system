@@ -8,7 +8,10 @@
 	"workspaces": [
 		"packages/mnemosyne",
 		"packages/mnemosyne-cloudflare",
-		"packages/mnemosyne-sqlite"
+		"packages/mnemosyne-mcp",
+		"packages/mnemosyne-pubsub",
+		"packages/mnemosyne-sqlite",
+		"packages/mnemosyne-sqlite-vscode"
 	],
 	"scripts": {
 		"dev": "wrangler dev -e staging",
@@ -17,12 +20,7 @@
 		"dev:docker": "tsx watch --clear-screen=false src/server.ts",
 		"deploy": "wrangler deploy -e staging",
 		"test": "vitest run",
-		"test:watch": "vitest",
-		"upload-dataset": "node scripts/upload-training-data.mjs",
-		"upload-memory-artifacts": "node scripts/upload-memory-artifacts.mjs",
-		"upload-critical-artifacts": "node scripts/upload-memory-artifacts.mjs critical",
-		"export-vectors": "node scripts/export-vector-store.mjs",
-		"upgrade-vectors": "node scripts/upgrade-vector-dimensions.mjs"
+		"test:watch": "vitest"
 	},
 	"dependencies": {
 		"@mnemosyne/cloudflare": "file:packages/mnemosyne-cloudflare",

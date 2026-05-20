@@ -4,7 +4,6 @@
 	"description": "Project-local knowledge storage via MCP with SQLite backend",
 	"version": "1.0.0",
 	"publisher": "jonahsul",
-	"icon": "icon.png",
 	"engines": {
 		"vscode": "^1.80.0"
 	},

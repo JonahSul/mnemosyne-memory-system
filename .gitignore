@@ -2,9 +2,25 @@
 .vscode
 node_modules
 
-# All the copilot notes!
-copilot-notes/*
-.continue/*
+# Build artifacts - generated during build, not source control
+dist/
+*.js.map
+
+# Developer notes and internal artifacts
+copilot-notes/
+.continue/
+
+# Internal agent runtime state
+.mnemosyne/
+.mnemosyne-agent-uuad
+
+# Development backups
+vector-backups/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
 
 # Environment files - never commit API keys/tokens
 .env
@@ -14,8 +30,6 @@ copilot-notes/*
 # Test results - keep test outputs out of version control
 test-results/
 
-# Memory system exports - temporary state files
-.mnemosyne/*.tmp.json
 staging.log
 
 # Wrangler build artifacts

@@ -16,7 +16,7 @@ export * from './topic-tracker.js';
 export { InMemoryEventBus } from './event-bus.js';
 export { SSEManager } from './sse-manager.js';
 export { EventPublishingVectorStore } from './storage-adapter.js';
-export { InMemoryPubSubAdapter, RedisPubSubAdapter, CloudflarePubSubAdapter } from './adapters.js';
+export { InMemoryPubSubAdapter, CloudflarePubSubAdapter } from './adapters.js';
 export { EventFactory } from './event-factory.js';
 export { TopicTracker } from './topic-tracker.js';
 

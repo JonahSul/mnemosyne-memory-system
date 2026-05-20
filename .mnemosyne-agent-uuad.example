@@ -1,0 +1,6 @@
+# Example Agent UUAD (Unique Universal Agent Identifier)
+# Copy this file to .mnemosyne-agent-uuad and replace the UUID with your own
+# to customize the agent identity for your deployment.
+# Without a custom UUAD, the system will use this example value.
+
+00000000-0000-0000-0000-000000000000

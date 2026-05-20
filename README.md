@@ -128,6 +128,19 @@ Mnemosyne includes foundational behavioral rules that promote reliable AI behavi
 
 **Start with `memory_view_foundation` to understand the complete behavioral framework.**
 
+## ⚠️ Known Limitations
+
+### Behavioral Claim Persistence
+**In current deployments, behavioral claims and assumptions are stored in volatile in-memory structures.** This means:
+
+- Claims logged in one Cloudflare Worker instance are **not persisted to KV or Vector stores** until explicitly exported
+- On Worker restart or deployment, in-flight behavioral claims (those not yet verified or exported) are lost
+- Long-term behavioral learning requires regular use of `memory_export_state` to persist critical claims to durable storage
+
+**Workaround:** Use the `memory_export_state` operation regularly to backup critical behavioral insights, and monitor behavioral rules via `memory_view_foundation` to ensure the system's learned rules persist across restarts.
+
+For deployments requiring persistent behavioral claims on every log operation, a future architecture iteration will implement write-through persistence to KV on all claim operations.
+
 ## 🤝 Contributing
 
 We encourage developers to create their own Mnemosyne Memory Systems with custom behavioral foundations!

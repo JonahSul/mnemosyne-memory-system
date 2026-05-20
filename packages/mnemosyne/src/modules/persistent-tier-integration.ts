@@ -240,14 +240,15 @@ export class PersistentMultiTierMemorySystem {
 		}
 
 		const stats = await this.persistentTiers.getStats();
-		
+
 		return {
-			status: stats.systemHealth,
+			status: stats.systemHealth || 'operational',
 			details: {
 				persistent_storage: true,
 				volatile_eliminated: true,
-				kv_operational: true, // TODO: Add actual KV health check
-				vector_operational: true // TODO: Add actual Vector health check
+				tiers_operational: stats.tiersAvailable || 0,
+				total_tiers: stats.totalTiers || 4,
+				total_knowledge_items: stats.totalKnowledge || 0
 			}
 		};
 	}

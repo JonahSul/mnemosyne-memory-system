@@ -718,7 +718,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 		name: "memory_admin",
 		description: "⚙️ **Advanced Memory System Administration & Foundation Management** - Perform critical administrative operations on the memory system including Foundation v1.5.0 management, system maintenance, data integrity operations, and deployment preparation. This powerful administrative tool provides comprehensive system control including foundation rule viewing and management, complete system state export for backup and migration, intelligent backfill operations to synchronize memory tiers, comprehensive sanity checks to detect and repair data inconsistencies, testing data cleanup for production readiness, memory optimization and defragmentation, behavioral rule updates and validation, differential knowledge extraction to R2 for AutoRAG integration, and emergency recovery operations. Features secure operation validation, audit logging for all administrative actions, rollback capabilities for critical operations, deployment-safe state management, and role-based authorization for cluster delegates. Essential for system administrators, deployment automation, data migration, troubleshooting complex memory issues, maintaining system integrity, and ensuring operational reliability across development, staging, and production environments.",
 		schema: {
-			operation: z.enum(["view_foundation", "export_state", "backfill", "sanity_check", "clear_testing_data", "reset_foundation", "extract_to_r2"]).describe("🎛️ Administrative operation: view_foundation (show behavioral rules), export_state (backup system), backfill (sync tiers), sanity_check (validate integrity), clear_testing_data (production prep), reset_foundation (force foundation upgrade), extract_to_r2 (differential knowledge export to R2)"),
+			operation: z.enum(["view_foundation", "export_state", "backfill", "sanity_check", "reset_foundation"]).describe("🎛️ Administrative operation: view_foundation (show behavioral rules), export_state (backup system), backfill (sync tiers), sanity_check (validate integrity), reset_foundation (force foundation upgrade)"),
 			options: z.record(z.unknown()).optional().describe("🔧 Operation-specific options and parameters for fine-tuned control")
 		},
 		handler: async (params) => {
@@ -814,15 +814,6 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							}]
 						};
 					
-					case "clear_testing_data":
-						// This would need implementation in the underlying systems
-						return {
-							content: [{
-								type: "text" as const,
-								text: "⚠️ Clear testing data operation not yet implemented in simplified registry"
-							}]
-						};
-					
 					case "reset_foundation":
 						// Force foundation reset and upgrade to latest version
 						try {
@@ -869,73 +860,6 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 								content: [{
 									type: "text" as const,
 									text: `❌ Foundation reset failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-								}]
-							};
-						}
-					
-					case "extract_to_r2":
-						// Secured knowledge extraction to R2 for AutoRAG integration
-						try {
-							// TODO: Implement role-based authorization check
-							// Verify requester has cluster delegate privileges
-							// const isAuthorized = await validateClusterDelegateRole(requestorId);
-							// if (!isAuthorized) {
-							//   return { content: [{ type: "text", text: "❌ Access denied: Requires cluster delegate authorization" }] };
-							// }
-							
-							let extractText = "=== R2 KNOWLEDGE EXTRACTION ===\n\n";
-							extractText += "🔒 Security: Role-based authorization (TODO: Identity registry integration)\n";
-							extractText += "🎯 Target: AutoRAG square-darkness-6e04 deployment\n\n";
-							
-							// Get high-confidence long-term memory entries
-							const memoryStats = await memory.getMemoryStats();
-							extractText += `📊 Memory Statistics:\n`;
-							extractText += `- Total entries: ${memoryStats.total}\n`;
-							const stats = await multiTier.getStats();
-							extractText += `- Long-term memory: ${stats.totalKnowledge} entries\n\n`;
-							
-							// TODO: Implement differential extraction logic
-							// 1. Query long-term memory for high-confidence entries (>0.7)
-							// 2. Cluster related memories by semantic similarity and tags
-							// 3. Generate atomic documents optimized for AutoRAG
-							// 4. Upload to R2 buckets (staging/prod)
-							// 5. Record extraction metadata
-							
-							extractText += "🔄 Differential extraction logic:\n";
-							extractText += "- ✅ Memory statistics gathered\n";
-							extractText += "- ⏳ High-confidence filtering (TODO)\n";
-							extractText += "- ⏳ Semantic clustering (TODO)\n";
-							extractText += "- ⏳ Atomic document generation (TODO)\n";
-							extractText += "- ⏳ R2 bucket upload (TODO)\n";
-							extractText += "- ⏳ Extraction audit logging (TODO)\n\n";
-							
-							extractText += "📝 Implementation Status:\n";
-							extractText += "- Architecture: ✅ Complete (docs/autorag-knowledge-extraction.md)\n";
-							extractText += "- Security Gates: ⏳ Pending identity registry integration\n";
-							extractText += "- KnowledgeExtractionWorker: ⏳ Implementation required\n";
-							extractText += "- R2 Integration: ⏳ Worker environment bindings needed\n\n";
-							
-							extractText += "🚧 NEXT STEPS:\n";
-							extractText += "1. Implement identity registry role validation\n";
-							extractText += "2. Develop KnowledgeExtractionWorker class\n";
-							extractText += "3. Add R2 bucket configuration\n";
-							extractText += "4. Create differential extraction algorithms\n";
-							extractText += "5. Add extraction audit trails\n\n";
-							
-							extractText += "⚠️ Currently returns mock response for testing purposes";
-							
-							return {
-								content: [{
-									type: "text" as const,
-									text: extractText
-								}]
-							};
-							
-						} catch (error) {
-							return {
-								content: [{
-									type: "text" as const,
-									text: `❌ R2 extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
 								}]
 							};
 						}
