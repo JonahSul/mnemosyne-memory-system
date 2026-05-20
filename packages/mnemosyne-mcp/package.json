@@ -1,26 +1,30 @@
 {
   "name": "@mnemosyne/mcp",
-  "version": "1.0.0-local",
-  "description": "Local shim package for @mnemosyne/mcp to start the dev MCP server",
-  "type": "module",
-  "main": "index.js",
-  "keywords": ["mcp","mnemosyne","local"],
-  "author": "mnemosyne-local",
-  "license": "MIT"
-}
-{
-  "name": "@mnemosyne/mcp",
   "version": "1.0.0",
-  "description": "Mnemosyne MCP server and agent package (optional) - Durable Object and local development agents",
+  "description": "Mnemosyne MCP server and agent package - Durable Object and local development agents",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "src",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+    "directory": "packages/mnemosyne-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+  },
+  "homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-mcp",
+  "author": "Jonah Sul",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch"
