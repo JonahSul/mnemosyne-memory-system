@@ -55,12 +55,7 @@ describe('FederationAuth', () => {
 			lastSeen: new Date().toISOString()
 		};
 
-		// Register the identity directly in the KV store for testing
-		const identityKey = `identity:v1:${identity.agentId}`;
-		const identityValue = JSON.stringify(identity);
-		kvStore.set(identityKey, identityValue);
-
-		// Also register with the identity registry
+		// Register the identity via the identity registry (which stores in KV)
 		await identityRegistry.registerIdentity(
 			identity.agentId,
 			identity.publicKey,
