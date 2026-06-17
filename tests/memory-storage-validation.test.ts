@@ -31,18 +31,78 @@ class MockVectorizeIndex {
         vectors.forEach(v => this.vectors.set(v.id, v));
     }
     async query(vector: number[], options: { topK: number }) {
-        // Return all vectors for simplicity in this mock
-        return { matches: Array.from(this.vectors.values()) };
+        // Return all vectors with similarity scores
+        const topK = options?.topK || 5;
+        const results: any[] = [];
+        for (const entry of this.vectors.values()) {
+            const score = cosineSimilarity(vector, entry.values);
+            results.push({ id: entry.id, score, values: entry.values, metadata: entry.metadata });
+        }
+        results.sort((a, b) => b.score - a.score);
+        return { matches: results.slice(0, topK) };
     }
     get count() {
         return this.vectors.size;
     }
 }
 
+// Cosine similarity function for mock vector index
+function cosineSimilarity(a: number[], b: number[]): number {
+    if (!a.length || !b.length || a.length !== b.length) {
+        return 0;
+    }
+    let dot = 0;
+    let magA = 0;
+    let magB = 0;
+    for (let i = 0; i < a.length; i++) {
+        const valueA = a[i] ?? 0;
+        const valueB = b[i] ?? 0;
+        dot += valueA * valueB;
+        magA += valueA * valueA;
+        magB += valueB * valueB;
+    }
+    const magnitude = Math.sqrt(magA) * Math.sqrt(magB);
+    return magnitude ? dot / magnitude : 0;
+}
+
 describe('Memory Storage and Retrieval Validation', () => {
+    // Deterministic embedding generation for consistent test results
+    function generateDeterministicEmbedding(text: string, dimension = 768): number[] {
+        const hash = simpleHash(text);
+        const random = seededRandom(hash);
+        const embeddings: number[] = [];
+        for (let i = 0; i < dimension; i++) {
+            embeddings.push((random() - 0.5) * 2);
+        }
+        const magnitude = Math.sqrt(embeddings.reduce((sum, val) => sum + val * val, 0));
+        if (magnitude > 0) {
+            for (let i = 0; i < embeddings.length; i++) {
+                embeddings[i] = embeddings[i] / magnitude;
+            }
+        }
+        return embeddings;
+    }
+
+    function simpleHash(str: string): number {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash);
+    }
+
+    function seededRandom(seed: number): () => number {
+        let m = 2 ** 35 - 31;
+        let a = 185852;
+        let s = seed % m;
+        return () => (s = s * a % m) / m;
+    }
+
     const mockAI = {
         run: async (_model: string, { text }: { text: string[] }) => {
-            return text.map(() => Array(768).fill(0).map(() => Math.random()));
+            return { data: text.map(t => generateDeterministicEmbedding(t)) };
         }
     };
 
@@ -63,7 +123,7 @@ describe('Memory Storage and Retrieval Validation', () => {
 
         // Instantiate PersistentCoreMemoryManager with both mocks
         const persistentMemory = new PersistentCoreMemoryManager(vectorStore, kvStore);
-        
+
         // Instantiate the main memory system, passing the persistent manager
         memorySystem = new MnemosyneMemorySystem({
             persistentMemoryManager: persistentMemory,

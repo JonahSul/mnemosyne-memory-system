@@ -9,14 +9,21 @@ import { MultiTierMemorySystem, DEFAULT_TIER_CONFIG } from '../packages/mnemosyn
 
 describe('Forgetting Curve Implementation', () => {
 	let memorySystem: MultiTierMemorySystem;
-	
+
 	beforeEach(() => {
 		memorySystem = new MultiTierMemorySystem();
 		vi.useFakeTimers();
+		// Stabilize Math.random with a counter so forgetting outcomes are reproducible across test runs.
+		let counter = 0;
+		vi.spyOn(Math, 'random').mockImplementation(() => {
+			counter += 1;
+			return (counter % 1000) / 1000;
+		});
 	});
 
 	afterEach(() => {
 		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	describe('Retention Probability Calculation', () => {
@@ -42,7 +49,7 @@ describe('Forgetting Curve Implementation', () => {
 			vi.setSystemTime(new Date(startTime.getTime() + 30 * 60 * 1000)); // 30 minutes
 
 			const analytics = memorySystem.getForgettingCurveAnalytics();
-			
+
 			expect(analytics.retentionProbabilities.short).toHaveLength(2);
 			expect(analytics.retentionProbabilities.short[0]).toBeGreaterThan(analytics.retentionProbabilities.short[1]);
 			expect(analytics.averageRetention.short).toBeGreaterThan(0);
@@ -90,7 +97,7 @@ describe('Forgetting Curve Implementation', () => {
 			vi.setSystemTime(new Date(startTime.getTime() + 30 * 60 * 1000));
 
 			const analytics = memorySystem.getForgettingCurveAnalytics();
-			
+
 			// Should have reasonable retention due to access boost
 			expect(analytics.averageRetention.short).toBeGreaterThan(0.3);
 		});
@@ -232,9 +239,9 @@ describe('Forgetting Curve Implementation', () => {
 					maxItems: 3
 				}
 			};
-			
+
 			const smallMemorySystem = new MultiTierMemorySystem(smallConfig);
-			
+
 			const startTime = new Date('2025-08-21T12:00:00Z');
 			vi.setSystemTime(startTime);
 
@@ -244,13 +251,13 @@ describe('Forgetting Curve Implementation', () => {
 				targetTier: 'short',
 				importance: 0.1
 			});
-			
+
 			await smallMemorySystem.storeKnowledge({
 				content: 'Item 2',
 				targetTier: 'short',
 				importance: 0.9
 			});
-			
+
 			await smallMemorySystem.storeKnowledge({
 				content: 'Item 3',
 				targetTier: 'short',
@@ -259,7 +266,7 @@ describe('Forgetting Curve Implementation', () => {
 
 			// Advance time and add new item to trigger both forgetting curves and capacity pruning
 			vi.setSystemTime(new Date(startTime.getTime() + 30 * 60 * 1000));
-			
+
 			await smallMemorySystem.storeKnowledge({
 				content: 'New item',
 				targetTier: 'short',
@@ -268,7 +275,7 @@ describe('Forgetting Curve Implementation', () => {
 
 			const stats = smallMemorySystem.getMemoryStats();
 			expect(stats.short.count).toBeLessThanOrEqual(3);
-			
+
 			// High importance item should likely survive
 			const searchResults = await smallMemorySystem.searchSimilar('Item 2', { threshold: 0.01 });
 			expect(searchResults.length).toBeGreaterThan(0);
