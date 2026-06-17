@@ -97,16 +97,24 @@ export const ROLE_CAPABILITIES: Record<AgentRole, string[]> = {
 export class FederationAuth {
 	private sessions = new Map<string, FederationSession>();
 	private identities = new Map<string, FederationIdentity>(); // Fallback for development
-	private identityRegistry?: IdentityRegistry;
+	private identityRegistry: IdentityRegistry;
 	private keyCache = new Map<string, CryptoKeyLike>();
 
 	/**
 	 * Initialize federation authentication with optional identity registry
 	 */
 	constructor(identityRegistry?: IdentityRegistry) {
-		this.identityRegistry = identityRegistry;
+		this.identityRegistry = identityRegistry || new IdentityRegistry({
+			kv: {} as any, // This will be replaced with real KV in production
+			ttl: 3600, // 1 hour default TTL
+			clusterId: 'default-cluster',
+			agentType: 'default',
+			reputation: 0,
+			lastSeen: new Date().toISOString(),
+			capabilities: [],
+		});
 		// If no identity registry provided, use in-memory fallback for development
-		if (!this.identityRegistry) {
+		if (!identityRegistry) {
 			console.warn('FederationAuth: No identity registry provided. Using in-memory fallback for development only.');
 		}
 	}
@@ -127,7 +135,15 @@ export class FederationAuth {
 
 			const decodedPayload = decodeJwt(token);
 			const agentId = this.extractAgentId(decodedPayload);
-			const identity = await this.getIdentity(agentId);
+			
+			// Get identity from identity registry if available, otherwise fallback to in-memory
+			let identity: FederationIdentity | null = null;
+			if (this.identityRegistry) {
+				identity = await this.identityRegistry.getIdentity(agentId);
+			} else {
+				identity = this.identities.get(agentId) || null;
+			}
+			
 			if (!identity || !identity.isActive) {
 				console.warn(`Rejected token for unknown or inactive identity: ${agentId}`);
 				return null;
@@ -179,6 +195,9 @@ export class FederationAuth {
 				metadata,
 				performedBy
 			);
+			// Also store in in-memory fallback for backward compatibility
+			this.identities.set(identity.agentId, identity);
+			this.keyCache.delete(identity.agentId);
 		} else {
 			// Fallback to in-memory storage for development
 			this.identities.set(identity.agentId, identity);
@@ -317,8 +336,11 @@ export class FederationAuth {
 		}
 		if (typeof globalThis.btoa === 'function') {
 			let binary = '';
-			for (const byte of bytes) {
-				binary += String.fromCharCode(byte);
+			for (let i = 0; i < bytes.length; i++) {
+				const byte = bytes[i];
+				if (byte !== undefined) {
+					binary += String.fromCharCode(byte);
+				}
 			}
 			return globalThis.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 		}

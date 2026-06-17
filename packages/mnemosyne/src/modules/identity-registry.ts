@@ -25,7 +25,13 @@ import { AgentRole, FederationIdentity, ROLE_CAPABILITIES } from './federation-a
 export interface IdentityRegistryConfig {
     kv: KVNamespace;
     keyPrefix?: string;
-    ttl?: number; // Time to live in seconds
+	ttl?: number; // Time to live in seconds
+    clusterId?: string;
+    agentType?: string;
+    reputation?: number;
+    lastSeen?: string;
+    capabilities?: string[];
+    metadata?: Record<string, unknown>;
 }
 
 export interface IdentityMetadata {
@@ -36,6 +42,9 @@ export interface IdentityMetadata {
     capabilities: string[];
     metadata?: Record<string, unknown>;
 }
+
+// Type alias for KVNamespace to avoid import issues
+export type KVNamespace = any;
 
 export interface IdentityFilter {
     clusterId?: string;
@@ -49,7 +58,7 @@ export interface IdentityAuditLog {
     did: string;
     performedBy: string;
     timestamp: string;
-    reason?: string;
+    reason?: string | undefined;
     previousState?: Partial<FederationIdentity>;
     newState?: Partial<FederationIdentity>;
 }
@@ -57,7 +66,7 @@ export interface IdentityAuditLog {
 export class IdentityRegistry {
     private kv: KVNamespace;
     private keyPrefix: string;
-    private ttl?: number;
+    private ttl: number | undefined;
 
     constructor(config: IdentityRegistryConfig) {
         this.kv = config.kv;
@@ -87,7 +96,7 @@ export class IdentityRegistry {
         // Create identity object
         const identity: FederationIdentity = {
             agentId: did,
-            clusterRole: roleArray[0], // Primary role
+            clusterRole: roleArray[0] || AgentRole.AGENT, // Primary role
             clusterId: metadata.clusterId,
             publicKey,
             capabilities: this.getCapabilitiesForRoles(roleArray),
@@ -153,8 +162,13 @@ export class IdentityRegistry {
         const previousState = { ...existing };
 
         // Update identity
-        existing.clusterRole = newRoles[0];
-        existing.capabilities = this.getCapabilitiesForRoles(newRoles);
+        if (newRoles.length > 0) {
+            const primaryRole = newRoles[0];
+            if (primaryRole) {
+                existing.clusterRole = primaryRole;
+            }
+            existing.capabilities = this.getCapabilitiesForRoles(newRoles);
+        }
         existing.lastSeen = new Date().toISOString();
 
         // Store updated identity
@@ -198,7 +212,9 @@ export class IdentityRegistry {
         existing.isActive = false;
         existing.lastSeen = new Date().toISOString();
         // Add revocation timestamp to metadata
-        if (!existing.metadata) existing.metadata = {};
+        if (!existing.metadata) {
+            existing.metadata = {};
+        }
         existing.metadata.revokedAt = new Date().toISOString();
         existing.metadata.revocationReason = reason;
 
@@ -232,7 +248,8 @@ export class IdentityRegistry {
         const list = await this.kv.list({ prefix: this.keyPrefix });
         const identities: FederationIdentity[] = [];
 
-        for await (const key of list) {
+        // Use the keys array from the list result
+        for (const key of list.keys) {
             const value = await this.kv.get(key.name);
             if (value) {
                 const identity = JSON.parse(value) as FederationIdentity;
