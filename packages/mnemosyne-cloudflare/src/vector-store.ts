@@ -61,9 +61,14 @@ export class CloudflareVectorStore implements VectorStoreAdapter {
 		this.apiToken = config.apiToken ?? this.apiToken;
 		this.useFallbackLocal = !(this.env && this.env.VECTORIZE_INDEX && this.env.AI);
 
+		// If we're running tests or a shim is explicitly requested, provide an in-process deterministic shim
+		// BUT ONLY if no env was provided (or env doesn't have the required bindings).
+		// This allows tests to provide their own mock bindings via config.env
 		const nodeEnv = (globalThis as any).NODE_ENV || config.nodeEnv;
-		const useShim = ((globalThis as any).__VECTORIZE_TEST_SHIM === '1') || nodeEnv === 'test' || !!config.useTestShim;
-		if (useShim) {
+		const useShim = ((globalThis as any).__VECTORIZE_TEST_SHIM === '1') || !!config.useTestShim;
+		const hasValidEnv = this.env && this.env.VECTORIZE_INDEX && this.env.AI;
+
+		if (useShim && !hasValidEnv) {
 			const store = new Map<string, { id: string; values: number[]; metadata: any }>();
 			const ai = {
 				run: async (_model: string, payload: any) => {
