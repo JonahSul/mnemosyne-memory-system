@@ -1,5 +1,5 @@
 {
-  "name": "@mnemosyne/mcp",
+  "name": "@mnemosyne-core/mcp",
   "version": "1.0.0",
   "description": "Mnemosyne MCP server and agent package - Durable Object and local development agents",
   "type": "module",
@@ -33,7 +33,7 @@
     "dev": "tsc -p tsconfig.json --watch"
   },
   "dependencies": {
-    "@mnemosyne/core": "workspace:*"
+    "@mnemosyne-core/core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

@@ -1,5 +1,5 @@
 {
-	"name": "@mnemosyne/sqlite",
+	"name": "@mnemosyne-core/sqlite",
 	"version": "1.0.0",
 	"description": "SQLite-based MCP server for project-local knowledge storage with Mnemosyne",
 	"type": "module",
@@ -64,7 +64,7 @@
 		"test": "node dist/server.js --help || echo 'Server binary exists'"
 	},
 	"dependencies": {
-		"@mnemosyne/core": "workspace:*",
+		"@mnemosyne-core/core": "workspace:*",
 		"@modelcontextprotocol/sdk": "^1.17.3",
 		"better-sqlite3": "^11.7.0"
 	},

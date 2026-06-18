@@ -10,7 +10,7 @@ import type {
 	VectorStoreRecord,
 	VectorStoreSearchOptions,
 	VectorStoreSearchResult
-} from '@mnemosyne/core/interfaces/storage';
+} from '@mnemosyne-core/core/interfaces/storage';
 
 export interface CloudflareEnv {
 	VECTORIZE_INDEX: Vectorize;
