@@ -13,8 +13,8 @@ import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@mode
 import { MnemosyneMemorySystem, type MnemosyneConfig } from "@mnemosyne/core/memory-tool";
 import type { KeyValueStoreAdapter } from "@mnemosyne/core/interfaces/storage";
 import { MemoryNotFoundError } from "@mnemosyne/core/modules/core-memory";
-import { foundationMigrationV15, applyFoundationMigration } from "@mnemosyne/core/migrations/foundation";
-import FOUNDATION_V18_IMPLEMENTATION from "@mnemosyne/core/migrations/foundation-v1.8.0";
+import { applyFoundationMigration, type FoundationMigration } from "@mnemosyne/core/migrations/foundation";
+import { foundationMigrationV1_0_0 } from "@mnemosyne/core/migrations/foundation-v1.0.0";
 import { registerSimplifiedMemoryTools } from "./tools/simplified-registry";
 import { CloudflareVectorStore } from "@mnemosyne/cloudflare/vector-store";
 import { KVMemoryLayer, getKVMemoryLayer } from "@mnemosyne/core/modules/kv-memory-layer";
@@ -143,40 +143,23 @@ export class MnemosyneMemoryMCP {
 			console.log('✅ Memory system created with proper environment bindings');
 			
 			// =====================================================================================
-			// FOUNDATION VERSION MANAGEMENT: v1.8.0 System-Wide Enhanced Memory Implementation
+			// FOUNDATION v1.0.0 — Canonical Behavioural Foundation
 			// =====================================================================================
-			// UPGRADED VERSION: Foundation v1.8.0 (complete enhanced memory architecture)
-			// INCLUDES: All previous capabilities plus enhanced memory with causality tracking
-			// 
-			// VERSION STRATEGY:
-			// 1. Apply v1.8.0 as complete implementation (includes all previous capabilities)
-			// 2. Activate enhanced memory tools and causality analysis
-			// 3. Maintain full backward compatibility
-			// 
-			// ENHANCEMENT NOTES:
-			// - Enhanced memory storage with microsecond-precision temporal metadata
-			// - Advanced causality analysis using Lamport/Vector/HLC consensus
-			// - Multi-axis semantic expansion with agent personality defaults
-			// - Cross-system correlation capabilities with trace/session IDs
+			// The Foundation version is kept in **lockstep** with the library
+			// packages.  Both the library version and the Foundation version
+			// are `1.0.0` for this initial public release.
+			//
+			// Every CI bump to the library packages MUST bump the Foundation
+			// version number to match.
+			//
+			// APPLY via the standard migration path so that core rules,
+			// essential patterns and safety constraints are registered in
+			// the behavioural rule manager.
 			// =====================================================================================
 			
-			// Apply Foundation v1.8.0 System-Wide Enhanced Memory Implementation
-			console.log('Applying Foundation v1.8.0 - Enhanced Memory Architecture with Causality Tracking');
-			
-			// Apply the complete v1.8.0 foundation (includes all previous capabilities)
-			// Foundation v1.8.0 maintains full backward compatibility
-			this.memory.setFoundationMetadata({
-				version: FOUNDATION_V18_IMPLEMENTATION.version,
-				timestamp: new Date().toISOString()
-			});
-			
-			// Log Foundation v1.8.0 implementation details
-			console.log('✅ Foundation v1.8.0 enhanced memory architecture initialized');
-			console.log(`📋 Implementation scope: ${FOUNDATION_V18_IMPLEMENTATION.implementationScope}`);
-			console.log(`🚀 Features: ${FOUNDATION_V18_IMPLEMENTATION.completedFeatures.length} enhanced capabilities`);
-			console.log(`⬆️ Agent changes: ${FOUNDATION_V18_IMPLEMENTATION.agentPerspectiveChanges.length} new/enhanced features`);
-			console.log(`👤 User changes: ${FOUNDATION_V18_IMPLEMENTATION.userPerspectiveChanges.length} new/enhanced capabilities`);
-			console.log(`🔄 Backward compatibility: ${FOUNDATION_V18_IMPLEMENTATION.backwardCompatibility}`);
+			console.log(`Applying Foundation v${foundationMigrationV1_0_0.version} — ${foundationMigrationV1_0_0.description}`);
+			await applyFoundationMigration(this.memory, foundationMigrationV1_0_0);
+			console.log(`✅ Foundation v${foundationMigrationV1_0_0.version} applied (${foundationMigrationV1_0_0.coreRules.length} rules, ${foundationMigrationV1_0_0.essentialPatterns.length} patterns, ${foundationMigrationV1_0_0.safetyConstraints.length} constraints)`);
 			
 			// Set up global memory instance getter for tools
 			(globalThis as any).getMemoryInstance = () => this.memory;
