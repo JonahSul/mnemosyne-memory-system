@@ -1,41 +1,133 @@
-name: Release PR
+name: Release
 
 on:
   push:
-    tags: ['v*.*.*']
+    branches: [main]
+
+env:
+  NODE_VERSION: 22.x
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
-  open-release-pr:
+  publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: write
+      contents: write
+      id-token: write
+      pages: write
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Verify tag on dev
-        run: git branch -r --contains "${GITHUB_REF_NAME}" | grep -q 'origin/dev'
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Configure npm authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+          echo "registry=https://registry.npmjs.org/" >> .npmrc
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build all packages
+        run: |
+          pnpm --filter @mnemosyne-core/core run build
+          pnpm --filter @mnemosyne-core/pubsub run build
+          pnpm --filter @mnemosyne-core/cloudflare run build
+          pnpm --filter @mnemosyne-core/sqlite run build
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Generate API docs
+        run: pnpm docs:generate
+
+      - name: Upload API docs artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/api
+
+      - name: Determine bump type
+        id: bump-type
+        run: |
+          BUMP="patch"
+          MERGE_MSG=$(git log -1 --pretty=format:'%s')
+          if echo "$MERGE_MSG" | grep -qi "breaking change"; then
+            BUMP="major"
+          elif echo "$MERGE_MSG" | grep -qiE "^(feat|feature)(\(.*\))?:"; then
+            BUMP="minor"
+          fi
+          echo "type=${BUMP}" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version
+        id: version
+        run: |
+          NEW_VER=$(node scripts/version-bump.mjs "${{ steps.bump-type.outputs.type }}" | tail -1)
+          echo "version=${NEW_VER}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish packages to npm (latest tag)
+        run: |
+          for pkg in packages/mnemosyne packages/mnemosyne-pubsub packages/mnemosyne-cloudflare packages/mnemosyne-sqlite packages/mnemosyne-mcp; do
+            pushd "$pkg"
+            pnpm publish --tag latest --no-git-checks
+            popd
+          done
 
       - name: Generate changelog
         id: changelog
         run: |
-          PREV=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || echo "")
-          if [ -z "$PREV" ]; then RANGE="${GITHUB_REF_NAME}"; else RANGE="$PREV..${GITHUB_REF_NAME}"; fi
+          PREV=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$PREV" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="$PREV..HEAD"
+          fi
+          CHANGELOG=$(git log --pretty=format:'- %s (%h)' "$RANGE" | grep -v '\[skip ci\]' || true)
           {
             echo "changelog<<EOF"
-            git log --pretty=format:'- %s (%h)' "$RANGE"
-            echo
+            echo "$CHANGELOG"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Open release PR
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync version bump to dev branch
         run: |
-          gh pr create \
-            --base main --head dev \
-            --title "Release ${GITHUB_REF_NAME}" \
-            --body "${{ steps.changelog.outputs.changelog }}" \
-            --label release
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin HEAD:dev
+
+  deploy-docs:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

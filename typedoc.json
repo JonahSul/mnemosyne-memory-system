@@ -1,0 +1,34 @@
+{
+	"$schema": "https://typedoc.org/schema.json",
+	"name": "Mnemosyne Memory System",
+	"entryPointStrategy": "packages",
+	"entryPoints": [
+		"packages/mnemosyne",
+		"packages/mnemosyne-cloudflare",
+		"packages/mnemosyne-pubsub",
+		"packages/mnemosyne-sqlite"
+	],
+	"out": "docs/api",
+	"tsconfig": "tsconfig.json",
+	"includeVersion": true,
+	"excludePrivate": true,
+	"excludeProtected": false,
+	"excludeExternals": true,
+	"excludeInternal": true,
+	"categorizeByGroup": true,
+	"categoryOrder": ["Core", "Storage", "PubSub", "MCP", "*"],
+	"sort": ["source-order", "required-first"],
+	"plugin": [],
+	"readme": "README.md",
+	"visibilityFilters": {
+		"protected": true,
+		"private": false,
+		"inherited": true,
+		"external": false
+	},
+	"navigation": {
+		"includeCategories": true,
+		"includeGroups": true
+	},
+	"searchInComments": true
+}

@@ -1,5 +1,5 @@
 {
-	"name": "@mnemosyne/core",
+	"name": "@mnemosyne-core/core",
 	"version": "1.0.0",
 	"description": "Core Mnemosyne memory system modules and utilities.",
 	"type": "module",
@@ -11,6 +11,9 @@
 		"README.md",
 		"LICENSE"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",

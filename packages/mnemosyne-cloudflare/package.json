@@ -1,5 +1,5 @@
 {
-	"name": "@mnemosyne/cloudflare",
+	"name": "@mnemosyne-core/cloudflare",
 	"version": "1.0.0",
 	"description": "Cloudflare-specific adapters and utilities for the Mnemosyne memory system.",
 	"type": "module",
@@ -35,6 +35,9 @@
 		"build": "tsc -p tsconfig.json"
 	},
 	"dependencies": {
-		"@mnemosyne/core": "file:../mnemosyne"
+		"@mnemosyne-core/core": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }
