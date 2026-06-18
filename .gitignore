@@ -34,3 +34,6 @@ staging.log
 
 # Wrangler build artifacts
 .wrangler/tmp
+
+# Generated API documentation
+docs/api/
