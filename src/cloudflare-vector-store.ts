@@ -66,9 +66,13 @@ export class CloudflareVectorStore {
 		this.useFallbackLocal = !(this.env && this.env.VECTORIZE_INDEX && this.env.AI);
 
 		// If we're running tests or a shim is explicitly requested, provide an in-process deterministic shim
-	const nodeEnv = (globalThis as any).NODE_ENV || (config && config.nodeEnv);
-	const useShim = ((globalThis as any).__VECTORIZE_TEST_SHIM === '1') || nodeEnv === 'test' || (!!config && config.useTestShim);
-		if (useShim) {
+		// BUT ONLY if no env was provided (or env doesn't have the required bindings).
+		// This allows tests to provide their own mock bindings via config.env
+		const nodeEnv = (globalThis as any).NODE_ENV || (config && config.nodeEnv);
+		const useShim = ((globalThis as any).__VECTORIZE_TEST_SHIM === '1') || (!!config && config.useTestShim);
+		const hasValidEnv = this.env && this.env.VECTORIZE_INDEX && this.env.AI;
+
+		if (useShim && !hasValidEnv) {
 			// Build a simple deterministic in-memory Vectorize index and AI binding
 			const store = new Map<string, { id: string; values: number[]; metadata: any; }>();
 
@@ -135,15 +139,15 @@ export class CloudflareVectorStore {
 		// Generate consistent 768-dimensional embeddings to match production Vectorize index
 		const dimension = 768; // Updated to match production configuration
 		const embeddings: number[] = [];
-		
+
 		// Use text content to create deterministic but varied embeddings
 		const hash = this.simpleHash(text);
 		const random = this.seededRandom(hash);
-		
+
 		for (let i = 0; i < dimension; i++) {
 			embeddings.push((random() - 0.5) * 2); // Range: -1 to 1
 		}
-		
+
 		// Normalize the vector
 		const magnitude = Math.sqrt(embeddings.reduce((sum, val) => sum + val * val, 0));
 		if (magnitude > 0) {
@@ -154,7 +158,7 @@ export class CloudflareVectorStore {
 				}
 			}
 		}
-		
+
 		return embeddings;
 	}
 
@@ -169,7 +173,7 @@ export class CloudflareVectorStore {
 	}
 
 	private seededRandom(seed: number): () => number {
-		let m = 2**35 - 31;
+		let m = 2 ** 35 - 31;
 		let a = 185852;
 		let s = seed % m;
 		return () => (s = s * a % m) / m;
@@ -183,13 +187,13 @@ export class CloudflareVectorStore {
 		metadata?: Record<string, unknown>;
 		tags?: string[];
 	}): Promise<CloudflareKnowledgeItem> {
-	// Use vec_ prefix to indicate vectorized record ids (tests expect this pattern)
-	const id = `vec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+		// Use vec_ prefix to indicate vectorized record ids (tests expect this pattern)
+		const id = `vec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 		const timestamp = new Date().toISOString();
-		
+
 		// Generate embeddings
 		const embedding = await this.generateEmbeddings(knowledge.content);
-		
+
 		// Prepare Vectorize record
 		const vectorizeRecord: VectorizeVector = {
 			id: id,
@@ -244,7 +248,7 @@ export class CloudflareVectorStore {
 		threshold?: number;
 	} = {}): Promise<CloudflareSearchResult[]> {
 		const { limit = 5, threshold = 0.1 } = options;
-		
+
 		let queryEmbedding: number[];
 		try {
 			queryEmbedding = await this.generateEmbeddings(query);
@@ -344,10 +348,10 @@ export class CloudflareVectorStore {
 	}): CloudflareSearchResult[] {
 		const { limit = 5, threshold = 0.1 } = options;
 		const results: CloudflareSearchResult[] = [];
-		
+
 		for (const stored of this.localKnowledge.values()) {
 			const similarity = this.cosineSimilarity(queryEmbedding, stored.embedding);
-			
+
 			if (similarity >= threshold) {
 				results.push({
 					...stored,
@@ -355,7 +359,7 @@ export class CloudflareVectorStore {
 				});
 			}
 		}
-		
+
 		return results
 			.sort((a, b) => b.similarity - a.similarity)
 			.slice(0, limit);
@@ -366,11 +370,11 @@ export class CloudflareVectorStore {
 	 */
 	private cosineSimilarity(a: number[], b: number[]): number {
 		if (a.length !== b.length) return 0;
-		
+
 		let dotProduct = 0;
 		let normA = 0;
 		let normB = 0;
-		
+
 		for (let i = 0; i < a.length; i++) {
 			const valA = a[i];
 			const valB = b[i];
@@ -380,7 +384,7 @@ export class CloudflareVectorStore {
 				normB += valB * valB;
 			}
 		}
-		
+
 		const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
 		return magnitude > 0 ? dotProduct / magnitude : 0;
 	}
@@ -389,16 +393,16 @@ export class CloudflareVectorStore {
 	 * Check if Vectorize is properly configured
 	 */
 	isConfigured(): boolean {
-	// Consider legacy config (indexName + apiToken) as configured for test/CI purposes
-	if (this.indexName && this.apiToken) return true;
-	return !!(this.env && this.env.VECTORIZE_INDEX && this.env.AI);
+		// Consider legacy config (indexName + apiToken) as configured for test/CI purposes
+		if (this.indexName && this.apiToken) return true;
+		return !!(this.env && this.env.VECTORIZE_INDEX && this.env.AI);
 	}
 
 	/**
 	 * Get index information
 	 */
 	getIndexName(): string {
-	return this.indexName || "VECTORIZE_INDEX";
+		return this.indexName || "VECTORIZE_INDEX";
 	}
 
 	/**

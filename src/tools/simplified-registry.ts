@@ -41,7 +41,7 @@ export function initializeWithEnv(env: any) {
 	memoryInstance = null;
 	multiTierInstance = null;
 	vectorStoreInstance = null;
-	
+
 	// Make vector store instance globally available for MnemosyneMemorySystem
 	(globalThis as any).getVectorStoreInstance = getVectorStoreInstance;
 }
@@ -84,7 +84,7 @@ function getMultiTierMemoryInstance(): PersistentMultiTierMemorySystem {
 	return multiTierInstance;
 }
 
-function getVectorStoreInstance(): CloudflareVectorStore {
+export function getVectorStoreInstance(): CloudflareVectorStore {
 	if (!vectorStoreInstance) {
 		// ADR-001 COMPLIANCE: Enforce persistent-first architecture with fail-closed behavior
 		if (workerEnv && workerEnv.VECTORIZE_INDEX && workerEnv.AI) {
@@ -93,12 +93,12 @@ function getVectorStoreInstance(): CloudflareVectorStore {
 		} else {
 			// ADR-001: Check for explicit dev/test environment flags before allowing fallback
 			const isTestEnvironment = (
-				(globalThis as any).NODE_ENV === 'test' || 
+				(globalThis as any).NODE_ENV === 'test' ||
 				(globalThis as any).NODE_ENV === 'development' ||
 				(globalThis as any).__VECTORIZE_TEST_SHIM === '1' ||
 				(globalThis as any).__DEV__ === true
 			);
-			
+
 			if (isTestEnvironment) {
 				// ADR-001 COMPLIANT: Dev-only mock behind explicit flags for unit tests
 				vectorStoreInstance = new CloudflareVectorStore({ useTestShim: true });
@@ -148,7 +148,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					message: "🧠 Foundation v1.8.0: Enhanced Memory Architecture with Causality Tracking & Semantic Expansion",
 					guidance: [
 						"📝 Store facts atomically with verifiable evidence (v1.5.0 core)",
-						"🎯 Set confidence based on evidence quality (v1.5.0 core)", 
+						"🎯 Set confidence based on evidence quality (v1.5.0 core)",
 						"🔍 Cross-validate against existing memory (v1.5.0 core)",
 						"⚖️ Build accountability beyond human oversight (v1.5.0 core)",
 						"🔗 Use verification methods to establish provenance (v1.5.0 core)",
@@ -159,32 +159,32 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					],
 					motto: "Every claim deserves evidence. Every fact deserves validation. Every relationship deserves causality analysis."
 				};
-				
+
 				let responseText = "🧠 MNEMOSYNE MEMORY SYSTEM INITIALIZED\n\n";
 				responseText += `${beacon.message}\n\n`;
-				
+
 				// Always show beacon guidance
 				responseText += "📋 FOUNDATION GUIDANCE:\n";
 				beacon.guidance.forEach((guide: string) => {
 					responseText += `   ${guide}\n`;
 				});
 				responseText += `\n💫 ${beacon.motto}\n\n`;
-				
+
 				// Show full foundation if requested
 				if (params.display_full) {
 					responseText += "🏛️ CORE PRINCIPLES:\n";
 					responseText += "\n🔹 Every factual claim must include verifiable evidence before storage\n";
 					responseText += "   No statement of fact enters memory without supporting evidence that can be independently verified\n";
 					responseText += "   Priority: critical | Enforcement: mandatory\n";
-					
+
 					responseText += "\n🔹 Store information in small, focused, atomic units rather than large blocks\n";
 					responseText += "   Optimize for granular knowledge building that enables precise retrieval and validation\n";
 					responseText += "   Priority: high | Enforcement: recommended\n";
-					
+
 					responseText += "\n🔹 Establish clear accountability mechanisms beyond human oversight\n";
 					responseText += "   Build systematic validation into the memory system itself\n";
 					responseText += "   Priority: critical | Enforcement: systematic\n";
-					
+
 					responseText += "\n\n📊 EMPIRICAL THRESHOLDS:\n";
 					responseText += "   exploration: 0.014\n";
 					responseText += "   recall: 0.036\n";
@@ -192,25 +192,25 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					responseText += "   prewarming: 0.05\n";
 					responseText += "   evidence_required: 0.6\n";
 					responseText += "   cross_validation: 0.8\n";
-					
+
 					responseText += "\n\n⚖️ ACCOUNTABILITY PROTOCOLS:\n";
 					responseText += "\n🔸 Validate claims against existing memory before storage\n";
 					responseText += "   Prevent contradictory or duplicate information from entering the system\n";
-					responseText += "\n🔸 Assess evidence quality and adjust confidence accordingly\n";  
+					responseText += "\n🔸 Assess evidence quality and adjust confidence accordingly\n";
 					responseText += "   Systematic evaluation of evidence strength and reliability\n";
 					responseText += "\n🔸 Periodically re-validate stored claims against new evidence\n";
 					responseText += "   Maintain memory accuracy through continuous validation\n";
 				} else {
 					responseText += "💡 Use display_full=true to see complete Foundation details\n";
 				}
-				
+
 				return {
 					content: [{
 						type: "text" as const,
 						text: responseText
 					}]
 				};
-				
+
 			} catch (error) {
 				return {
 					content: [{
@@ -239,32 +239,32 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 		handler: async (params) => {
 			const memory = getMnemosyneMemoryInstance();
 			const multiTier = getMultiTierMemoryInstance();
-			
+
 			// Get stats before storage (Foundation v1.8.0 architecture integrity)
 			const statsBefore = await multiTier.getStats();
 			const totalBefore = statsBefore.totalKnowledge;
-			
+
 			try {
 				// Auto-calculate confidence from evidence if not provided
 				let confidence = params.confidence;
 				if (!confidence && params.evidence) {
 					// Simple confidence calculation based on evidence quality
 					const evidenceScore = Math.min(params.evidence.length * 0.2, 1.0); // More evidence = higher confidence
-					const sourceBonus = params.verification_method === "automated" ? 0.1 : 
+					const sourceBonus = params.verification_method === "automated" ? 0.1 :
 						params.verification_method === "manual" ? 0.2 : 0.05;
 					confidence = Math.min(evidenceScore + sourceBonus, 1.0);
 				}
 				confidence = confidence || 0.5; // Default medium confidence
-				
+
 				// Auto-calculate importance from confidence if not provided
 				const importance = params.importance || confidence;
-				
+
 				// Determine tier based on confidence and importance
-				const tier = params.tier === "auto" || !params.tier 
-					? (confidence > 0.8 && importance > 0.7 ? "long" : 
+				const tier = params.tier === "auto" || !params.tier
+					? (confidence > 0.8 && importance > 0.7 ? "long" :
 						confidence > 0.6 || importance > 0.3 ? "intermediate" : "short")
 					: params.tier;
-				
+
 				// Prepare semantic metadata
 				const semanticMetadata = {
 					...params.metadata,
@@ -276,7 +276,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					foundation_version: "v1.5.0",
 					semantic_storage: true
 				};
-				
+
 				// Store using logClaim for behavioral memory (persistent via PersistentCoreMemoryManager)
 				const memoryId = await memory.logClaim(
 					params.content,
@@ -284,7 +284,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					params.source || "semantic_memory_store",
 					confidence > 0.7 ? "high" : confidence > 0.4 ? "medium" : "low"
 				);
-				
+
 				// Store in persistent tiered memory (Foundation v1.8.0: KV-first with Vector backup)
 				await multiTier.storeKnowledge({
 					content: params.content,
@@ -301,13 +301,13 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					importance,
 					...(tier !== 'auto' && { targetTier: tier as 'axiom' | 'long' | 'intermediate' | 'short' })
 				});
-				
+
 				// Verify stats after storage (Foundation v1.8.0 critical rule)
 				const statsAfter = await multiTier.getStats();
 				const totalAfter = statsAfter.totalKnowledge;
-				
+
 				const storageSuccessful = totalAfter > totalBefore;
-				
+
 				if (!storageSuccessful) {
 					// Log violation per Foundation v1.5.0
 					await memory.recordViolation(
@@ -315,7 +315,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						`Storage operation failed architecture integrity check. Stats before: ${totalBefore}, after: ${totalAfter}`,
 						"critical"
 					);
-					
+
 					return {
 						content: [{
 							type: "text" as const,
@@ -323,7 +323,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						}]
 					};
 				}
-				
+
 				// Build success response with semantic details
 				let responseText = `✅ Successfully stored content with semantic confidence tracking.\n`;
 				responseText += `Memory ID: ${memoryId}\n`;
@@ -335,21 +335,21 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 				responseText += `Architecture integrity verified: ${totalBefore} → ${totalAfter} items\n`;
 				responseText += `\n⚠️  PERSISTENCE NOTE: Behavioral memory is persistent (KV+Vectorize), tier memory is volatile\n`;
 				responseText += `✅ Stored to vector store for persistence backup`;
-				
+
 				if (params.evidence && params.evidence.length > 0) {
 					responseText += `\n\nSupporting Evidence:\n`;
 					params.evidence.forEach((evidence: string, index: number) => {
 						responseText += `${index + 1}. ${evidence}\n`;
 					});
 				}
-				
+
 				return {
 					content: [{
 						type: "text" as const,
 						text: responseText
 					}]
 				};
-				
+
 			} catch (error) {
 				return {
 					content: [{
@@ -377,7 +377,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 		handler: async (params) => {
 			const memory = getMnemosyneMemoryInstance();
 			const multiTier = getMultiTierMemoryInstance();
-			
+
 			// Apply Foundation v1.5.0 empirical thresholds
 			let threshold = params.threshold;
 			if (!threshold && params.searchType) {
@@ -389,7 +389,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 			if (!threshold) {
 				threshold = EMPIRICAL_THRESHOLDS.recall; // Default to recall threshold
 			}
-			
+
 			try {
 				// Search across memory systems using Foundation v1.8.0 persistent search
 				const tieredResults = await multiTier.search({
@@ -397,71 +397,71 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					maxResults: (params.limit || 8) * 2, // Get more results for filtering
 					threshold
 				});
-				
+
 				// Also search behavioral memory
 				const behavioralResults = await memory.searchMemory(params.query, false);
-				
+
 				// Apply semantic confidence filtering
 				const filteredTieredResults = tieredResults.filter(result => {
 					const metadata = result.metadata || {};
-					
+
 					// Filter by minimum confidence
-					if (params.minConfidence && 
-						typeof metadata.confidence === 'number' && 
+					if (params.minConfidence &&
+						typeof metadata.confidence === 'number' &&
 						metadata.confidence < params.minConfidence) {
 						return false;
 					}
-					
+
 					// Filter by evidence requirement
-					if (params.requireEvidence && 
+					if (params.requireEvidence &&
 						(!Array.isArray(metadata.evidence) || metadata.evidence.length === 0)) {
 						return false;
 					}
-					
+
 					// Filter by verification method
-					if (params.verificationMethod && params.verificationMethod !== "any" && 
+					if (params.verificationMethod && params.verificationMethod !== "any" &&
 						metadata.verification_method !== params.verificationMethod) {
 						return false;
 					}
-					
+
 					return true;
 				}).slice(0, params.limit || 8); // Apply final limit after filtering
-				
+
 				// Filter behavioral results similarly
 				const filteredBehavioralResults = behavioralResults.filter(result => {
 					const context = result.context || {};
-					
+
 					// Filter by minimum confidence
-					if (params.minConfidence && 
-						typeof context.confidence === 'number' && 
+					if (params.minConfidence &&
+						typeof context.confidence === 'number' &&
 						context.confidence < params.minConfidence) {
 						return false;
 					}
-					
+
 					// Filter by evidence requirement  
-					if (params.requireEvidence && 
+					if (params.requireEvidence &&
 						(!Array.isArray(context.evidence) || context.evidence.length === 0)) {
 						return false;
 					}
-					
+
 					// Filter by verification method
-					if (params.verificationMethod && params.verificationMethod !== "any" && 
+					if (params.verificationMethod && params.verificationMethod !== "any" &&
 						context.verification_method !== params.verificationMethod) {
 						return false;
 					}
-					
+
 					return true;
 				}).slice(0, params.limit || 8);
-				
+
 				const totalResults = filteredTieredResults.length + filteredBehavioralResults.length;
 				const originalTotal = tieredResults.length + behavioralResults.length;
-				
+
 				let resultsText = `Found ${totalResults} results for "${params.query}" (threshold: ${threshold})`;
 				if (totalResults < originalTotal) {
 					resultsText += ` [filtered from ${originalTotal} total]`;
 				}
 				resultsText += `\n\n`;
-				
+
 				// Add semantic filter info
 				if (params.minConfidence || params.requireEvidence || params.verificationMethod) {
 					resultsText += "=== SEMANTIC FILTERS APPLIED ===\n";
@@ -470,7 +470,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					if (params.verificationMethod) resultsText += `Verification method: ${params.verificationMethod}\n`;
 					resultsText += "\n";
 				}
-				
+
 				// Format tiered results with semantic details
 				if (filteredTieredResults.length > 0) {
 					resultsText += "=== TIERED MEMORY RESULTS ===\n";
@@ -484,7 +484,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							resultsText += ` (evidence: ${metadata.evidence.length})`;
 						}
 						resultsText += ` - ${result.content}\n`;
-						
+
 						// Show verification method if available
 						if (typeof metadata.verification_method === 'string') {
 							resultsText += `    Verified via: ${metadata.verification_method}\n`;
@@ -492,7 +492,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					});
 					resultsText += "\n";
 				}
-				
+
 				// Format behavioral results with semantic details
 				if (filteredBehavioralResults.length > 0) {
 					resultsText += "=== BEHAVIORAL MEMORY RESULTS ===\n";
@@ -506,28 +506,28 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							resultsText += ` (evidence: ${context.evidence.length})`;
 						}
 						resultsText += ` - ${result.content}\n`;
-						
+
 						// Show verification method if available
 						if (typeof context.verification_method === 'string') {
 							resultsText += `    Verified via: ${context.verification_method}\n`;
 						}
 					});
 				}
-				
+
 				if (totalResults === 0) {
 					resultsText += "No results found. Consider:\n";
 					resultsText += `- Lowering threshold (current: ${threshold})\n`;
 					resultsText += `- Using exploration search (threshold: ${EMPIRICAL_THRESHOLDS.exploration})\n`;
 					resultsText += "- Checking if content was properly stored\n";
 				}
-				
+
 				return {
 					content: [{
 						type: "text" as const,
 						text: resultsText
 					}]
 				};
-				
+
 			} catch (error) {
 				return {
 					content: [{
@@ -549,14 +549,14 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 		handler: async (params) => {
 			const memory = getMnemosyneMemoryInstance();
 			const multiTier = getMultiTierMemoryInstance();
-			
+
 			try {
 				// Get comprehensive memory statistics
 				const tieredStats = await multiTier.getStats();
 				const memoryStats = await memory.getMemoryStats();
 				const unverifiedClaims = await memory.getUnverifiedClaims();
 				const behavioralStatus = memory.getBehavioralStatus();
-				
+
 				// FIXED: Get persistent storage counts with proper vector store querying
 				const vectorStore = getVectorStoreInstance();
 				let persistentCounts = {
@@ -564,11 +564,11 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					behavioral_memory: memoryStats.total || 0,
 					unverified_claims: unverifiedClaims.length
 				};
-				
+
 				// DEBUG: Check vector store configuration status
 				const vectorStats = vectorStore.getStats();
 				const isConfigured = vectorStore.isConfigured();
-				
+
 				console.log('DEBUG Vector Store Status:', {
 					configured: isConfigured,
 					localItems: vectorStats.localItems,
@@ -576,7 +576,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 					hasAI: !!(workerEnv && workerEnv.AI),
 					useFallbackLocal: (vectorStore as any).useFallbackLocal
 				});
-				
+
 				// CRITICAL FIX: Use proper Vectorize query limits (max topK=50)
 				try {
 					// Try multiple broad search terms with corrected limits
@@ -586,17 +586,17 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						vectorStore.searchSimilar("information", { limit: 50, threshold: 0.0 }),
 						vectorStore.searchSimilar("content", { limit: 50, threshold: 0.0 })
 					];
-					
+
 					const allResults = await Promise.all(broadSearches);
 					const uniqueIds = new Set<string>();
-					
+
 					// Collect unique item IDs from all searches
 					allResults.forEach(results => {
 						results.forEach(item => uniqueIds.add(item.id));
 					});
-					
+
 					persistentCounts.vector_store = uniqueIds.size;
-					
+
 					// If no results from searches, try getting stats from vector store
 					if (persistentCounts.vector_store === 0) {
 						if (vectorStats && vectorStats.localItems) {
@@ -612,23 +612,23 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						console.warn("Could not get vector stats:", statsError);
 					}
 				}
-				
+
 				let statsText = "=== MEMORY SYSTEM STATISTICS ===\n\n";
-				
+
 				// Persistent Storage Stats (Primary Information)
 				statsText += "🏛️ PERSISTENT STORAGE (Survives Deployments):\n";
 				statsText += `  Behavioral Memory (KV): ${persistentCounts.behavioral_memory} entries\n`;
 				statsText += `  Vector Store (Vectorize): ${persistentCounts.vector_store} embeddings\n`;
 				statsText += `  Unverified Claims: ${persistentCounts.unverified_claims} pending\n`;
 				statsText += `  TOTAL PERSISTENT: ${persistentCounts.behavioral_memory + persistentCounts.vector_store} items\n\n`;
-				
+
 				// Persistent Tier Memory Stats (Foundation v1.8.0)
 				statsText += "🗄️ PERSISTENT TIER MEMORY (KV-First Architecture):\n";
-				
+
 				// Handle new PersistentMultiTierMemorySystem.getStats() format
 				if (tieredStats.tiers && Array.isArray(tieredStats.tiers)) {
 					tieredStats.tiers.forEach((tierStat: any) => {
-						const utilization = tierStat.itemCount && tierStat.config?.maxItems 
+						const utilization = tierStat.itemCount && tierStat.config?.maxItems
 							? (tierStat.itemCount / tierStat.config.maxItems * 100).toFixed(1)
 							: '0.0';
 						const capacity = tierStat.config?.maxItems === Infinity ? 'unlimited' : tierStat.config?.maxItems;
@@ -650,19 +650,19 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 						}
 					});
 				}
-				
+
 				// Behavioral Memory Stats
 				statsText += `\nBEHAVIORAL STATUS:\n`;
 				statsText += `  Rule Violations: ${behavioralStatus.recentViolations.length} recorded\n`;
-				
+
 				// Architecture Health Check (Foundation v1.5.0)
 				if (params.healthCheck) {
 					statsText += "\n=== ARCHITECTURE HEALTH CHECK ===\n";
-					
+
 					// Check persistent tier health instead of volatile tiers
 					const totalPersistent = persistentCounts.behavioral_memory + persistentCounts.vector_store;
 					const totalTierStorage = tieredStats.totalKnowledge || 0;
-					
+
 					if (totalPersistent === 0 && totalTierStorage === 0) {
 						statsText += "❌ CRITICAL: No items in persistent storage - data loss detected\n";
 					} else {
@@ -671,38 +671,38 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							statsText += `✅ Persistent tier storage operational: ${totalTierStorage} items\n`;
 						}
 					}
-					
+
 					if (totalTierStorage === 0 && totalPersistent > 0) {
 						statsText += "⚠️  INFO: Tier storage empty but behavioral storage intact (expected after deployment)\n";
 					}
-					
+
 					if (unverifiedClaims.length > memoryStats.total * 0.5) {
 						statsText += "⚠️  WARNING: High ratio of unverified claims - may indicate verification issues\n";
 					}
-					
+
 					if (behavioralStatus.recentViolations.length > 0) {
 						statsText += `⚠️  WARNING: ${behavioralStatus.recentViolations.length} behavioral violations detected\n`;
 						behavioralStatus.recentViolations.slice(0, 3).forEach(violation => {
 							statsText += `   - ${violation.rule}: ${violation.context}\n`;
 						});
 					}
-					
+
 					statsText += "✅ Persistent storage integrity check complete\n";
 				}
-				
+
 				// Foundation v1.8.0 Threshold Information
 				statsText += "\n=== FOUNDATION v1.8.0 THRESHOLDS ===\n";
 				Object.entries(EMPIRICAL_THRESHOLDS).forEach(([type, threshold]) => {
 					statsText += `  ${type}: ${threshold}\n`;
 				});
-				
+
 				return {
 					content: [{
 						type: "text" as const,
 						text: statsText
 					}]
 				};
-				
+
 			} catch (error) {
 				return {
 					content: [{
@@ -724,35 +724,35 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 		handler: async (params) => {
 			const memory = getMnemosyneMemoryInstance();
 			const multiTier = getMultiTierMemoryInstance();
-			
+
 			try {
 				switch (params.operation) {
 					case "view_foundation":
 						const foundationRules = memory.getBehavioralRules();
 						const foundationInfo = memory.getFoundationInfo();
 						let foundationText = `=== FOUNDATION ${foundationInfo.version || 'UNKNOWN'} BEHAVIORAL RULES ===\n\n`;
-						
+
 						foundationRules.forEach(rule => {
 							foundationText += `${rule.id} (${rule.priority}):\n`;
 							foundationText += `  Rule: ${rule.rule}\n`;
 							foundationText += `  Description: ${rule.description}\n`;
 							foundationText += `  Violations: ${rule.violations}\n\n`;
 						});
-						
+
 						return {
 							content: [{
 								type: "text" as const,
 								text: foundationText
 							}]
 						};
-					
+
 					case "export_state":
 						const exportFoundationInfo = memory.getFoundationInfo();
 						const actualRulesCount = memory.getBehavioralRules().length;
-						
+
 						// Use actual Foundation v1.5.0 version since that's what's active
 						const currentFoundationVersion = actualRulesCount >= 6 ? "v1.5.0" : (exportFoundationInfo.version || "unknown");
-						
+
 						const exportData = {
 							timestamp: new Date().toISOString(),
 							tieredMemory: await multiTier.getStats(),
@@ -764,56 +764,56 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							foundationRules: actualRulesCount,
 							foundationVersion: currentFoundationVersion
 						};
-						
+
 						return {
 							content: [{
 								type: "text" as const,
 								text: `=== MEMORY SYSTEM STATE EXPORT ===\n\n${JSON.stringify(exportData, null, 2)}`
 							}]
 						};
-					
+
 					case "backfill":
 						const backfillResult = await memory.backfillFromVectorStore({
 							maxItems: params.options?.maxItems || 100,
 							restoreFoundation: params.options?.restoreFoundation !== false
 						});
-						
+
 						return {
 							content: [{
 								type: "text" as const,
 								text: `=== BACKFILL OPERATION RESULTS ===\n\nSuccess: ${backfillResult.success}\nRestored: ${JSON.stringify(backfillResult.restored)}\n\nSummary:\n${backfillResult.summary.join('\n')}\n\nErrors:\n${backfillResult.errors.join('\n')}`
 							}]
 						};
-					
+
 					case "sanity_check":
 						// Perform comprehensive system sanity check
 						const tieredStats = await multiTier.getStats();
 						const totalItems = Object.values(tieredStats).reduce((sum: number, tier: any) => sum + (tier.count || 0), 0);
 						const behavioralStatus = memory.getBehavioralStatus();
-						
+
 						let sanityText = "=== MEMORY SYSTEM SANITY CHECK ===\n\n";
-						
+
 						if (totalItems === 0) {
 							sanityText += "❌ CRITICAL: No items in tiered memory - possible system failure\n";
 						} else {
 							sanityText += `✅ Tiered memory operational: ${totalItems} items\n`;
 						}
-						
+
 						if (behavioralStatus.recentViolations.length > 10) {
 							sanityText += `⚠️  WARNING: High violation count: ${behavioralStatus.recentViolations.length}\n`;
 						} else {
 							sanityText += `✅ Violation count acceptable: ${behavioralStatus.recentViolations.length}\n`;
 						}
-						
+
 						sanityText += "✅ Memory system sanity check complete\n";
-						
+
 						return {
 							content: [{
 								type: "text" as const,
 								text: sanityText
 							}]
 						};
-					
+
 					case "reset_foundation":
 						// Force foundation reset and upgrade to latest version
 						try {
@@ -821,40 +821,40 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							const currentFoundation = memory.getFoundationInfo();
 							let resetText = "=== FOUNDATION RESET OPERATION ===\n\n";
 							resetText += `Current Foundation: ${currentFoundation.version || 'unknown'}\n`;
-							
+
 							// Import latest foundation (v1.5.0)
 							const { foundationMigrationV15 } = await import('@mnemosyne/core/migrations/foundation-v1.5.0');
 							const { applyFoundationMigration } = await import('@mnemosyne/core/migrations/foundation');
-							
+
 							resetText += `Target Foundation: ${foundationMigrationV15.version}\n\n`;
-							
+
 							// Clear existing foundation data by force-updating
 							resetText += "🔄 Clearing existing foundation data...\n";
-							
+
 							// Apply new foundation
 							resetText += "🔄 Applying Foundation v1.5.0...\n";
 							await applyFoundationMigration(memory, foundationMigrationV15);
-							
+
 							// Verify the update
 							const updatedFoundation = memory.getFoundationInfo();
 							const newRules = memory.getBehavioralRules();
-							
+
 							resetText += `✅ Foundation reset complete!\n`;
 							resetText += `New Foundation: ${updatedFoundation.version || 'updated'}\n`;
 							resetText += `Rules applied: ${newRules.length}\n\n`;
-							
+
 							resetText += "📋 NEW BEHAVIORAL RULES:\n";
 							newRules.forEach(rule => {
 								resetText += `- ${rule.id} (${rule.priority}): ${rule.rule}\n`;
 							});
-							
+
 							return {
 								content: [{
 									type: "text" as const,
 									text: resetText
 								}]
 							};
-							
+
 						} catch (error) {
 							return {
 								content: [{
@@ -863,7 +863,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 								}]
 							};
 						}
-					
+
 					default:
 						return {
 							content: [{
@@ -872,7 +872,7 @@ export const simplifiedMemoryTools: SimplifiedToolImplementation[] = [
 							}]
 						};
 				}
-				
+
 			} catch (error) {
 				return {
 					content: [{
