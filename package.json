@@ -19,8 +19,11 @@
 		"dev:stop": "docker-compose -f docker-compose.dev.yml down",
 		"dev:docker": "tsx watch --clear-screen=false src/server.ts",
 		"deploy": "wrangler deploy -e staging",
+		"build": "pnpm --filter @mnemosyne/core --filter @mnemosyne/pubsub --filter @mnemosyne/cloudflare --filter @mnemosyne/sqlite run build",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"docs:generate": "typedoc",
+		"docs:serve": "pnpm docs:generate && npx serve docs/api"
 	},
 	"dependencies": {
 		"@mnemosyne/cloudflare": "file:packages/mnemosyne-cloudflare",
@@ -43,6 +46,7 @@
 		"@types/node": "^24.3.0",
 		"dotenv": "^17.2.1",
 		"tsx": "^4.7.1",
+		"typedoc": "^0.27.9",
 		"typescript": "^5.3.3",
 		"vitest": "^2.1.9",
 		"wrangler": "^4.42.0"

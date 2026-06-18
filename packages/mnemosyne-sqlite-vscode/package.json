@@ -64,7 +64,7 @@
 		"publish": "vsce publish"
 	},
 	"dependencies": {
-		"@mnemosyne/sqlite": "^1.0.0"
+		"@mnemosyne/sqlite": "workspace:^1.0.0"
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.80.0",

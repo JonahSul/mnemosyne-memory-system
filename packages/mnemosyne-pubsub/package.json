@@ -12,6 +12,9 @@
 		"LICENSE",
 		"CHANGELOG.md"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"keywords": [
 		"mnemosyne",
 		"pubsub",
@@ -38,7 +41,7 @@
 		"prepublishOnly": "npm run build"
 	},
 	"dependencies": {
-		"@mnemosyne/core": "file:../mnemosyne"
+		"@mnemosyne/core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^24.3.0",
