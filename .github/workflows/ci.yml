@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x]
 
     steps:
       - uses: actions/checkout@v7
@@ -42,6 +42,40 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+
+  docs:
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - name: Use Node.js ${{ env.NODE_VERSION_TEST }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION_TEST }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build all packages
+        run: |
+          pnpm build --workspace=packages/mnemosyne
+          pnpm build --workspace=packages/mnemosyne-pubsub
+          pnpm build --workspace=packages/mnemosyne-cloudflare
+          pnpm build --workspace=packages/mnemosyne-sqlite
+
+      - name: Generate API docs
+        run: pnpm docs:generate
 
   publish-dev:
     if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
