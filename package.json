@@ -19,6 +19,7 @@
 		"dev:stop": "docker-compose -f docker-compose.dev.yml down",
 		"dev:docker": "tsx watch --clear-screen=false src/server.ts",
 		"deploy": "wrangler deploy -e staging",
+		"build": "pnpm --filter @mnemosyne/core --filter @mnemosyne/pubsub --filter @mnemosyne/cloudflare --filter @mnemosyne/sqlite run build",
 		"test": "vitest run",
 		"test:watch": "vitest"
 	},

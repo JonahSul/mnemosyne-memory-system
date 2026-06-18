@@ -161,8 +161,8 @@ function main() {
 
   console.log(`\nUpdated ${1 + PACKAGES.length} package.json files.`);
 
-  // Emit just the version number for CI scripts
-  console.log(`::set-output name=version::${newVersion}`);
+  // Emit just the version number for CI scripts (last line of stdout)
+  console.log(newVersion);
 }
 
 main();
