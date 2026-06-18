@@ -5,6 +5,7 @@ node_modules
 # Build artifacts - generated during build, not source control
 dist/
 *.js.map
+*.tsbuildinfo
 
 # Developer notes and internal artifacts
 copilot-notes/

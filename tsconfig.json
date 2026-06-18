@@ -23,10 +23,10 @@
 		"downlevelIteration": true,
 		"baseUrl": ".",
 		"paths": {
-			"@mnemosyne/core": ["packages/mnemosyne/src/library.ts"],
-			"@mnemosyne/core/*": ["packages/mnemosyne/src/*"],
-			"@mnemosyne/cloudflare": ["packages/mnemosyne-cloudflare/src/index.ts"],
-			"@mnemosyne/cloudflare/*": ["packages/mnemosyne-cloudflare/src/*"]
+			"@mnemosyne-core/core": ["packages/mnemosyne/src/library.ts"],
+			"@mnemosyne-core/core/*": ["packages/mnemosyne/src/*"],
+			"@mnemosyne-core/cloudflare": ["packages/mnemosyne-cloudflare/src/index.ts"],
+			"@mnemosyne-core/cloudflare/*": ["packages/mnemosyne-cloudflare/src/*"]
 		}
 	},
 	"include": ["src/**/*", "packages/mnemosyne/src/**/*", "packages/mnemosyne-cloudflare/src/**/*", "tests/**/*"],

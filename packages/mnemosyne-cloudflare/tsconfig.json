@@ -5,8 +5,8 @@
 		"rootDir": "src",
 		"ignoreDeprecations": "5.0",
 		"paths": {
-			"@mnemosyne/core": ["packages/mnemosyne/dist/library"],
-			"@mnemosyne/core/*": ["packages/mnemosyne/dist/*"]
+			"@mnemosyne-core/core": ["packages/mnemosyne/dist/library"],
+			"@mnemosyne-core/core/*": ["packages/mnemosyne/dist/*"]
 		},
 		"composite": false,
 		"declaration": true,
