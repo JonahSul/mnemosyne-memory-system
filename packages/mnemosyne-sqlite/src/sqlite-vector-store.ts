@@ -11,7 +11,7 @@ import type {
 	VectorStoreRecord,
 	VectorStoreSearchOptions,
 	VectorStoreSearchResult
-} from '@mnemosyne-core/core/interfaces/storage';
+} from '@mnemosyne/core/interfaces/storage';
 
 export interface SqliteVectorStoreConfig {
 	/**

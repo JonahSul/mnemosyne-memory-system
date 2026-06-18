@@ -10,7 +10,7 @@ import type {
 	VectorStoreRecord,
 	VectorStoreSearchOptions,
 	VectorStoreSearchResult
-} from '@mnemosyne-core/core/interfaces/storage';
+} from '@mnemosyne/core/interfaces/storage';
 
 import { EventType } from './types.js';
 import type {

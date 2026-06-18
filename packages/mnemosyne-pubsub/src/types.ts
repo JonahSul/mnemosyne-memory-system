@@ -8,7 +8,7 @@
 import type { 
 	VectorStoreRecord, 
 	VectorStoreSearchResult 
-} from '@mnemosyne-core/core/interfaces/storage';
+} from '@mnemosyne/core/interfaces/storage';
 
 /**
  * Canonical Mnemosyne topic identifiers (25-term vocabulary)

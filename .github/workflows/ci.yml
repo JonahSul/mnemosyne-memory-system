@@ -8,7 +8,6 @@ on:
 
 env:
   NODE_VERSION_TEST: 22.x
-  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
   test:
@@ -36,10 +35,10 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
+          pnpm --filter @mnemosyne/core run build
+          pnpm --filter @mnemosyne/pubsub run build
+          pnpm --filter @mnemosyne/cloudflare run build
+          pnpm --filter @mnemosyne/sqlite run build
 
       - name: Run tests
         run: pnpm test
@@ -70,10 +69,10 @@ jobs:
 
       - name: Build all packages
         run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
+          pnpm --filter @mnemosyne/core run build
+          pnpm --filter @mnemosyne/pubsub run build
+          pnpm --filter @mnemosyne/cloudflare run build
+          pnpm --filter @mnemosyne/sqlite run build
 
       - name: Generate API docs
         run: pnpm docs:generate
@@ -104,11 +103,6 @@ jobs:
           cache: "pnpm"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Configure npm authentication
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-          echo "registry=https://registry.npmjs.org/" >> .npmrc
-
       - name: Install dependencies
         run: pnpm install
 
@@ -120,18 +114,20 @@ jobs:
 
       - name: Build all packages
         run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
+          pnpm --filter @mnemosyne/core run build
+          pnpm --filter @mnemosyne/pubsub run build
+          pnpm --filter @mnemosyne/cloudflare run build
+          pnpm --filter @mnemosyne/sqlite run build
 
       - name: Publish packages to npm (dev tag)
         run: |
           for pkg in packages/mnemosyne packages/mnemosyne-pubsub packages/mnemosyne-cloudflare packages/mnemosyne-sqlite packages/mnemosyne-mcp; do
             pushd "$pkg"
-            pnpm publish --tag dev --no-git-checks
+            pnpm publish --tag dev --no-git-checks --provenance
             popd
           done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Commit version bump back to dev
         run: |

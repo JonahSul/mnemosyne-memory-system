@@ -8,10 +8,10 @@ importers:
 
   .:
     dependencies:
-      '@mnemosyne-core/cloudflare':
+      '@mnemosyne/cloudflare':
         specifier: file:packages/mnemosyne-cloudflare
         version: file:packages/mnemosyne-cloudflare
-      '@mnemosyne-core/core':
+      '@mnemosyne/core':
         specifier: file:packages/mnemosyne
         version: link:packages/mnemosyne
       '@modelcontextprotocol/sdk':
@@ -80,13 +80,13 @@ importers:
 
   packages/mnemosyne-cloudflare:
     dependencies:
-      '@mnemosyne-core/core':
+      '@mnemosyne/core':
         specifier: workspace:*
         version: link:../mnemosyne
 
   packages/mnemosyne-mcp:
     dependencies:
-      '@mnemosyne-core/core':
+      '@mnemosyne/core':
         specifier: workspace:*
         version: link:../mnemosyne
     devDependencies:
@@ -99,7 +99,7 @@ importers:
 
   packages/mnemosyne-pubsub:
     dependencies:
-      '@mnemosyne-core/core':
+      '@mnemosyne/core':
         specifier: workspace:*
         version: link:../mnemosyne
     devDependencies:
@@ -112,7 +112,7 @@ importers:
 
   packages/mnemosyne-sqlite:
     dependencies:
-      '@mnemosyne-core/core':
+      '@mnemosyne/core':
         specifier: workspace:*
         version: link:../mnemosyne
       '@modelcontextprotocol/sdk':
@@ -137,7 +137,7 @@ importers:
 
   packages/mnemosyne-sqlite-vscode:
     dependencies:
-      '@mnemosyne-core/sqlite':
+      '@mnemosyne/sqlite':
         specifier: workspace:^1.0.0
         version: link:../mnemosyne-sqlite
     devDependencies:
@@ -869,7 +869,7 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@mnemosyne-core/cloudflare@file:packages/mnemosyne-cloudflare':
+  '@mnemosyne/cloudflare@file:packages/mnemosyne-cloudflare':
     resolution: {directory: packages/mnemosyne-cloudflare, type: directory}
     engines: {node: '>=20.0.0'}
 
@@ -2988,9 +2988,9 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@mnemosyne-core/cloudflare@file:packages/mnemosyne-cloudflare':
+  '@mnemosyne/cloudflare@file:packages/mnemosyne-cloudflare':
     dependencies:
-      '@mnemosyne-core/core': link:packages/mnemosyne
+      '@mnemosyne/core': link:packages/mnemosyne
 
   '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
     dependencies:

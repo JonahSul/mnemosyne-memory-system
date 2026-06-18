@@ -6,7 +6,7 @@
  * or integrate it with your application.
  */
 
-import { SqliteVectorStore } from '@mnemosyne-core/sqlite';
+import { SqliteVectorStore } from '@mnemosyne/sqlite';
 
 async function main() {
 	console.log('🧠 Mnemosyne SQLite Example\n');
