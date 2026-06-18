@@ -37,10 +37,10 @@ jobs:
 
       - name: Build all packages
         run: |
-          pnpm build --workspace=packages/mnemosyne
-          pnpm build --workspace=packages/mnemosyne-pubsub
-          pnpm build --workspace=packages/mnemosyne-cloudflare
-          pnpm build --workspace=packages/mnemosyne-sqlite
+          pnpm --filter @mnemosyne/core run build
+          pnpm --filter @mnemosyne/pubsub run build
+          pnpm --filter @mnemosyne/cloudflare run build
+          pnpm --filter @mnemosyne/sqlite run build
 
       - name: Run tests
         run: pnpm test
