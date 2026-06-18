@@ -12,6 +12,9 @@
 		"LICENSE",
 		"CHANGELOG.md"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"keywords": [
 		"mnemosyne",
 		"pubsub",

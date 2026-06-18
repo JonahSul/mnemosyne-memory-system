@@ -15,6 +15,9 @@
 		"LICENSE",
 		"CHANGELOG.md"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"keywords": [
 		"mcp",
 		"model-context-protocol",

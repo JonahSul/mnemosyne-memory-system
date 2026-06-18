@@ -36,5 +36,8 @@
 	},
 	"dependencies": {
 		"@mnemosyne/core": "file:../mnemosyne"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }
