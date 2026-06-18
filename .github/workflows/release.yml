@@ -6,6 +6,7 @@ on:
 
 env:
   NODE_VERSION: 22.x
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
   publish:
@@ -31,6 +32,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
           registry-url: "https://registry.npmjs.org"
+
+      - name: Configure npm authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+          echo "registry=https://registry.npmjs.org/" >> .npmrc
 
       - name: Install dependencies
         run: pnpm install
@@ -75,11 +81,9 @@ jobs:
         run: |
           for pkg in packages/mnemosyne packages/mnemosyne-pubsub packages/mnemosyne-cloudflare packages/mnemosyne-sqlite packages/mnemosyne-mcp; do
             pushd "$pkg"
-            pnpm publish --tag latest --no-git-checks --provenance
+            pnpm publish --tag latest --no-git-checks
             popd
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Generate changelog
         id: changelog
