@@ -39,7 +39,7 @@ export class MnemosyneMemoryMCP {
 		console.log('DEBUG: MnemosyneMemoryMCP constructor starting...');
 		console.log('DEBUG: env.VECTORIZE_INDEX available:', !!env.VECTORIZE_INDEX);
 		console.log('DEBUG: env.AI available:', !!env.AI);
-		
+
 		// CRITICAL FIX: Defer memory system creation until after environment bindings are initialized
 		// this.memory = new MnemosyneMemorySystem(); // Moved to initialization method
 		this.server = new Server({
@@ -50,7 +50,7 @@ export class MnemosyneMemoryMCP {
 				tools: {}
 			}
 		});
-		
+
 		// Initialize KV Memory Layer as foundation
 		if (env.MEMORY_KV) {
 			try {
@@ -64,7 +64,7 @@ export class MnemosyneMemoryMCP {
 		} else {
 			console.warn('KV Memory Layer not initialized - missing MEMORY_KV binding');
 		}
-		
+
 		// Initialize CloudflareVectorStore with Worker environment bindings
 		if (env.VECTORIZE_INDEX && env.AI) {
 			try {
@@ -119,13 +119,13 @@ export class MnemosyneMemoryMCP {
 	 */
 	async init() {
 		if (this.initialized) return;
-		
+
 		try {
 			// CRITICAL FIX: Initialize environment bindings FIRST
 			const { initializeWithEnv } = await import('./tools/simplified-registry');
 			initializeWithEnv(this.env);
 			console.log('✅ Tools initialized with Worker environment bindings');
-			
+
 			// CRITICAL FIX: Create memory system AFTER environment bindings are initialized
 			if (!this.vectorStore) {
 				if (this.env.VECTORIZE_INDEX && this.env.AI) {
@@ -141,7 +141,7 @@ export class MnemosyneMemoryMCP {
 			}
 			this.memory = new MnemosyneMemorySystem(memoryConfig);
 			console.log('✅ Memory system created with proper environment bindings');
-			
+
 			// =====================================================================================
 			// FOUNDATION v1.0.0 — Canonical Behavioural Foundation
 			// =====================================================================================
@@ -156,22 +156,22 @@ export class MnemosyneMemoryMCP {
 			// essential patterns and safety constraints are registered in
 			// the behavioural rule manager.
 			// =====================================================================================
-			
+
 			console.log(`Applying Foundation v${foundationMigrationV1_0_0.version} — ${foundationMigrationV1_0_0.description}`);
 			await applyFoundationMigration(this.memory, foundationMigrationV1_0_0);
 			console.log(`✅ Foundation v${foundationMigrationV1_0_0.version} applied (${foundationMigrationV1_0_0.coreRules.length} rules, ${foundationMigrationV1_0_0.essentialPatterns.length} patterns, ${foundationMigrationV1_0_0.safetyConstraints.length} constraints)`);
-			
+
 			// Set up global memory instance getter for tools
 			(globalThis as any).getMemoryInstance = () => this.memory;
 			(globalThis as any).getKVMemoryInstance = () => this.kvMemory;
 			(globalThis as any).getWorkerEnvironment = () => this.env;
-			
+
 			// Re-enable tools registry
 			registerSimplifiedMemoryTools(this.server);
-			
+
 			// Environment bindings already initialized above
 			// (Removed duplicate initializeWithEnv call)
-			
+
 			// Install persistence wrappers (disabled - module not found)
 			// try {
 			// 	const { installPersistenceWrappers } = await import('./modules/persistence-installer');
@@ -184,7 +184,7 @@ export class MnemosyneMemoryMCP {
 			console.log('DEBUG: Checking CloudflareVectorStore initialization...');
 			console.log('DEBUG: env.VECTORIZE_INDEX available:', !!this.env.VECTORIZE_INDEX);
 			console.log('DEBUG: env.AI available:', !!this.env.AI);
-			
+
 			if (this.env.VECTORIZE_INDEX && this.env.AI) {
 				try {
 					console.log('DEBUG: Creating CloudflareVectorStore instance...');
@@ -197,7 +197,7 @@ export class MnemosyneMemoryMCP {
 			} else {
 				console.warn('DEBUG: CloudflareVectorStore not initialized - missing VECTORIZE_INDEX or AI bindings');
 			}
-			
+
 			this.initialized = true;
 			console.log('Mnemosyne Memory System initialized successfully with Foundation v1.8.0');
 		} catch (error) {
@@ -244,7 +244,7 @@ export class MnemosyneMemoryMCP {
 
 			// Default response
 			return new Response("Mnemosyne Memory System MCP Server - Runtime Foundation Updates Ready", {
-				headers: { 
+				headers: {
 					'Content-Type': 'text/plain',
 					...corsHeaders
 				}
@@ -255,7 +255,7 @@ export class MnemosyneMemoryMCP {
 			console.error('Worker error:', error);
 			return new Response(`Worker Error: ${error instanceof Error ? error.message : 'Unknown error'}`, {
 				status: 500,
-				headers: { 
+				headers: {
 					'Content-Type': 'text/plain',
 					'Access-Control-Allow-Origin': '*'
 				}
@@ -273,7 +273,7 @@ export class MnemosyneMemoryMCP {
 				error: { code: -32600, message: "Invalid Request: Only POST method supported" }
 			}), {
 				status: 405,
-				headers: { 
+				headers: {
 					'Content-Type': 'application/json',
 					...corsHeaders
 				}
@@ -282,7 +282,7 @@ export class MnemosyneMemoryMCP {
 
 		try {
 			const body = await request.json() as any;
-			
+
 			// Handle initialization
 			if (body.method === 'initialize') {
 				return new Response(JSON.stringify({
@@ -303,21 +303,21 @@ export class MnemosyneMemoryMCP {
 						}
 					}
 				}), {
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			// Handle initialized notification
 			if (body.method === 'notifications/initialized') {
-				return new Response('', { 
+				return new Response('', {
 					status: 200,
 					headers: corsHeaders
 				});
 			}
-			
+
 			// Handle logging level setting
 			if (body.method === 'logging/setLevel') {
 				// Accept the logging level but don't actually change anything
@@ -327,13 +327,13 @@ export class MnemosyneMemoryMCP {
 					id: body.id,
 					result: {}
 				}), {
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			// Handle prompts list - return empty list since we don't provide prompts
 			if (body.method === 'prompts/list') {
 				return new Response(JSON.stringify({
@@ -343,13 +343,13 @@ export class MnemosyneMemoryMCP {
 						prompts: []
 					}
 				}), {
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			// Handle resources list - return empty list since we don't provide resources
 			if (body.method === 'resources/list') {
 				return new Response(JSON.stringify({
@@ -359,13 +359,13 @@ export class MnemosyneMemoryMCP {
 						resources: []
 					}
 				}), {
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			// Handle resource templates list - return empty list since we don't provide resource templates
 			if (body.method === 'resources/templates/list') {
 				return new Response(JSON.stringify({
@@ -375,17 +375,17 @@ export class MnemosyneMemoryMCP {
 						resourceTemplates: []
 					}
 				}), {
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			// Handle tools list
 			if (body.method === 'tools/list') {
 				const { simplifiedMemoryTools } = await import('./tools/simplified-registry');
-				
+
 				return new Response(JSON.stringify({
 					jsonrpc: "2.0",
 					id: body.id,
@@ -401,18 +401,18 @@ export class MnemosyneMemoryMCP {
 						}))
 					}
 				}), {
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			// Handle tool execution
 			if (body.method === 'tools/call') {
 				const toolName = body.params?.name;
 				const toolArgs = body.params?.arguments || {};
-				
+
 				if (!toolName) {
 					return new Response(JSON.stringify({
 						jsonrpc: "2.0",
@@ -420,23 +420,23 @@ export class MnemosyneMemoryMCP {
 						error: { code: -32602, message: "Invalid params: missing tool name" }
 					}), {
 						status: 400,
-						headers: { 
+						headers: {
 							'Content-Type': 'application/json',
 							...corsHeaders
 						}
 					});
 				}
-				
+
 				// Find tool in registry
 				const { simplifiedMemoryTools } = await import('./tools/simplified-registry');
 				const tool = simplifiedMemoryTools.find(t => t.name === toolName);
-				
+
 				if (!tool) {
 					return new Response(JSON.stringify({
 						jsonrpc: "2.0",
 						id: body.id,
-						error: { 
-							code: -32601, 
+						error: {
+							code: -32601,
 							message: `Tool not found: ${toolName}`,
 							data: {
 								availableTools: simplifiedMemoryTools.map(t => t.name)
@@ -444,40 +444,40 @@ export class MnemosyneMemoryMCP {
 						}
 					}), {
 						status: 404,
-						headers: { 
+						headers: {
 							'Content-Type': 'application/json',
 							...corsHeaders
 						}
 					});
 				}
-				
+
 				try {
 					// Execute tool using the registry handler
 					const result = await tool.handler(toolArgs);
-					
+
 					return new Response(JSON.stringify({
 						jsonrpc: "2.0",
 						id: body.id,
 						result
 					}), {
-						headers: { 
+						headers: {
 							'Content-Type': 'application/json',
 							...corsHeaders
 						}
 					});
-					
+
 				} catch (error) {
 					// Handle specific error types with appropriate status codes
 					let statusCode = 500;
 					let errorCode = -32603;
 					let errorMessage = "Tool execution error";
-					
+
 					if (error instanceof MemoryNotFoundError) {
 						statusCode = 404;
 						errorCode = -32602; // Invalid params (the claim ID doesn't exist)
 						errorMessage = "Resource not found";
 					}
-					
+
 					return new Response(JSON.stringify({
 						jsonrpc: "2.0",
 						id: body.id,
@@ -488,7 +488,7 @@ export class MnemosyneMemoryMCP {
 						}
 					}), {
 						status: statusCode,
-						headers: { 
+						headers: {
 							'Content-Type': 'application/json',
 							...corsHeaders
 						}
@@ -501,13 +501,13 @@ export class MnemosyneMemoryMCP {
 					id: body.id,
 					result: {}
 				}), {
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			// Method not found
 			return new Response(JSON.stringify({
 				jsonrpc: "2.0",
@@ -515,12 +515,12 @@ export class MnemosyneMemoryMCP {
 				error: { code: -32601, message: `Method not found: ${body.method}` }
 			}), {
 				status: 404,
-				headers: { 
+				headers: {
 					'Content-Type': 'application/json',
 					...corsHeaders
 				}
 			});
-			
+
 		} catch (error) {
 			return new Response(JSON.stringify({
 				jsonrpc: "2.0",
@@ -528,7 +528,7 @@ export class MnemosyneMemoryMCP {
 				error: { code: -32700, message: "Parse error" }
 			}), {
 				status: 400,
-				headers: { 
+				headers: {
 					'Content-Type': 'application/json',
 					...corsHeaders
 				}
@@ -542,7 +542,7 @@ export class MnemosyneMemoryMCP {
 	async handleFederationRequest(request: Request, corsHeaders: Record<string, string>): Promise<Response> {
 		try {
 			const url = new URL(request.url);
-			
+
 			// Parse operation from URL path
 			const pathParts = url.pathname.split('/');
 			if (pathParts.length < 4) {
@@ -551,17 +551,17 @@ export class MnemosyneMemoryMCP {
 					error: 'Invalid federation endpoint format. Expected: /federation/v1/{role}/{operation}'
 				}), {
 					status: 400,
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			const role = pathParts[3];
 			const operation = pathParts[4];
 			const federationOperation = `${role}:${operation}`;
-			
+
 			// Extract Bearer token from Authorization header
 			const authHeader = request.headers.get('Authorization');
 			if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -570,15 +570,15 @@ export class MnemosyneMemoryMCP {
 					error: 'Missing or invalid Authorization header. Expected: Bearer {token}'
 				}), {
 					status: 401,
-					headers: { 
+					headers: {
 						'Content-Type': 'application/json',
 						...corsHeaders
 					}
 				});
 			}
-			
+
 			const sessionToken = authHeader.substring(7); // Remove "Bearer "
-			
+
 			// Parse request body for operation payload
 			let payload = {};
 			if (request.method === 'POST') {
@@ -590,29 +590,29 @@ export class MnemosyneMemoryMCP {
 						error: 'Invalid JSON payload'
 					}), {
 						status: 400,
-						headers: { 
+						headers: {
 							'Content-Type': 'application/json',
 							...corsHeaders
 						}
 					});
 				}
 			}
-			
+
 			// Process federation operation
 			const response = await processFederationOperation(
 				federationOperation,
 				payload,
 				sessionToken
 			);
-			
+
 			return new Response(JSON.stringify(response), {
 				status: response.success ? 200 : 400,
-				headers: { 
+				headers: {
 					'Content-Type': 'application/json',
 					...corsHeaders
 				}
 			});
-			
+
 		} catch (error) {
 			console.error('Federation request error:', error);
 			return new Response(JSON.stringify({
@@ -623,7 +623,7 @@ export class MnemosyneMemoryMCP {
 				timestamp: Date.now()
 			}), {
 				status: 500,
-				headers: { 
+				headers: {
 					'Content-Type': 'application/json',
 					...corsHeaders
 				}
