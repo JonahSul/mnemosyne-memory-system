@@ -1,8 +1,8 @@
 # Mnemosyne Foundation Protocol
 
-_Current canonical baseline: **Foundation v1.7.0** (Multi‑Axis Semantic Expansion), extended with topic/task/document rigor and MCP onramp semantics._
+_Current canonical baseline: **Foundation v1.8.0** (Persistent-Tier Memory Architecture), building on v1.7.0 Multi‑Axis Semantic Expansion, topic/task/document rigor, and MCP onramp semantics._
 
-This document is the single, authoritative overview of how agents should interact with the Mnemosyne Memory System.
+This document is the single, authoritative overview of how agents should interact with the Mnemosyne Memory System. The Foundation version is stated here and only here — other docs and code comments must not restate a different "current" version.
 
 ## 1. Core Principles
 
@@ -14,7 +14,7 @@ This document is the single, authoritative overview of how agents should interac
     - **Agent attribution** (`uuad`, optional role and federation node).
   - Writes are **fail‑closed** if this metadata is missing or invalid.
 
-- **Multi‑Axis Semantic Expansion (v1.7.0)**
+- **Multi‑Axis Semantic Expansion (v1.7.0, carried forward)**
   - Every memory can be expanded along three axes:
     - **Near‑Semantic Neighbors** – direct synonyms and technical variants.
     - **Related Concepts** – conceptually connected technical domains.
@@ -33,7 +33,7 @@ This document is the single, authoritative overview of how agents should interac
   - A behavioral rules system governs how agents may read/write and transform memory.
   - Rules can be updated at runtime in a controlled way ("Foundation updates").
 
-## 2. Semantic Expansion (Foundation v1.7.0)
+## 2. Semantic Expansion (Foundation v1.7.0, carried forward in v1.8.0)
 
 Foundation v1.7.0 (see `docs/foundation-v1.7.0-guide.md`) defines the **Multi‑Axis Semantic Expansion Architecture**:
 
@@ -126,7 +126,7 @@ When connecting as an agent (via MCP or other integration), follow this minimal 
 
 ## 6. Imperative Agent Loop & Causality
 
-**Quiet Operation:** Agents should perform memory operations (search, store) silently in the background unless errors or protocol hints occur. Do not narrate or announce every memory access—treat the memory system like working memory, not a verbose journal. See [Quiet Operation Examples](./docs/quiet-operation-examples.md) for correct vs. incorrect patterns.
+**Quiet Operation:** Agents should perform memory operations (search, store) silently in the background unless errors or protocol hints occur. Do not narrate or announce every memory access—treat the memory system like working memory, not a verbose journal.
 
 Agents must treat the memory system as an explicit checkpoint for facts, decisions, and results. For any non-trivial claim or action, follow this loop:
 
@@ -170,21 +170,13 @@ The system may emit **protocol hints** when your writes appear to violate the im
 - Refresh their understanding via `foundation_info` and `orientation_onramp`.
 - Re-issue writes with corrected metadata (binding to a task, linking to precedent memories, and tracking assertion IDs).
 
-## 7. Relationship to Detailed Documentation
+---
 
-`FOUNDATION.md` is an overview. Detailed behavior and implementation notes live in `./docs`:
+## Versioning
 
-- Semantic expansion and Foundation v1.7.0:
-  - `docs/foundation-v1.7.0-guide.md`
-- Behavioral rules and runtime updates:
-  - `docs/behavioral-rules-system.md`
-  - `docs/runtime-foundation-updates.md` (if present)
-- Memory and search architecture:
-  - `docs/multi-tier-memory.md`
-  - `docs/semantic-search.md`
-  - `docs/dynamic-threshold-tuning.md`
-- MCP integration and tools:
-  - `docs/tools-registry.md`
-  - `docs/mcp-integration.md` (if present)
-
-As the system evolves (e.g. formalizing "Foundation v1.8.0"), this file should be updated to reflect the current operational protocol and any new mandatory rules for agents.
+The canonical Foundation version lives in the header of this file and nowhere
+else. Code and docs may reference historical versions (v1.0.0–v1.7.1) in
+migration files and changelogs, but must not assert a *different current
+version*. When the Foundation is upgraded, update this file's header and the
+migration that ships the new rules — do not scatter new version claims across
+code comments.

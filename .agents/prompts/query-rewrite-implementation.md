@@ -9,7 +9,7 @@
 query_rewrite:
   enabled: true
   model: "llama-3.1-8b-fast-instruct"  # Same as your generation model
-  system_prompt_file: "system-prompts/query-rewrite-system.md"
+  system_prompt_file: ".agents/prompts/query-rewrite-system.md"
   max_tokens: 150
   temperature: 0.1  # Low temperature for consistent rewrites
   timeout: 5000ms
