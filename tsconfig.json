@@ -1,7 +1,9 @@
 {
 	"compilerOptions": {
 		"target": "ES2022",
-		"lib": ["ES2022"],
+		"lib": [
+			"ES2022"
+		],
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"allowSyntheticDefaultImports": true,
@@ -18,29 +20,67 @@
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedSideEffectImports": true,
 		"isolatedModules": true,
-		"types": ["@cloudflare/workers-types"],
+		"types": [
+			"@cloudflare/workers-types"
+		],
 		"resolveJsonModule": true,
 		"downlevelIteration": true,
 		"baseUrl": ".",
 		"paths": {
-			"@mnemosyne/legacy-core": ["packages/mnemosyne/src/library.ts"],
-			"@mnemosyne/legacy-core/*": ["packages/mnemosyne/src/*"],
-			"@mnemosyne/legacy-cloudflare": ["packages/mnemosyne-cloudflare/src/index.ts"],
-			"@mnemosyne/legacy-cloudflare/*": ["packages/mnemosyne-cloudflare/src/*"],
-			"@mnemosyne/core": ["packages/mnemosyne-core/src/index.ts"],
-			"@mnemosyne/core/*": ["packages/mnemosyne-core/src/*"],
-			"@mnemosyne/infra-cloudflare": ["packages/mnemosyne-infrastructure-cloudflare/src/index.ts"],
-			"@mnemosyne/infra-cloudflare/*": ["packages/mnemosyne-infrastructure-cloudflare/src/*"],
-			"@mnemosyne/infra-sqlite": ["packages/mnemosyne-infrastructure-sqlite/src/index.ts"],
-			"@mnemosyne/infra-sqlite/*": ["packages/mnemosyne-infrastructure-sqlite/src/*"],
-			"@mnemosyne/mcp-server": ["packages/mnemosyne-mcp-server/src/index.ts"],
-			"@mnemosyne/mcp-server/*": ["packages/mnemosyne-mcp-server/src/*"],
-			"@mnemosyne/streaming": ["packages/mnemosyne-streaming/src/index.ts"],
-			"@mnemosyne/streaming/*": ["packages/mnemosyne-streaming/src/*"],
-			"@mnemosyne/saas": ["packages/mnemosyne-saas/src/index.ts"],
-			"@mnemosyne/saas/*": ["packages/mnemosyne-saas/src/*"],
-			"@mnemosyne/cli": ["packages/mnemosyne-cli/src/index.ts"],
-			"@mnemosyne/cli/*": ["packages/mnemosyne-cli/src/*"]
+			"@mnemosyne/legacy-core": [
+				"packages/mnemosyne/src/library.ts"
+			],
+			"@mnemosyne/legacy-core/*": [
+				"packages/mnemosyne/src/*"
+			],
+			"@mnemosyne/legacy-cloudflare": [
+				"packages/mnemosyne-cloudflare/src/index.ts"
+			],
+			"@mnemosyne/legacy-cloudflare/*": [
+				"packages/mnemosyne-cloudflare/src/*"
+			],
+			"@mnemosyne/core": [
+				"packages/mnemosyne-core/src/index.ts"
+			],
+			"@mnemosyne/core/*": [
+				"packages/mnemosyne-core/src/*"
+			],
+			"@mnemosyne/infra-cloudflare": [
+				"packages/mnemosyne-infrastructure-cloudflare/src/index.ts"
+			],
+			"@mnemosyne/infra-cloudflare/*": [
+				"packages/mnemosyne-infrastructure-cloudflare/src/*"
+			],
+			"@mnemosyne/infra-sqlite": [
+				"packages/mnemosyne-infrastructure-sqlite/src/index.ts"
+			],
+			"@mnemosyne/infra-sqlite/*": [
+				"packages/mnemosyne-infrastructure-sqlite/src/*"
+			],
+			"@mnemosyne/mcp-server": [
+				"packages/mnemosyne-mcp-server/src/index.ts"
+			],
+			"@mnemosyne/mcp-server/*": [
+				"packages/mnemosyne-mcp-server/src/*"
+			],
+			"@mnemosyne/streaming": [
+				"packages/mnemosyne-streaming/src/index.ts"
+			],
+			"@mnemosyne/streaming/*": [
+				"packages/mnemosyne-streaming/src/*"
+			],
+			"@mnemosyne/saas": [
+				"packages/mnemosyne-saas/src/index.ts"
+			],
+			"@mnemosyne/saas/*": [
+				"packages/mnemosyne-saas/src/*"
+			],
+			"@mnemosyne/cli": [
+				"packages/mnemosyne-cli/src/index.ts"
+			],
+			"@mnemosyne/cli/*": [
+				"packages/mnemosyne-cli/src/*"
+			]
 		}
 	},
 	"include": [
@@ -56,5 +96,8 @@
 		"packages/mnemosyne-cli/src/**/*",
 		"tests/**/*"
 	],
-	"exclude": ["node_modules", "dist"]
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
 }
