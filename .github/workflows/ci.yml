@@ -36,10 +36,10 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
+          pnpm --filter @mnemosyne/legacy-core run build
+          pnpm --filter @mnemosyne/pubsub run build
+          pnpm --filter @mnemosyne/legacy-cloudflare run build
+          pnpm --filter @mnemosyne/legacy-sqlite run build
 
       - name: Run tests
         run: pnpm test
@@ -70,10 +70,10 @@ jobs:
 
       - name: Build all packages
         run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
+          pnpm --filter @mnemosyne/legacy-core run build
+          pnpm --filter @mnemosyne/pubsub run build
+          pnpm --filter @mnemosyne/legacy-cloudflare run build
+          pnpm --filter @mnemosyne/legacy-sqlite run build
 
       - name: Generate API docs
         run: pnpm docs:generate
@@ -120,10 +120,10 @@ jobs:
 
       - name: Build all packages
         run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
+          pnpm --filter @mnemosyne/legacy-core run build
+          pnpm --filter @mnemosyne/pubsub run build
+          pnpm --filter @mnemosyne/legacy-cloudflare run build
+          pnpm --filter @mnemosyne/legacy-sqlite run build
 
       - name: Publish packages to npm (dev tag)
         run: |

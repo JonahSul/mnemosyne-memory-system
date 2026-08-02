@@ -11,7 +11,14 @@
 		"packages/mnemosyne-mcp",
 		"packages/mnemosyne-pubsub",
 		"packages/mnemosyne-sqlite",
-		"packages/mnemosyne-sqlite-vscode"
+		"packages/mnemosyne-sqlite-vscode",
+		"packages/mnemosyne-core",
+		"packages/mnemosyne-infrastructure-cloudflare",
+		"packages/mnemosyne-infrastructure-sqlite",
+		"packages/mnemosyne-mcp-server",
+		"packages/mnemosyne-streaming",
+		"packages/mnemosyne-saas",
+		"packages/mnemosyne-cli"
 	],
 	"scripts": {
 		"dev": "wrangler dev -e staging",
@@ -19,15 +26,16 @@
 		"dev:stop": "docker-compose -f docker-compose.dev.yml down",
 		"dev:docker": "tsx watch --clear-screen=false src/server.ts",
 		"deploy": "wrangler deploy -e staging",
-		"build": "pnpm --filter @mnemosyne-core/core --filter @mnemosyne-core/pubsub --filter @mnemosyne-core/cloudflare --filter @mnemosyne-core/sqlite run build",
+		"build": "pnpm --filter @mnemosyne/legacy-core --filter @mnemosyne/pubsub --filter @mnemosyne/legacy-cloudflare --filter @mnemosyne/legacy-sqlite run build",
+		"build:new": "pnpm --filter @mnemosyne/core --filter @mnemosyne/infra-cloudflare --filter @mnemosyne/infra-sqlite --filter @mnemosyne/mcp-server --filter @mnemosyne/streaming --filter @mnemosyne/saas --filter @mnemosyne/cli run build",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"docs:generate": "typedoc",
 		"docs:serve": "pnpm docs:generate && npx serve docs/api"
 	},
 	"dependencies": {
-		"@mnemosyne-core/cloudflare": "file:packages/mnemosyne-cloudflare",
-		"@mnemosyne-core/core": "file:packages/mnemosyne",
+		"@mnemosyne/legacy-cloudflare": "file:packages/mnemosyne-cloudflare",
+		"@mnemosyne/legacy-core": "file:packages/mnemosyne",
 		"@modelcontextprotocol/sdk": "^1.17.3",
 		"@qdrant/js-client-rest": "^1.9.0",
 		"cors": "^2.8.5",

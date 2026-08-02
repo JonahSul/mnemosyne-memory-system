@@ -23,12 +23,38 @@
 		"downlevelIteration": true,
 		"baseUrl": ".",
 		"paths": {
-			"@mnemosyne/core": ["packages/mnemosyne/src/library.ts"],
-			"@mnemosyne/core/*": ["packages/mnemosyne/src/*"],
-			"@mnemosyne/cloudflare": ["packages/mnemosyne-cloudflare/src/index.ts"],
-			"@mnemosyne/cloudflare/*": ["packages/mnemosyne-cloudflare/src/*"]
+			"@mnemosyne/legacy-core": ["packages/mnemosyne/src/library.ts"],
+			"@mnemosyne/legacy-core/*": ["packages/mnemosyne/src/*"],
+			"@mnemosyne/legacy-cloudflare": ["packages/mnemosyne-cloudflare/src/index.ts"],
+			"@mnemosyne/legacy-cloudflare/*": ["packages/mnemosyne-cloudflare/src/*"],
+			"@mnemosyne/core": ["packages/mnemosyne-core/src/index.ts"],
+			"@mnemosyne/core/*": ["packages/mnemosyne-core/src/*"],
+			"@mnemosyne/infra-cloudflare": ["packages/mnemosyne-infrastructure-cloudflare/src/index.ts"],
+			"@mnemosyne/infra-cloudflare/*": ["packages/mnemosyne-infrastructure-cloudflare/src/*"],
+			"@mnemosyne/infra-sqlite": ["packages/mnemosyne-infrastructure-sqlite/src/index.ts"],
+			"@mnemosyne/infra-sqlite/*": ["packages/mnemosyne-infrastructure-sqlite/src/*"],
+			"@mnemosyne/mcp-server": ["packages/mnemosyne-mcp-server/src/index.ts"],
+			"@mnemosyne/mcp-server/*": ["packages/mnemosyne-mcp-server/src/*"],
+			"@mnemosyne/streaming": ["packages/mnemosyne-streaming/src/index.ts"],
+			"@mnemosyne/streaming/*": ["packages/mnemosyne-streaming/src/*"],
+			"@mnemosyne/saas": ["packages/mnemosyne-saas/src/index.ts"],
+			"@mnemosyne/saas/*": ["packages/mnemosyne-saas/src/*"],
+			"@mnemosyne/cli": ["packages/mnemosyne-cli/src/index.ts"],
+			"@mnemosyne/cli/*": ["packages/mnemosyne-cli/src/*"]
 		}
 	},
-	"include": ["src/**/*", "packages/mnemosyne/src/**/*", "packages/mnemosyne-cloudflare/src/**/*", "tests/**/*"],
+	"include": [
+		"src/**/*",
+		"packages/mnemosyne/src/**/*",
+		"packages/mnemosyne-cloudflare/src/**/*",
+		"packages/mnemosyne-core/src/**/*",
+		"packages/mnemosyne-infrastructure-cloudflare/src/**/*",
+		"packages/mnemosyne-infrastructure-sqlite/src/**/*",
+		"packages/mnemosyne-mcp-server/src/**/*",
+		"packages/mnemosyne-streaming/src/**/*",
+		"packages/mnemosyne-saas/src/**/*",
+		"packages/mnemosyne-cli/src/**/*",
+		"tests/**/*"
+	],
 	"exclude": ["node_modules", "dist"]
 }

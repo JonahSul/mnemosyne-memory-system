@@ -4,8 +4,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     alias: {
-      '@mnemosyne-core/core': path.resolve(__dirname, 'packages/mnemosyne/src'),
-      '@mnemosyne-core/cloudflare': path.resolve(__dirname, 'packages/mnemosyne-cloudflare/src')
+      '@mnemosyne/legacy-core': path.resolve(__dirname, 'packages/mnemosyne/src'),
+      '@mnemosyne/legacy-cloudflare': path.resolve(__dirname, 'packages/mnemosyne-cloudflare/src')
     }
   },
   test: {

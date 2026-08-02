@@ -1,5 +1,5 @@
 {
-	"name": "@mnemosyne-core/pubsub",
+	"name": "@mnemosyne/pubsub",
 	"version": "1.0.0",
 	"description": "Event bus and pub/sub system for Mnemosyne with SSE support",
 	"type": "module",
@@ -41,7 +41,7 @@
 		"prepublishOnly": "npm run build"
 	},
 	"dependencies": {
-		"@mnemosyne-core/core": "workspace:*"
+		"@mnemosyne/legacy-core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^24.3.0",

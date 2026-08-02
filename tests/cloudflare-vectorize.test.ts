@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { CloudflareVectorStore } from '@mnemosyne-core/cloudflare/vector-store';
+import { CloudflareVectorStore } from '@mnemosyne/legacy-cloudflare/vector-store';
 
 describe('Cloudflare Vectorize Integration', () => {
 	let vectorStore: CloudflareVectorStore;

@@ -1,5 +1,5 @@
 {
-	"name": "@mnemosyne-core/core",
+	"name": "@mnemosyne/legacy-core",
 	"version": "1.0.0",
 	"description": "Core Mnemosyne memory system modules and utilities.",
 	"type": "module",

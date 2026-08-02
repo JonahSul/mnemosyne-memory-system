@@ -10,16 +10,16 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, ToolSchema } from "@modelcontextprotocol/sdk/types.js";
-import { MnemosyneMemorySystem, type MnemosyneConfig } from "@mnemosyne-core/core/memory-tool";
-import type { KeyValueStoreAdapter } from "@mnemosyne-core/core/interfaces/storage";
-import { MemoryNotFoundError } from "@mnemosyne-core/core/modules/core-memory";
-import { applyFoundationMigration, type FoundationMigration } from "@mnemosyne-core/core/migrations/foundation";
-import { foundationMigrationV1_0_0 } from "@mnemosyne-core/core/migrations/foundation-v1.0.0";
+import { MnemosyneMemorySystem, type MnemosyneConfig } from "@mnemosyne/legacy-core/memory-tool";
+import type { KeyValueStoreAdapter } from "@mnemosyne/legacy-core/interfaces/storage";
+import { MemoryNotFoundError } from "@mnemosyne/legacy-core/modules/core-memory";
+import { applyFoundationMigration, type FoundationMigration } from "@mnemosyne/legacy-core/migrations/foundation";
+import { foundationMigrationV1_0_0 } from "@mnemosyne/legacy-core/migrations/foundation-v1.0.0";
 import { registerSimplifiedMemoryTools } from "./tools/simplified-registry";
-import { CloudflareVectorStore } from "@mnemosyne-core/cloudflare/vector-store";
-import { KVMemoryLayer, getKVMemoryLayer } from "@mnemosyne-core/core/modules/kv-memory-layer";
-import { processFederationOperation } from "@mnemosyne-core/core/modules/federation-rag";
-import { getFederationAuth, AgentRole } from "@mnemosyne-core/core/modules/federation-auth";
+import { CloudflareVectorStore } from "@mnemosyne/legacy-cloudflare/vector-store";
+import { KVMemoryLayer, getKVMemoryLayer } from "@mnemosyne/legacy-core/modules/kv-memory-layer";
+import { processFederationOperation } from "@mnemosyne/legacy-core/modules/federation-rag";
+import { getFederationAuth, AgentRole } from "@mnemosyne/legacy-core/modules/federation-auth";
 
 /**
  * Mnemosyne Memory System MCP Agent

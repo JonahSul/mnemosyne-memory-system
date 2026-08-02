@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MnemosyneMemorySystem } from '../packages/mnemosyne/src/memory-tool';
-import { CloudflareVectorStore, type CloudflareSearchResult } from '@mnemosyne-core/cloudflare/vector-store';
+import { CloudflareVectorStore, type CloudflareSearchResult } from '@mnemosyne/legacy-cloudflare/vector-store';
 import { PersistentCoreMemoryManager } from '../packages/mnemosyne/src/modules/persistent-core-memory';
 import { applyFoundationForTests, resetTestMemoryGlobals } from './setup/test-memory-environment';
 
