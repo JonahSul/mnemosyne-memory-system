@@ -8,10 +8,10 @@ importers:
 
   .:
     dependencies:
-      '@mnemosyne-core/cloudflare':
+      '@mnemosyne/legacy-cloudflare':
         specifier: file:packages/mnemosyne-cloudflare
         version: file:packages/mnemosyne-cloudflare
-      '@mnemosyne-core/core':
+      '@mnemosyne/legacy-core':
         specifier: file:packages/mnemosyne
         version: link:packages/mnemosyne
       '@modelcontextprotocol/sdk':
@@ -78,17 +78,99 @@ importers:
 
   packages/mnemosyne: {}
 
+  packages/mnemosyne-cli:
+    dependencies:
+      '@mnemosyne/core':
+        specifier: workspace:*
+        version: link:../mnemosyne-core
+      '@mnemosyne/infra-sqlite':
+        specifier: workspace:*
+        version: link:../mnemosyne-infrastructure-sqlite
+      '@mnemosyne/mcp-server':
+        specifier: workspace:*
+        version: link:../mnemosyne-mcp-server
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.17.3
+        version: 1.29.0(zod@3.25.76)
+    devDependencies:
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.13.2
+      tsx:
+        specifier: ^4.7.1
+        version: 4.22.4
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
   packages/mnemosyne-cloudflare:
     dependencies:
-      '@mnemosyne-core/core':
+      '@mnemosyne/legacy-core':
         specifier: workspace:*
         version: link:../mnemosyne
 
+  packages/mnemosyne-core:
+    dependencies:
+      jose:
+        specifier: ^6.2.3
+        version: 6.2.3
+
+  packages/mnemosyne-infrastructure-cloudflare:
+    dependencies:
+      '@mnemosyne/core':
+        specifier: workspace:*
+        version: link:../mnemosyne-core
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20241127.0
+        version: 4.20260616.1
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/mnemosyne-infrastructure-sqlite:
+    dependencies:
+      '@mnemosyne/core':
+        specifier: workspace:*
+        version: link:../mnemosyne-core
+      better-sqlite3:
+        specifier: ^11.7.0
+        version: 11.10.0
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.12
+        version: 7.6.13
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.13.2
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
   packages/mnemosyne-mcp:
     dependencies:
-      '@mnemosyne-core/core':
+      '@mnemosyne/legacy-core':
         specifier: workspace:*
         version: link:../mnemosyne
+    devDependencies:
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.13.2
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/mnemosyne-mcp-server:
+    dependencies:
+      '@mnemosyne/core':
+        specifier: workspace:*
+        version: link:../mnemosyne-core
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.17.3
+        version: 1.29.0(zod@3.25.76)
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^24.3.0
@@ -99,7 +181,7 @@ importers:
 
   packages/mnemosyne-pubsub:
     dependencies:
-      '@mnemosyne-core/core':
+      '@mnemosyne/legacy-core':
         specifier: workspace:*
         version: link:../mnemosyne
     devDependencies:
@@ -110,9 +192,34 @@ importers:
         specifier: ^5.3.3
         version: 5.9.3
 
+  packages/mnemosyne-saas:
+    dependencies:
+      '@mnemosyne/core':
+        specifier: workspace:*
+        version: link:../mnemosyne-core
+      '@mnemosyne/infra-cloudflare':
+        specifier: workspace:*
+        version: link:../mnemosyne-infrastructure-cloudflare
+      '@mnemosyne/mcp-server':
+        specifier: workspace:*
+        version: link:../mnemosyne-mcp-server
+      '@mnemosyne/pubsub':
+        specifier: workspace:*
+        version: link:../mnemosyne-pubsub
+      '@mnemosyne/streaming':
+        specifier: workspace:*
+        version: link:../mnemosyne-streaming
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20241127.0
+        version: 4.20260616.1
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
   packages/mnemosyne-sqlite:
     dependencies:
-      '@mnemosyne-core/core':
+      '@mnemosyne/legacy-core':
         specifier: workspace:*
         version: link:../mnemosyne
       '@modelcontextprotocol/sdk':
@@ -137,7 +244,7 @@ importers:
 
   packages/mnemosyne-sqlite-vscode:
     dependencies:
-      '@mnemosyne-core/sqlite':
+      '@mnemosyne/legacy-sqlite':
         specifier: workspace:^1.0.0
         version: link:../mnemosyne-sqlite
     devDependencies:
@@ -147,6 +254,22 @@ importers:
       '@vscode/vsce':
         specifier: ^2.22.0
         version: 2.32.0
+
+  packages/mnemosyne-streaming:
+    dependencies:
+      '@mnemosyne/core':
+        specifier: workspace:*
+        version: link:../mnemosyne-core
+      '@mnemosyne/pubsub':
+        specifier: workspace:*
+        version: link:../mnemosyne-pubsub
+    devDependencies:
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.13.2
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
 
 packages:
 
@@ -869,7 +992,7 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@mnemosyne-core/cloudflare@file:packages/mnemosyne-cloudflare':
+  '@mnemosyne/legacy-cloudflare@file:packages/mnemosyne-cloudflare':
     resolution: {directory: packages/mnemosyne-cloudflare, type: directory}
     engines: {node: '>=20.0.0'}
 
@@ -2988,9 +3111,9 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@mnemosyne-core/cloudflare@file:packages/mnemosyne-cloudflare':
+  '@mnemosyne/legacy-cloudflare@file:packages/mnemosyne-cloudflare':
     dependencies:
-      '@mnemosyne-core/core': link:packages/mnemosyne
+      '@mnemosyne/legacy-core': link:packages/mnemosyne
 
   '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
     dependencies:
