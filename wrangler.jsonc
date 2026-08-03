@@ -3,7 +3,9 @@
 	"name": "mnemosyne-memory-system-dev",
 	"main": "src/index.ts",
 	"compatibility_date": "2024-11-27",
-	"compatibility_flags": ["nodejs_compat"],
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
 	"migrations": [
 		{
 			"new_sqlite_classes": [
@@ -37,7 +39,6 @@
 			"enabled": true
 		}
 	},
-	
 	// Environment-specific configurations
 	"env": {
 		"staging": {
@@ -89,7 +90,6 @@
 				}
 			}
 		},
-		
 		"production": {
 			"name": "mnemosyne-memory-system",
 			"durable_objects": {
@@ -113,6 +113,13 @@
 				{
 					"binding": "R2_BUCKET",
 					"bucket_name": "mnemosyne-autorag-prod"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "MEMORY_KV",
+					"id": "REPLACE_WITH_PROD_KV_ID",
+					"preview_id": "REPLACE_WITH_PROD_PREVIEW_KV_ID"
 				}
 			],
 			"define": {
