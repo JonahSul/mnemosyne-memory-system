@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Pre-commit hook: type-check staged files via lint-staged.
+# This catches type errors before they enter the commit history.
+
+npx lint-staged
