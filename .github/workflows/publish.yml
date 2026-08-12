@@ -47,6 +47,28 @@ jobs:
             - name: Install dependencies
               run: pnpm install
 
+            - name: Inject version from tag into package.json files
+              run: |
+                  TAG="${{ github.ref_name }}"
+                  VERSION="${TAG#v}"
+                  echo "Publishing version: $VERSION"
+                  # Update root package.json
+                  node -e "
+                    const fs = require('fs');
+                    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+                    pkg.version = '$VERSION';
+                    fs.writeFileSync('package.json', JSON.stringify(pkg, null, '\t') + '\n');
+                  "
+                  # Update each workspace package
+                  for pkg in packages/mnemosyne-core packages/mnemosyne-pubsub packages/mnemosyne-infrastructure-cloudflare packages/mnemosyne-infrastructure-sqlite packages/mnemosyne-mcp-server packages/mnemosyne-streaming packages/mnemosyne-saas packages/mnemosyne-cli; do
+                    node -e "
+                      const fs = require('fs');
+                      const pkg = JSON.parse(fs.readFileSync('$pkg/package.json', 'utf8'));
+                      pkg.version = '$VERSION';
+                      fs.writeFileSync('$pkg/package.json', JSON.stringify(pkg, null, '\t') + '\n');
+                    "
+                  done
+
             - name: Build all packages
               run: pnpm build
 

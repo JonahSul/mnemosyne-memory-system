@@ -5,6 +5,8 @@ on:
     branches: [main, dev]
   pull_request:
     branches: [main, dev]
+  merge_group:
+    types: [checks_requested]
 
 env:
   NODE_VERSION: 22.x
@@ -74,15 +76,21 @@ jobs:
         run: pnpm docs:generate
 
   # ───────────────────────────────────────────────────────────────────────
-  # Stage 2: Version + Tag (only on push, not PRs)
+  # Stage 2: Tag (only on push, not PRs, not merge_group)
   # Gate: needs test → cannot run unless build+test passed.
   #
-  # - dev push: always bumps prerelease (vX.Y.Z-dev.N), commits + tags.
-  # - main push: computes patch/minor/major from commits since last tag,
-  #   commits + tags.
+  # Computes the next version and creates a git tag pointing at the CURRENT
+  # HEAD commit (the merge commit that was just tested). Does NOT commit
+  # anything to the branch — no push back, no [skip ci], no loop risk.
   #
-  # The bump commit uses [skip ci] so it doesn't re-trigger this workflow.
-  # The tag points at the bump commit → publish.yml fires on the tag.
+  # publish.yml reads the tag name, injects the version into package.json
+  # in-memory, and publishes. The tag is the source of truth for the version.
+  #
+  # - dev push: prerelease (vX.Y.Z-dev.N).
+  # - main push: patch/minor/major from commits since last tag.
+  #
+  # Loop prevention: the job checks if the computed tag already exists. If
+  # it does (e.g. a re-trigger from a prior run), it exits without tagging.
   # ───────────────────────────────────────────────────────────────────────
   bump-version:
     if: github.event_name == 'push'
@@ -139,21 +147,24 @@ jobs:
             echo "mode=$BUMP" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Bump version
+      - name: Compute next version
         id: version
         run: |
-          NEW_VER=$(node scripts/version-bump.mjs "${{ steps.mode.outputs.mode }}" | tail -1)
+          NEW_VER=$(node scripts/version-bump.mjs "${{ steps.mode.outputs.mode }}" --compute-only | tail -1)
           echo "version=${NEW_VER}" >> "$GITHUB_OUTPUT"
 
-      - name: Commit version bump [skip ci]
+      - name: Check if tag already exists (loop guard)
+        id: guard
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
-          git push
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${{ steps.version.outputs.version }} already exists — skipping."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create and push version tag
+        if: steps.guard.outputs.skip != 'true'
         run: |
           git tag "v${{ steps.version.outputs.version }}"
           git push origin "v${{ steps.version.outputs.version }}"
