@@ -31,7 +31,7 @@
 		"version:major": "node scripts/version-bump.mjs major"
 	},
 	"lint-staged": {
-		"*.{ts,js,mjs}": "tsc --noEmit -p tsconfig.json || true"
+		"*.{ts,tsx,js,mjs}": "bash -c 'tsc --noEmit -p tsconfig.json'"
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.17.3",
