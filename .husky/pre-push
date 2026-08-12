@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# Pre-push hook: run the full build + test suite before pushing.
+# This is the last local gate — if it fails, the push is blocked.
+# Skip on CI (where the workflow handles its own gating).
+
+if [ -n "$CI" ]; then
+    exit 0
+fi
+
+echo "Running build + tests before push..."
+pnpm build && pnpm test
