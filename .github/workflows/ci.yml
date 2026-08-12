@@ -5,12 +5,17 @@ on:
     branches: [main, dev]
   pull_request:
     branches: [main, dev]
+  merge_group:
+    types: [checks_requested]
 
 env:
   NODE_VERSION: 22.x
-  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
+  # ───────────────────────────────────────────────────────────────────────
+  # Stage 1: Build + Test (THE GATE)
+  # Every push and PR runs this. Nothing proceeds unless this passes.
+  # ───────────────────────────────────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -70,18 +75,23 @@ jobs:
       - name: Generate API docs
         run: pnpm docs:generate
 
-  # Compute the next version, bump all package.json files, commit with
-  # [skip ci] (so this bump does NOT re-trigger this workflow), and push a
-  # version tag `v<version>` pointing at the bump commit.
+  # ───────────────────────────────────────────────────────────────────────
+  # Stage 2: Tag (only on push, not PRs, not merge_group)
+  # Gate: needs test → cannot run unless build+test passed.
   #
-  # - dev: only fires when the HEAD commit is a conventional commit
-  #   (feat|fix|breaking). Bumps prerelease → vX.Y.Z-dev.N.
-  # - main: always fires. Computes bump type from all commits since the
-  #   previous git tag. Highest severity (breaking > feat > fix) wins;
-  #   defaults to patch if no conventional commits found.
+  # Computes the next version and creates a git tag pointing at the CURRENT
+  # HEAD commit (the merge commit that was just tested). Does NOT commit
+  # anything to the branch — no push back, no [skip ci], no loop risk.
   #
-  # The tag points at the bump commit, so the published artifact SHA is
-  # immutable and pinned — publish.yml checks out exactly this tag.
+  # publish.yml reads the tag name, injects the version into package.json
+  # in-memory, and publishes. The tag is the source of truth for the version.
+  #
+  # - dev push: prerelease (vX.Y.Z-dev.N).
+  # - main push: patch/minor/major from commits since last tag.
+  #
+  # Loop prevention: the job checks if the computed tag already exists. If
+  # it does (e.g. a re-trigger from a prior run), it exits without tagging.
+  # ───────────────────────────────────────────────────────────────────────
   bump-version:
     if: github.event_name == 'push'
     needs: test
@@ -111,61 +121,50 @@ jobs:
       - name: Determine bump mode
         id: mode
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            # Dev branch: only bump on conventional-commit pushes
-            MERGE_MSG=$(git log -1 --pretty=format:'%s')
-            if echo "$MERGE_MSG" | grep -qiE "^(feat|fix|breaking change|breaking)"; then
-              echo "mode=prerelease" >> "$GITHUB_OUTPUT"
-            else
-              echo "mode=skip" >> "$GITHUB_OUTPUT"
-            fi
+          BRANCH="${{ github.ref_name }}"
+          if [ "$BRANCH" = "dev" ]; then
+            echo "mode=prerelease" >> "$GITHUB_OUTPUT"
           else
-            # Main branch: compute bump from all commits since previous tag
+            # Main: scan commits since the last version tag.
+            # Highest severity wins: breaking > feat > fix, default patch.
             PREV=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
             if [ -z "$PREV" ]; then
-              RANGE="HEAD"
+              RANGE=""
             else
               RANGE="$PREV..HEAD"
             fi
-            # Resolve to the common ancestor if PREV isn't directly reachable
-            MERGE_BASE=$(git merge-base "$PREV" HEAD 2>/dev/null || echo "HEAD")
-            if [ -n "$MERGE_BASE" ] && [ "$MERGE_BASE" != "HEAD" ]; then
-              RANGE="$MERGE_BASE..HEAD"
+            if [ -z "$RANGE" ]; then
+              COMMITS=$(git log --pretty=format:'%s')
+            else
+              COMMITS=$(git log --pretty=format:'%s' "$RANGE")
             fi
-            COMMITS=$(git log --pretty=format:'%s' "$RANGE" 2>/dev/null || echo "")
             BUMP="patch"
-            if echo "$COMMITS" | grep -qiE "breaking change|BREAKING CHANGE"; then
+            if echo "$COMMITS" | grep -qi "breaking change"; then
               BUMP="major"
-            elif echo "$COMMITS" | grep -qiE "^(feat|feature)(\(.*\))?:"; then
+            elif echo "$COMMITS" | grep -qiE "^feat"; then
               BUMP="minor"
-            elif echo "$COMMITS" | grep -qiE "^(fix)(\(.*\))?:"; then
-              BUMP="patch"
             fi
             echo "mode=$BUMP" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Skip (non-feat/fix/breaking on dev)
-        if: steps.mode.outputs.mode == 'skip'
-        run: echo "Skipping version bump — HEAD is not a feat/fix/breaking commit"
-
-      - name: Bump version
-        if: steps.mode.outputs.mode != 'skip'
+      - name: Compute next version
         id: version
         run: |
-          NEW_VER=$(node scripts/version-bump.mjs "${{ steps.mode.outputs.mode }}" | tail -1)
+          NEW_VER=$(node scripts/version-bump.mjs "${{ steps.mode.outputs.mode }}" --compute-only | tail -1)
           echo "version=${NEW_VER}" >> "$GITHUB_OUTPUT"
 
-      - name: Commit version bump [skip ci]
-        if: steps.mode.outputs.mode != 'skip'
+      - name: Check if tag already exists (loop guard)
+        id: guard
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
-          git push
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${{ steps.version.outputs.version }} already exists — skipping."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create and push version tag
-        if: steps.mode.outputs.mode != 'skip'
+        if: steps.guard.outputs.skip != 'true'
         run: |
           git tag "v${{ steps.version.outputs.version }}"
           git push origin "v${{ steps.version.outputs.version }}"

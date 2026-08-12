@@ -87,6 +87,22 @@ When building from clean: `pnpm build` runs all 8 packages:
 
 ## Deployment
 
-- **Dev branch** → CI runs tests + pre-release npm publish (dev tag)
-- **Main branch** → CI runs tests + version bump + npm publish (latest) + GitHub Release
-- **Local** → Docker compose (qdrant + redis + ollama) or wrangler dev
+## Deployment Pipeline
+
+```
+push/PR → ci.yml
+  ├─ test (build + test) ← THE GATE
+  ├─ docs (dev only, needs test)
+  └─ bump-version (push only, needs test)
+       ├─ dev: prerelease vX.Y.Z-dev.N → npm dev tag
+       └─ main: patch/minor/major → npm latest + GitHub Release + docs
+            ↓ commits [skip ci], pushes v<version> tag
+tag v* → publish.yml
+  └─ publish immutable artifact from tagged SHA
+```
+
+- **Local gates**: Husky pre-commit (lint-staged), pre-push (build + test)
+- **CI gate**: ci.yml test job must pass before bump-version runs
+- **Publish**: publish.yml fires on tag push, checks out the tagged SHA
+- **Branch naming**: `feat/`, `fix/`, `docs/`, `refactor/`, `ci/`, `chore/`
+- **Local dev**: Docker compose (qdrant + redis + ollama) or wrangler dev

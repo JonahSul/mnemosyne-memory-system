@@ -125,9 +125,11 @@ function bump(versionStr, mode) {
 function main() {
     const mode = process.argv[2];
     if (!mode || !['prerelease', 'patch', 'minor', 'major'].includes(mode)) {
-        console.error('Usage: node scripts/version-bump.mjs <prerelease|patch|minor|major>');
+        console.error('Usage: node scripts/version-bump.mjs <prerelease|patch|minor|major> [--compute-only]');
         process.exit(1);
     }
+
+    const computeOnly = process.argv.includes('--compute-only');
 
     const rootPkg = readJson('package.json');
     const currentVersion = rootPkg.version;
@@ -137,32 +139,24 @@ function main() {
     console.log(`New version:     ${newVersion}`);
     console.log(`Mode:            ${mode}`);
 
-    // Update root package.json
-    rootPkg.version = newVersion;
-    writeJson('package.json', rootPkg);
+    if (!computeOnly) {
+        // Update root package.json
+        rootPkg.version = newVersion;
+        writeJson('package.json', rootPkg);
 
-    // Update each workspace package
-    for (const pkgDir of PACKAGES) {
-        const pkgPath = `${pkgDir}/package.json`;
-        const pkg = readJson(pkgPath);
-        pkg.version = newVersion;
+        // Update each workspace package
+        for (const pkgDir of PACKAGES) {
+            const pkgPath = `${pkgDir}/package.json`;
+            const pkg = readJson(pkgPath);
+            pkg.version = newVersion;
 
-        // Also update local dependency references if they use file: protocol
-        // (They use exact versions, so they don't need updating for local dev,
-        //  but keep them in sync anyway.)
-        if (pkg.dependencies) {
-            for (const [dep, ver] of Object.entries(pkg.dependencies)) {
-                if (ver.startsWith('file:')) {
-                    // Keep file: references as-is for local development
-                    continue;
-                }
-            }
+            writeJson(pkgPath, pkg);
         }
 
-        writeJson(pkgPath, pkg);
+        console.log(`\nUpdated ${1 + PACKAGES.length} package.json files.`);
+    } else {
+        console.log('(compute-only — no files written)');
     }
-
-    console.log(`\nUpdated ${1 + PACKAGES.length} package.json files.`);
 
     // Emit just the version number for CI scripts (last line of stdout)
     console.log(newVersion);
