@@ -1,6 +1,6 @@
 {
 	"name": "@mnemosyne/saas",
-	"version": "2.0.1-dev.0",
+	"version": "2.0.1-dev.1",
 	"description": "Mnemosyne SaaS application — Cloudflare Worker entry point. Composition root binding domain to Cloudflare infrastructure.",
 	"type": "module",
 	"main": "dist/worker.js",

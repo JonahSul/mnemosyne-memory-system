@@ -1,6 +1,6 @@
 {
 	"name": "@mnemosyne/cli",
-	"version": "2.0.1-dev.0",
+	"version": "2.0.1-dev.1",
 	"description": "Mnemosyne CLI — standalone MCP server over stdio with SQLite infrastructure. For local dev, CLI, and VS Code extension.",
 	"type": "module",
 	"main": "dist/index.js",

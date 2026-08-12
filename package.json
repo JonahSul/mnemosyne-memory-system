@@ -1,6 +1,6 @@
 {
 	"name": "mnemosyne-memory-system",
-	"version": "2.0.1-dev.0",
+	"version": "2.0.1-dev.1",
 	"description": "Mnemosyne Memory System for AI behavior regulation and cognitive enhancement - DDD SaaS architecture",
 	"main": "packages/mnemosyne-saas/src/worker.ts",
 	"type": "module",
