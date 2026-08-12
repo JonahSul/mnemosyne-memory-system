@@ -21,18 +21,21 @@ config/             → Runtime config (query-rewrite, etc.)
 copilot-notes/      → Upload scripts, training data
 docs/               → ADRs, architecture guides
 packages/
-  mnemosyne/          → @mnemosyne/core
-  mnemosyne-cloudflare/ → @mnemosyne/cloudflare
-  mnemosyne-mcp/      → @mnemosyne/mcp
-  mnemosyne-pubsub/   → @mnemosyne/pubsub
-  mnemosyne-sqlite/   → @mnemosyne/sqlite (+ VS Code ext)
-src/                → Cloudflare Worker entry point
-tests/              → Vitest test suite
+  mnemosyne-core/   → @mnemosyne/core (domain model)
+  mnemosyne-pubsub/ → @mnemosyne/pubsub (event bus)
+  mnemosyne-infrastructure-cloudflare/ → @mnemosyne/infra-cloudflare
+  mnemosyne-infrastructure-sqlite/     → @mnemosyne/infra-sqlite
+  mnemosyne-mcp-server/ → @mnemosyne/mcp-server
+  mnemosyne-streaming/ → @mnemosyne/streaming
+  mnemosyne-saas/    → @mnemosyne/saas (Cloudflare Worker)
+  mnemosyne-cli/     → @mnemosyne/cli
 ```
 
 ## Core Patterns
 
-- **Delegator pattern** — module composition via method routing
+- **DDD bounded contexts** — Memory, Tier, Search, Foundation, Causality, Federation
+- **Application services** — use cases orchestrate domain services
+- **Ports & adapters** — infrastructure implements @mnemosyne/core ports
 - **Multi-tier memory** — short/intermediate/long-term with forgetting curves
 - **Semantic search** — vector embeddings + adaptive thresholds
 - **Foundation system** — hot-deployable behavioral rules
@@ -41,9 +44,11 @@ tests/              → Vitest test suite
 
 | Package | Published | Docs |
 |---------|-----------|------|
-| `@mnemosyne/core` | ✅ npm | packages/mnemosyne/ |
-| `@mnemosyne/cloudflare` | ✅ npm | packages/mnemosyne-cloudflare/ |
+| `@mnemosyne/core` | ✅ npm | packages/mnemosyne-core/ |
 | `@mnemosyne/pubsub` | ✅ npm | packages/mnemosyne-pubsub/ |
-| `@mnemosyne/sqlite` | ✅ npm | packages/mnemosyne-sqlite/ |
-| `@mnemosyne/mcp` | ✅ npm | packages/mnemosyne-mcp/ |
-| `mnemosyne-sqlite-vscode` | VS Marketplace | packages/mnemosyne-sqlite-vscode/ |
+| `@mnemosyne/infra-cloudflare` | ✅ npm | packages/mnemosyne-infrastructure-cloudflare/ |
+| `@mnemosyne/infra-sqlite` | ✅ npm | packages/mnemosyne-infrastructure-sqlite/ |
+| `@mnemosyne/mcp-server` | ✅ npm | packages/mnemosyne-mcp-server/ |
+| `@mnemosyne/streaming` | ✅ npm | packages/mnemosyne-streaming/ |
+| `@mnemosyne/saas` | ✅ npm | packages/mnemosyne-saas/ |
+| `@mnemosyne/cli` | ✅ npm | packages/mnemosyne-cli/ |

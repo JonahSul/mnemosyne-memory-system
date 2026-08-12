@@ -38,9 +38,9 @@ Every published package needs `README.md` in its root:
 - Configuration reference (if applicable)
 - Link to full API docs
 
-Packages requiring README: `@mnemosyne/core`, `@mnemosyne/cloudflare`, `@mnemosyne/mcp`.
+Packages requiring README: `@mnemosyne/core`, `@mnemosyne/infra-cloudflare`, `@mnemosyne/infra-sqlite`, `@mnemosyne/mcp-server`, `@mnemosyne/streaming`, `@mnemosyne/saas`, `@mnemosyne/cli`.
 
-✅ Have README: `@mnemosyne/sqlite`, `@mnemosyne/pubsub`, `mnemosyne-sqlite-vscode`.
+✅ Have README: `@mnemosyne/pubsub`.
 
 ## ADR (Architecture Decision Records)
 

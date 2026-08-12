@@ -114,7 +114,7 @@ curl -X POST https://your-worker.workers.dev/foundation \
 
 ### Creating Custom Foundations
 
-Create domain-specific foundations by extending the base migration structure found in `migrations/foundation-v1.5.0-fixed.ts`. The current system uses **Foundation v1.5.0** as the single source of truth for all behavioral rules and patterns.
+Create domain-specific foundations by extending the base migration structure found in `migrations/foundation-v1.5.0-fixed.ts`. The canonical Foundation version is **v1.8.0** — see `FOUNDATION.md` (the single source of truth for the current version). Do not restate a different "current" version in code or docs.
 
 ## 📋 Foundation Rules System
 

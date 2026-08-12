@@ -1,0 +1,50 @@
+{
+	"name": "@mnemosyne/infra-sqlite",
+	"version": "2.0.1-dev.1",
+	"description": "SQLite infrastructure adapters for Mnemosyne — better-sqlite3 + sqlite-vec. Real implementations for local/CLI/VS Code use.",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+		"directory": "packages/mnemosyne-infrastructure-sqlite"
+	},
+	"bugs": {
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+	},
+	"homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-infrastructure-sqlite",
+	"author": "Jonah Sul",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@mnemosyne/core": "workspace:*",
+		"better-sqlite3": "^11.7.0"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.12",
+		"@types/node": "^24.3.0",
+		"typescript": "^5.3.3"
+	},
+	"sideEffects": false
+}

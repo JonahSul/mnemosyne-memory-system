@@ -5,12 +5,12 @@
  * for all storage operations.
  */
 
-import type { 
+import type {
 	VectorStoreAdapter,
 	VectorStoreRecord,
 	VectorStoreSearchOptions,
 	VectorStoreSearchResult
-} from '@mnemosyne-core/core/interfaces/storage';
+} from './storage-types.js';
 
 import { EventType } from './types.js';
 import type {
@@ -65,7 +65,7 @@ export class EventPublishingVectorStore implements VectorStoreAdapter {
 
 		if (this.options.publishWrites) {
 			const isUpdate = record.id && this.recordCache.has(record.id);
-			
+
 			if (isUpdate) {
 				const previous = this.recordCache.get(record.id!)!;
 				await this.publishEvent<StorageUpdatedEvent>({
@@ -152,7 +152,7 @@ export class EventPublishingVectorStore implements VectorStoreAdapter {
 
 			if (deleted && this.options.publishWrites) {
 				const record = this.recordCache.get(id);
-				
+
 				await this.publishEvent<StorageDeletedEvent>({
 					id: this.generateEventId(),
 					type: EventType.STORAGE_DELETED,

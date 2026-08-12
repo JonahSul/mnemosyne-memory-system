@@ -7,7 +7,7 @@ on:
     branches: [main, dev]
 
 env:
-  NODE_VERSION_TEST: 22.x
+  NODE_VERSION: 22.x
   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
@@ -18,15 +18,15 @@ jobs:
         node-version: [22.x]
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 11
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@12b7ff3796cabd9e0da05c556468eec2f565d246
         with:
           node-version: ${{ matrix.node-version }}
           cache: "pnpm"
@@ -35,11 +35,7 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
+        run: pnpm build
 
       - name: Run tests
         run: pnpm test
@@ -52,91 +48,90 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 11
 
-      - name: Use Node.js ${{ env.NODE_VERSION_TEST }}
-        uses: actions/setup-node@v6
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@12b7ff3796cabd9e0da05c556468eec2f565d246
         with:
-          node-version: ${{ env.NODE_VERSION_TEST }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Build all packages
-        run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
+        run: pnpm build
 
       - name: Generate API docs
         run: pnpm docs:generate
 
-  publish-dev:
-    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+  # Compute the next version, bump all package.json files, commit with
+  # [skip ci] (so this bump does NOT re-trigger this workflow — no publish
+  # loop), and push a version tag `v<version>` pointing at the bump commit.
+  # The separate publish.yml workflow reacts to the tag push and publishes
+  # exactly that tagged commit.
+  bump-version:
+    if: github.event_name == 'push'
     needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
         with:
           fetch-depth: 0
-          ref: dev
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 11
 
-      - name: Use Node.js ${{ env.NODE_VERSION_TEST }}
-        uses: actions/setup-node@v6
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@12b7ff3796cabd9e0da05c556468eec2f565d246
         with:
-          node-version: ${{ env.NODE_VERSION_TEST }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Configure npm authentication
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-          echo "registry=https://registry.npmjs.org/" >> .npmrc
 
       - name: Install dependencies
         run: pnpm install
 
-      - name: Bump prerelease version
+      - name: Determine bump mode
+        id: mode
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            echo "mode=prerelease" >> "$GITHUB_OUTPUT"
+          else
+            BUMP="patch"
+            MERGE_MSG=$(git log -1 --pretty=format:'%s')
+            if echo "$MERGE_MSG" | grep -qi "breaking change"; then
+              BUMP="major"
+            elif echo "$MERGE_MSG" | grep -qiE "^(feat|feature)(\(.*\))?:"; then
+              BUMP="minor"
+            fi
+            echo "mode=$BUMP" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version
         id: version
         run: |
-          NEW_VER=$(node scripts/version-bump.mjs prerelease | tail -1)
+          NEW_VER=$(node scripts/version-bump.mjs "${{ steps.mode.outputs.mode }}" | tail -1)
           echo "version=${NEW_VER}" >> "$GITHUB_OUTPUT"
 
-      - name: Build all packages
-        run: |
-          pnpm --filter @mnemosyne-core/core run build
-          pnpm --filter @mnemosyne-core/pubsub run build
-          pnpm --filter @mnemosyne-core/cloudflare run build
-          pnpm --filter @mnemosyne-core/sqlite run build
-
-      - name: Publish packages to npm (dev tag)
-        run: |
-          for pkg in packages/mnemosyne packages/mnemosyne-pubsub packages/mnemosyne-cloudflare packages/mnemosyne-sqlite packages/mnemosyne-mcp; do
-            pushd "$pkg"
-            pnpm publish --tag dev --no-git-checks
-            popd
-          done
-
-      - name: Commit version bump back to dev
+      - name: Commit version bump [skip ci]
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
           git push
+
+      - name: Create and push version tag
+        run: |
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"

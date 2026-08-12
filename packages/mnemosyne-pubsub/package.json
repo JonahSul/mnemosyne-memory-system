@@ -1,6 +1,6 @@
 {
-	"name": "@mnemosyne-core/pubsub",
-	"version": "1.0.0",
+	"name": "@mnemosyne/pubsub",
+	"version": "2.0.1-dev.1",
 	"description": "Event bus and pub/sub system for Mnemosyne with SSE support",
 	"type": "module",
 	"main": "dist/index.js",
@@ -40,9 +40,7 @@
 		"dev": "tsc -p tsconfig.json --watch",
 		"prepublishOnly": "npm run build"
 	},
-	"dependencies": {
-		"@mnemosyne-core/core": "workspace:*"
-	},
+	"dependencies": {},
 	"devDependencies": {
 		"@types/node": "^24.3.0",
 		"typescript": "^5.3.3"

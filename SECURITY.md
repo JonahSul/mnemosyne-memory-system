@@ -8,11 +8,14 @@ Do not open public issues for security bugs.
 
 ## Scope
 
-- Core memory system (`@mnemosyne/core`)
-- Cloudflare adapter (`@mnemosyne/cloudflare`)
-- MCP server (`@mnemosyne/mcp`, `@mnemosyne/sqlite`)
+- Core domain model (`@mnemosyne/core`)
+- Cloudflare adapters (`@mnemosyne/infra-cloudflare`)
+- SQLite adapters (`@mnemosyne/infra-sqlite`)
+- MCP server (`@mnemosyne/mcp-server`)
+- Streaming (`@mnemosyne/streaming`)
 - Pub/sub system (`@mnemosyne/pubsub`)
-- VS Code extension (`mnemosyne-sqlite-vscode`)
+- SaaS Worker (`@mnemosyne/saas`)
+- CLI (`@mnemosyne/cli`)
 
 ## Supported Versions
 

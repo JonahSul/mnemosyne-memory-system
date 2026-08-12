@@ -18,14 +18,14 @@ mnemosyne-memory-system/
 ├── copilot-notes/        → Embedding upload scripts
 ├── docs/                 → ADRs, architecture guides
 ├── packages/
-│   ├── mnemosyne/          → @mnemosyne/core (types, services, domains)
-│   ├── mnemosyne-cloudflare/ → @mnemosyne/cloudflare (Vectorize, AI binding)
-│   ├── mnemosyne-mcp/      → @mnemosyne/mcp (MCP server for Workers)
-│   ├── mnemosyne-pubsub/   → @mnemosyne/pubsub (event bus + SSE)
-│   ├── mnemosyne-sqlite/   → @mnemosyne/sqlite (local SQLite + MCP server)
-│   └── mnemosyne-sqlite-vscode/ → VS Code extension
-├── src/                  → Cloudflare Worker entry point
-├── tests/                → Vitest suite
+│   ├── mnemosyne-core/   → @mnemosyne/core (domain model, ports)
+│   ├── mnemosyne-pubsub/ → @mnemosyne/pubsub (event bus + SSE)
+│   ├── mnemosyne-infrastructure-cloudflare/ → @mnemosyne/infra-cloudflare
+│   ├── mnemosyne-infrastructure-sqlite/     → @mnemosyne/infra-sqlite
+│   ├── mnemosyne-mcp-server/ → @mnemosyne/mcp-server (MCP server)
+│   ├── mnemosyne-streaming/ → @mnemosyne/streaming (SSE + WS)
+│   ├── mnemosyne-saas/    → @mnemosyne/saas (Cloudflare Worker)
+│   └── mnemosyne-cli/     → @mnemosyne/cli (local CLI)
 ├── docker/               → Dockerfiles (qdrant, redis, ollama)
 ├── scripts/              → Version bump, KV setup, migrations
 └── typedoc.json          → API doc generation config
@@ -36,45 +36,54 @@ mnemosyne-memory-system/
 ```
 @mnemosyne/core (no intra-repo deps)
     ↑ deps on core
-@mnemosyne/cloudflare  @mnemosyne/pubsub  @mnemosyne/sqlite
+@mnemosyne/infra-cloudflare  @mnemosyne/infra-sqlite  @mnemosyne/mcp-server
     ↑                              ↑                    ↑
     └──────────┬───────────────────┘                    │
                ↓                                        │
-        @mnemosyne/mcp (MCP server)                     │
+        @mnemosyne/streaming (SSE + WS)                │
                │                                        │
                └──────────┬─────────────────────────────┘
                           ↓
-              mnemosyne-sqlite-vscode (VS Code ext)
+              @mnemosyne/saas (Cloudflare Worker)
+              @mnemosyne/cli (local CLI)
 ```
 
 ## Key Architecture Patterns
 
-### Delegator Pattern
-Module composition via method routing. `Delegator` class autodiscovers methods from registered modules and dispatches calls. Used in `memory-tool.ts`.
+### DDD Bounded Contexts
+Six bounded contexts: Memory, Tier, Search, Foundation, Causality, Federation. Each has aggregates, services, and types in `@mnemosyne/core/src/domain/`.
+
+### Application Services (Use Cases)
+`@mnemosyne/core/src/application/` — StoreMemoryUseCase, SearchMemoryUseCase, GetSystemStatsUseCase, AdministerFoundationUseCase, StoreEnhancedMemoryUseCase, AnalyzeCausalityUseCase. Orchestrate domain services; no business logic.
+
+### Ports & Adapters
+`@mnemosyne/core/src/shared/` defines ports (VectorStoreAdapter, KeyValueStoreAdapter, EventPublisher, EmbeddingProvider). Infrastructure packages implement them. Composition roots (`@mnemosyne/saas`, `@mnemosyne/cli`) bind adapters to the domain.
 
 ### Multi-Tier Memory
-Three tiers: short-term (aggressive pruning), intermediate-term (frequency-based), long-term (persistent). Forgetting curves applied per tier.
+Four tiers: axiom, long, intermediate, short. Forgetting curves applied per tier.
 
 ### Semantic Search
-Vector embeddings (768-dim, BGE-base-en-v1.5) with adaptive thresholds. Workload-aware tuning for precision/recall balance.
+Vector embeddings (768-dim, BGE-base-en-v1.5) with adaptive thresholds.
 
 ### Foundation System
-Hot-deployable behavioral rules. Foundation v1.7.0 canonical. Rules: Verify Before Claim, Ask for Help When Blocked, Evidence-Based Claims, Systematic Debugging, Progressive Disclosure.
+Hot-deployable behavioral rules. Foundation v1.8.0 canonical.
 
 ## Build Order
 
-When building from clean: `pnpm build` runs:
-1. `@mnemosyne/core` → produces `dist/library.js`
-2. `@mnemosyne/pubsub` → depends on core types
-3. `@mnemosyne/cloudflare` → depends on core interfaces
-4. `@mnemosyne/sqlite` → depends on core interfaces
-
-`@mnemosyne/mcp` and `mnemosyne-sqlite-vscode` build separately.
+When building from clean: `pnpm build` runs all 8 packages:
+1. `@mnemosyne/core` → domain model
+2. `@mnemosyne/pubsub` → event bus
+3. `@mnemosyne/infra-cloudflare` → Cloudflare adapters
+4. `@mnemosyne/infra-sqlite` → SQLite adapters
+5. `@mnemosyne/mcp-server` → MCP server
+6. `@mnemosyne/streaming` → SSE + WS
+7. `@mnemosyne/saas` → Cloudflare Worker
+8. `@mnemosyne/cli` → local CLI
 
 ## Test Structure
 
-- `tests/` root — integration & behavioral tests (Vitest)
-- Not all packages have `test` scripts; core tests run from root
+- Tests live in each package's `tests/` directory (Vitest)
+- Run from root: `pnpm test`
 
 ## Deployment
 

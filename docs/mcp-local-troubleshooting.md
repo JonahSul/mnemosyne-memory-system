@@ -40,9 +40,9 @@ Example lines you may see and what they mean:
 
 ## Development notes (how the verification works)
 
-- The development helper `packages/mnemosyne-sqlite-vscode/scripts/start-mcp.js` will attempt to import `@mnemosyne/mcp`; when not installed it falls back to the local shim in `packages/mnemosyne-mcp/index.js`.
-- The local shim runs `npx tsx src/server.ts` from the repository root so that TypeScript sources are executed directly (no build step required for quick iteration).
-- After the server starts, the recommended verification is to call `foundation_info` then `get_stats` (or `get_stats`/`get_memory_stats`) to confirm the memory API is reachable. This is the authoritative verification because the server exposes the same memory tools used during development.
+- The local MCP server is provided by `@mnemosyne/cli` (package `packages/mnemosyne-cli`), which binds the `@mnemosyne/infra-sqlite` adapters to the `@mnemosyne/mcp-server` tool registry.
+- Run the local server with `pnpm --filter @mnemosyne/cli start` (or `node packages/mnemosyne-cli/dist/server.js`).
+- After the server starts, the recommended verification is to call `memory_init` then `memory_stats` to confirm the memory API is reachable. This is the authoritative verification because the server exposes the same memory tools used during development.
 
 ## Recommended additions for clearer UX
 
@@ -62,12 +62,12 @@ Calling `foundation_info` before `agent_identity` will typically result in a log
 ## Where to look for logs
 
 - The LocalProcess / extension-host will capture the server stdout/stderr (example logs shown above).
-- The `packages/mnemosyne-sqlite` runtime prints early diagnostic lines; if you start the server directly with `node packages/mnemosyne-sqlite/dist/server.js`, the console will show the same messages.
+- The `@mnemosyne/cli` runtime prints early diagnostic lines; if you start the server directly with `node packages/mnemosyne-cli/dist/server.js`, the console will show the same messages.
 
 ---
 
 If you want, I can:
-- Add the short verification summary to the local shim (`packages/mnemosyne-mcp/index.js`) so it prints memory-tool results after startup, or
-- Modify the VS Code helper to present a friendly remediation dialog when `better-sqlite3` is missing.
+- Add the short verification summary to the local CLI (`packages/mnemosyne-cli`) so it prints memory-tool results after startup, or
+- Present a friendly remediation dialog when `better-sqlite3` is missing.
 
 Choose one and I'll implement it and commit the change.

@@ -5,10 +5,10 @@
  * Integrates with Mnemosyne's causality tracking and storage operations.
  */
 
-import type { 
-	VectorStoreRecord, 
-	VectorStoreSearchResult 
-} from '@mnemosyne-core/core/interfaces/storage';
+import type {
+	VectorStoreRecord,
+	VectorStoreSearchResult
+} from './storage-types.js';
 
 /**
  * Canonical Mnemosyne topic identifiers (25-term vocabulary)
@@ -233,23 +233,23 @@ export interface MnemosyneEvent<T = unknown> {
 	id: string;
 	type: EventType;
 	timestamp: number;
-	
+
 	// Event payload
 	payload: T;
-	
+
 	// Event metadata
 	source: string;          // Origin of the event (node ID, service name, etc.)
 	correlationId?: string;  // For tracking related events
 	causationId?: string;    // ID of the event that caused this event
-	
+
 	// Causality tracking
 	causalContext?: CausalContext;
-	
+
 	// Event properties
 	priority: EventPriority;
 	ttl?: number;            // Time-to-live in milliseconds
 	retryable: boolean;      // Can this event be retried if processing fails
-	
+
 	// Additional metadata
 	metadata?: Record<string, unknown>;
 }
@@ -329,7 +329,7 @@ export interface EventBus {
 	 * Publish an event to the bus
 	 */
 	publish<T = unknown>(event: MnemosyneEvent<T>): Promise<void>;
-	
+
 	/**
 	 * Subscribe to events
 	 */
@@ -338,22 +338,22 @@ export interface EventBus {
 		handler: EventHandler<T>,
 		options?: SubscriptionOptions
 	): Subscription;
-	
+
 	/**
 	 * Unsubscribe from events
 	 */
 	unsubscribe(subscriptionId: string): void;
-	
+
 	/**
 	 * Get event history
 	 */
 	getHistory(filter?: EventFilter, limit?: number): MnemosyneEvent[];
-	
+
 	/**
 	 * Clear event history
 	 */
 	clearHistory(): void;
-	
+
 	/**
 	 * Get active subscription count
 	 */
@@ -368,17 +368,17 @@ export interface SSEChannel {
 	 * Send event to all connected clients
 	 */
 	broadcast(event: MnemosyneEvent): Promise<void>;
-	
+
 	/**
 	 * Send event to specific client
 	 */
 	send(clientId: string, event: MnemosyneEvent): Promise<void>;
-	
+
 	/**
 	 * Get connected client count
 	 */
 	getClientCount(): number;
-	
+
 	/**
 	 * Close the channel
 	 */
@@ -404,17 +404,17 @@ export interface PubSubAdapter {
 	 * Publish event to backend
 	 */
 	publish(channel: string, event: MnemosyneEvent): Promise<void>;
-	
+
 	/**
 	 * Subscribe to events from backend
 	 */
 	subscribe(channel: string, handler: EventHandler): Promise<void>;
-	
+
 	/**
 	 * Unsubscribe from channel
 	 */
 	unsubscribe(channel: string): Promise<void>;
-	
+
 	/**
 	 * Close adapter connection
 	 */

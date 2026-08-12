@@ -1,0 +1,48 @@
+{
+	"name": "@mnemosyne/infra-cloudflare",
+	"version": "2.0.1-dev.1",
+	"description": "Cloudflare infrastructure adapters for Mnemosyne — Vectorize, KV, R2, Workers AI. Real implementations, no mocks in production paths.",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+		"directory": "packages/mnemosyne-infrastructure-cloudflare"
+	},
+	"bugs": {
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+	},
+	"homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-infrastructure-cloudflare",
+	"author": "Jonah Sul",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@mnemosyne/core": "workspace:*"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20241127.0",
+		"typescript": "^5.3.3"
+	},
+	"sideEffects": false
+}

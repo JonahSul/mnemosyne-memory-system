@@ -3,6 +3,7 @@
  */
 
 export * from './types.js';
+export * from './storage-types.js';
 export * from './event-bus.js';
 export * from './sse-manager.js';
 export * from './storage-adapter.js';

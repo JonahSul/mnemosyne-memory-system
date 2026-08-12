@@ -3,10 +3,14 @@
 	"name": "Mnemosyne Memory System",
 	"entryPointStrategy": "packages",
 	"entryPoints": [
-		"packages/mnemosyne",
-		"packages/mnemosyne-cloudflare",
+		"packages/mnemosyne-core",
 		"packages/mnemosyne-pubsub",
-		"packages/mnemosyne-sqlite"
+		"packages/mnemosyne-infrastructure-cloudflare",
+		"packages/mnemosyne-infrastructure-sqlite",
+		"packages/mnemosyne-mcp-server",
+		"packages/mnemosyne-streaming",
+		"packages/mnemosyne-saas",
+		"packages/mnemosyne-cli"
 	],
 	"out": "docs/api",
 	"tsconfig": "tsconfig.json",
@@ -16,8 +20,17 @@
 	"excludeExternals": true,
 	"excludeInternal": true,
 	"categorizeByGroup": true,
-	"categoryOrder": ["Core", "Storage", "PubSub", "MCP", "*"],
-	"sort": ["source-order", "required-first"],
+	"categoryOrder": [
+		"Core",
+		"Storage",
+		"PubSub",
+		"MCP",
+		"*"
+	],
+	"sort": [
+		"source-order",
+		"required-first"
+	],
 	"plugin": [],
 	"readme": "README.md",
 	"visibilityFilters": {
