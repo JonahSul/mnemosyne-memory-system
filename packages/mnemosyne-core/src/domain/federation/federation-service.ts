@@ -79,7 +79,10 @@ export class FederationService {
 
     async createDevSession(role: AgentRole, clusterId: string = 'dev-cluster'): Promise<FederationSession> {
         const agentId = `did:key:dev-${role.toLowerCase()}-${Date.now()}`;
-        const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+        // Use a cryptographically secure random ID for the session token —
+        // it is used as an authentication credential (validated via
+        // validateDevelopmentToken). Math.random() is not a secure PRNG.
+        const sessionId = `session-${Date.now()}-${crypto.randomUUID()}`;
         const identity: FederationIdentity = { agentId, clusterRole: role, clusterId, publicKey: 'dev-public-key', capabilities: ROLE_CAPABILITIES[role], reputation: 0.8, isActive: true, lastSeen: new Date().toISOString() };
         const now = Date.now();
         const session: FederationSession = { sessionId, identity, sessionToken: `${DEV_TOKEN_PREFIX}${sessionId}`, issuedAt: now, expiresAt: now + DEV_SESSION_TTL_MS, lastActivity: now };
