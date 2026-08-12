@@ -9,6 +9,12 @@ on:
     push:
         tags:
             - "v*"
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: 'Version tag to publish (e.g. v2.1.0)'
+                required: true
+                type: string
 
 env:
     NODE_VERSION: 22.x
@@ -26,6 +32,7 @@ jobs:
             - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
               with:
                   fetch-depth: 0
+                  ref: ${{ inputs.tag || github.ref }}
 
             - name: Install pnpm
               uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
