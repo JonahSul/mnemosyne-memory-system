@@ -8,31 +8,31 @@
  */
 
 export interface VectorStoreRecord {
-	id?: string;
-	content: string;
-	embedding?: number[];
-	metadata?: Record<string, unknown>;
-	tags?: string[];
-	timestamp?: string;
+    id?: string;
+    content: string;
+    embedding?: number[];
+    metadata?: Record<string, unknown>;
+    tags?: string[];
+    timestamp?: string;
 }
 
 export interface VectorStoreSearchOptions {
-	limit?: number;
-	threshold?: number;
+    limit?: number;
+    threshold?: number;
 }
 
 export interface VectorStoreSearchResult {
-	id: string;
-	content: string;
-	embedding?: number[];
-	metadata: Record<string, unknown>;
-	tags: string[];
-	timestamp?: string;
-	similarity: number;
+    id: string;
+    content: string;
+    embedding?: number[];
+    metadata: Record<string, unknown>;
+    tags: string[];
+    timestamp?: string;
+    similarity: number;
 }
 
 export interface VectorStoreAdapter {
-	storeKnowledge(record: VectorStoreRecord): Promise<VectorStoreRecord>;
-	searchSimilar(query: string, options?: VectorStoreSearchOptions): Promise<VectorStoreSearchResult[]>;
-	getById?(id: string): Promise<VectorStoreSearchResult[]>;
+    storeKnowledge(record: VectorStoreRecord): Promise<VectorStoreRecord>;
+    searchSimilar(query: string, options?: VectorStoreSearchOptions): Promise<VectorStoreSearchResult[]>;
+    getById?(id: string): Promise<VectorStoreSearchResult[]>;
 }

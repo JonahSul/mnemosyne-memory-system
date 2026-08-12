@@ -20,8 +20,17 @@
 	"excludeExternals": true,
 	"excludeInternal": true,
 	"categorizeByGroup": true,
-	"categoryOrder": ["Core", "Storage", "PubSub", "MCP", "*"],
-	"sort": ["source-order", "required-first"],
+	"categoryOrder": [
+		"Core",
+		"Storage",
+		"PubSub",
+		"MCP",
+		"*"
+	],
+	"sort": [
+		"source-order",
+		"required-first"
+	],
 	"plugin": [],
 	"readme": "README.md",
 	"visibilityFilters": {

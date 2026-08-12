@@ -6,123 +6,123 @@ name: Publish
 # `dev` dist-tag; a release tag publishes to `latest` plus a GitHub Release
 # and deploys API docs.
 on:
-  push:
-    tags:
-      - "v*"
+    push:
+        tags:
+            - "v*"
 
 env:
-  NODE_VERSION: 22.x
-  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    NODE_VERSION: 22.x
+    NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-      pages: write
+    publish:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            id-token: write
+            pages: write
 
-    steps:
-      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
-        with:
-          fetch-depth: 0
+        steps:
+            - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+              with:
+                  fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
-        with:
-          version: 11
+            - name: Install pnpm
+              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              with:
+                  version: 11
 
-      - name: Use Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@12b7ff3796cabd9e0da05c556468eec2f565d246
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
+            - name: Use Node.js ${{ env.NODE_VERSION }}
+              uses: actions/setup-node@12b7ff3796cabd9e0da05c556468eec2f565d246
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "pnpm"
+                  registry-url: "https://registry.npmjs.org"
 
-      - name: Configure npm authentication
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-          echo "registry=https://registry.npmjs.org/" >> .npmrc
+            - name: Configure npm authentication
+              run: |
+                  echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+                  echo "registry=https://registry.npmjs.org/" >> .npmrc
 
-      - name: Install dependencies
-        run: pnpm install
+            - name: Install dependencies
+              run: pnpm install
 
-      - name: Build all packages
-        run: pnpm build
+            - name: Build all packages
+              run: pnpm build
 
-      - name: Run tests
-        run: pnpm test
+            - name: Run tests
+              run: pnpm test
 
-      - name: Classify tag (dev vs release)
-        id: classify
-        run: |
-          TAG="${{ github.ref_name }}"
-          if echo "$TAG" | grep -qE -- "-dev\."; then
-            echo "channel=dev" >> "$GITHUB_OUTPUT"
-            echo "npm-tag=dev" >> "$GITHUB_OUTPUT"
-          else
-            echo "channel=release" >> "$GITHUB_OUTPUT"
-            echo "npm-tag=latest" >> "$GITHUB_OUTPUT"
-          fi
+            - name: Classify tag (dev vs release)
+              id: classify
+              run: |
+                  TAG="${{ github.ref_name }}"
+                  if echo "$TAG" | grep -qE -- "-dev\."; then
+                    echo "channel=dev" >> "$GITHUB_OUTPUT"
+                    echo "npm-tag=dev" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "channel=release" >> "$GITHUB_OUTPUT"
+                    echo "npm-tag=latest" >> "$GITHUB_OUTPUT"
+                  fi
 
-      - name: Publish packages to npm (${{ steps.classify.outputs.npm-tag }})
-        run: |
-          for pkg in packages/mnemosyne-core packages/mnemosyne-pubsub packages/mnemosyne-infrastructure-cloudflare packages/mnemosyne-infrastructure-sqlite packages/mnemosyne-mcp-server packages/mnemosyne-streaming packages/mnemosyne-saas packages/mnemosyne-cli; do
-            pushd "$pkg"
-            pnpm publish --tag "${{ steps.classify.outputs.npm-tag }}" --no-git-checks
-            popd
-          done
+            - name: Publish packages to npm (${{ steps.classify.outputs.npm-tag }})
+              run: |
+                  for pkg in packages/mnemosyne-core packages/mnemosyne-pubsub packages/mnemosyne-infrastructure-cloudflare packages/mnemosyne-infrastructure-sqlite packages/mnemosyne-mcp-server packages/mnemosyne-streaming packages/mnemosyne-saas packages/mnemosyne-cli; do
+                    pushd "$pkg"
+                    pnpm publish --tag "${{ steps.classify.outputs.npm-tag }}" --no-git-checks
+                    popd
+                  done
 
-      - name: Generate API docs
-        if: steps.classify.outputs.channel == 'release'
-        run: pnpm docs:generate
+            - name: Generate API docs
+              if: steps.classify.outputs.channel == 'release'
+              run: pnpm docs:generate
 
-      - name: Upload API docs artifact
-        if: steps.classify.outputs.channel == 'release'
-        uses: actions/upload-pages-artifact@98ef48e41587a300b82de4cf298aa98b57b2faae
-        with:
-          path: docs/api
+            - name: Upload API docs artifact
+              if: steps.classify.outputs.channel == 'release'
+              uses: actions/upload-pages-artifact@98ef48e41587a300b82de4cf298aa98b57b2faae
+              with:
+                  path: docs/api
 
-      - name: Generate changelog
-        if: steps.classify.outputs.channel == 'release'
-        id: changelog
-        run: |
-          PREV=$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || echo "")
-          if [ -z "$PREV" ]; then
-            RANGE="HEAD"
-          else
-            RANGE="$PREV..${{ github.ref_name }}"
-          fi
-          CHANGELOG=$(git log --pretty=format:'- %s (%h)' "$RANGE" | grep -v '\[skip ci\]' || true)
-          {
-            echo "changelog<<EOF"
-            echo "$CHANGELOG"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+            - name: Generate changelog
+              if: steps.classify.outputs.channel == 'release'
+              id: changelog
+              run: |
+                  PREV=$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || echo "")
+                  if [ -z "$PREV" ]; then
+                    RANGE="HEAD"
+                  else
+                    RANGE="$PREV..${{ github.ref_name }}"
+                  fi
+                  CHANGELOG=$(git log --pretty=format:'- %s (%h)' "$RANGE" | grep -v '\[skip ci\]' || true)
+                  {
+                    echo "changelog<<EOF"
+                    echo "$CHANGELOG"
+                    echo "EOF"
+                  } >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
-        if: steps.classify.outputs.channel == 'release'
-        uses: softprops/action-gh-release@d1e66170d32c9ec7bbcb7fae044d3d686ce304d3
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body: ${{ steps.changelog.outputs.changelog }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Create GitHub Release
+              if: steps.classify.outputs.channel == 'release'
+              uses: softprops/action-gh-release@d1e66170d32c9ec7bbcb7fae044d3d686ce304d3
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  name: ${{ github.ref_name }}
+                  body: ${{ steps.changelog.outputs.changelog }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  deploy-docs:
-    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-dev.')
-    needs: publish
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
+    deploy-docs:
+        if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-dev.')
+        needs: publish
+        runs-on: ubuntu-latest
+        permissions:
+            pages: write
+            id-token: write
 
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
 
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
