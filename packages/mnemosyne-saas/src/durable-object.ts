@@ -12,7 +12,7 @@
 import { McpServer } from '@mnemosyne/mcp-server';
 import type { ShardKey } from '@mnemosyne/core';
 import { composeSaas } from './composition-root.js';
-import type { SaasEnv } from './composition-root.js';
+import type { SaasComposition, SaasEnv } from './composition-root.js';
 
 const CORS_HEADERS: Record<string, string> = {
     'Access-Control-Allow-Origin': '*',
@@ -24,15 +24,23 @@ export class MnemosyneDurableObject {
     private readonly env: SaasEnv;
     private readonly shardKey: ShardKey;
     private server?: McpServer;
+    private composition?: SaasComposition;
 
     constructor(private readonly state: DurableObjectState, env: unknown) {
         this.env = env as SaasEnv;
         this.shardKey = { tenant: 'default', tier: 'intermediate' };
     }
 
+    private getComposition(): SaasComposition {
+        if (!this.composition) {
+            this.composition = composeSaas(this.env, this.shardKey);
+        }
+        return this.composition;
+    }
+
     private getMcpServer(): McpServer {
         if (!this.server) {
-            const { registry } = composeSaas(this.env, this.shardKey);
+            const { registry } = this.getComposition();
             this.server = new McpServer({ registry, transport: 'http' });
         }
         return this.server;
@@ -46,8 +54,19 @@ export class MnemosyneDurableObject {
             return new Response(null, { status: 200, headers: CORS_HEADERS });
         }
 
+        // Real SSE streaming endpoint — domain events pushed to the client.
+        if (url.pathname === '/sse') {
+            const { sseEndpoint } = this.getComposition();
+            const response = sseEndpoint.handleRequest(request, this.shardKey.tenant);
+            const headers = new Headers(response.headers);
+            for (const [key, value] of Object.entries(CORS_HEADERS)) {
+                headers.set(key, value);
+            }
+            return new Response(response.body, { status: response.status, headers });
+        }
+
         // MCP endpoint (Streamable HTTP)
-        if (url.pathname === '/mcp' || url.pathname === '/sse' || url.pathname === '/sse/message') {
+        if (url.pathname === '/mcp' || url.pathname === '/sse/message') {
             const server = this.getMcpServer();
             const response = await server.handleHttpRequest(request);
             // Merge CORS headers onto the transport response.

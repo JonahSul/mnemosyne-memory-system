@@ -23,6 +23,7 @@ import {
 import type { ShardKey } from '@mnemosyne/core';
 import { KVAdapter, VectorizeAdapter, WorkersAIEmbeddingAdapter } from '@mnemosyne/infra-cloudflare';
 import { InMemoryEventBus } from '@mnemosyne/pubsub';
+import { EventRouter, SSEEndpoint } from '@mnemosyne/streaming';
 import { registerMemoryTools, ToolRegistry } from '@mnemosyne/mcp-server';
 import type { MemoryToolContext } from '@mnemosyne/mcp-server';
 import { EventBusPublisher } from './event-bus-publisher.js';
@@ -38,6 +39,8 @@ export interface SaasComposition {
     readonly registry: ToolRegistry;
     readonly context: MemoryToolContext;
     readonly eventBus: InMemoryEventBus;
+    readonly eventRouter: EventRouter;
+    readonly sseEndpoint: SSEEndpoint;
     readonly shardKey: ShardKey;
 }
 
@@ -99,5 +102,9 @@ export function composeSaas(env: SaasEnv, shardKey: ShardKey): SaasComposition {
     const registry = new ToolRegistry();
     registerMemoryTools(registry, context);
 
-    return { registry, context, eventBus, shardKey };
+    // Streaming: route domain events from the bus to SSE clients.
+    const eventRouter = new EventRouter(eventBus);
+    const sseEndpoint = new SSEEndpoint();
+
+    return { registry, context, eventBus, eventRouter, sseEndpoint, shardKey };
 }
