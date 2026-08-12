@@ -27,11 +27,14 @@ const ROOT = resolve(__dirname, '..');
 // Packages to version in lockstep
 // ---------------------------------------------------------------------------
 const PACKAGES = [
-    'packages/mnemosyne',
-    'packages/mnemosyne-cloudflare',
-    'packages/mnemosyne-mcp',
+    'packages/mnemosyne-core',
     'packages/mnemosyne-pubsub',
-    'packages/mnemosyne-sqlite',
+    'packages/mnemosyne-infrastructure-cloudflare',
+    'packages/mnemosyne-infrastructure-sqlite',
+    'packages/mnemosyne-mcp-server',
+    'packages/mnemosyne-streaming',
+    'packages/mnemosyne-saas',
+    'packages/mnemosyne-cli',
 ];
 
 // ---------------------------------------------------------------------------

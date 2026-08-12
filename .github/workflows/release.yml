@@ -42,11 +42,7 @@ jobs:
         run: pnpm install
 
       - name: Build all packages
-        run: |
-          pnpm --filter @mnemosyne/legacy-core run build
-          pnpm --filter @mnemosyne/pubsub run build
-          pnpm --filter @mnemosyne/legacy-cloudflare run build
-          pnpm --filter @mnemosyne/legacy-sqlite run build
+        run: pnpm build
 
       - name: Run tests
         run: pnpm test
@@ -79,7 +75,7 @@ jobs:
 
       - name: Publish packages to npm (latest tag)
         run: |
-          for pkg in packages/mnemosyne packages/mnemosyne-pubsub packages/mnemosyne-cloudflare packages/mnemosyne-sqlite packages/mnemosyne-mcp; do
+          for pkg in packages/mnemosyne-core packages/mnemosyne-pubsub packages/mnemosyne-infrastructure-cloudflare packages/mnemosyne-infrastructure-sqlite packages/mnemosyne-mcp-server packages/mnemosyne-streaming packages/mnemosyne-saas packages/mnemosyne-cli; do
             pushd "$pkg"
             pnpm publish --tag latest --no-git-checks
             popd

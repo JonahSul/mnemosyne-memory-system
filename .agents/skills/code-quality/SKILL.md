@@ -29,13 +29,7 @@ description: >
 ## Build
 
 ```bash
-pnpm build   # builds core + pubsub + cloudflare + sqlite
-```
-
-Packages not in the build script (`@mnemosyne/mcp`, `mnemosyne-sqlite-vscode`) build independently:
-```bash
-cd packages/mnemosyne-mcp && pnpm build
-cd packages/mnemosyne-sqlite-vscode && vsce package
+pnpm build   # builds all 8 new DDD packages
 ```
 
 ## Commits

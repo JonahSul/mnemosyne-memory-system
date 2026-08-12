@@ -8,7 +8,7 @@
 import type { 
 	VectorStoreRecord, 
 	VectorStoreSearchResult 
-} from '@mnemosyne/legacy-core/interfaces/storage';
+} from './storage-types.js';
 
 /**
  * Canonical Mnemosyne topic identifiers (25-term vocabulary)

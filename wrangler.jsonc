@@ -1,7 +1,7 @@
 {
 	// Default development environment
 	"name": "mnemosyne-memory-system-dev",
-	"main": "src/index.ts",
+	"main": "packages/mnemosyne-saas/src/worker.ts",
 	"compatibility_date": "2024-11-27",
 	"compatibility_flags": [
 		"nodejs_compat"
@@ -9,7 +9,7 @@
 	"migrations": [
 		{
 			"new_sqlite_classes": [
-				"MnemosyneMemoryMCP"
+				"MnemosyneDurableObject"
 			],
 			"tag": "v1"
 		}
@@ -17,7 +17,7 @@
 	"durable_objects": {
 		"bindings": [
 			{
-				"class_name": "MnemosyneMemoryMCP",
+				"class_name": "MnemosyneDurableObject",
 				"name": "MNEMOSYNE_MCP_OBJECT_DEV"
 			}
 		]
@@ -46,7 +46,7 @@
 			"migrations": [
 				{
 					"new_sqlite_classes": [
-						"MnemosyneMemoryMCP"
+						"MnemosyneDurableObject"
 					],
 					"tag": "v1"
 				}
@@ -54,7 +54,7 @@
 			"durable_objects": {
 				"bindings": [
 					{
-						"class_name": "MnemosyneMemoryMCP",
+						"class_name": "MnemosyneDurableObject",
 						"name": "MNEMOSYNE_MCP_OBJECT_STAGE"
 					}
 				]
@@ -95,7 +95,7 @@
 			"durable_objects": {
 				"bindings": [
 					{
-						"class_name": "MnemosyneMemoryMCP",
+						"class_name": "MnemosyneDurableObject",
 						"name": "MNEMOSYNE_MCP_OBJECT"
 					}
 				]

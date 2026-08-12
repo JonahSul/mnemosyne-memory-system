@@ -1,3 +1,12 @@
+/**
+ * Storage types — local definitions decoupled from `@mnemosyne/legacy-core`.
+ *
+ * The pubsub package previously imported these from
+ * `@mnemosyne/legacy-core/interfaces/storage`. To allow the legacy package to
+ * be deleted (Phase 7), these Delegator-style storage types are now defined
+ * here. They describe the vector-store adapter contract that pubsub wraps.
+ */
+
 export interface VectorStoreRecord {
 	id?: string;
 	content: string;
@@ -26,11 +35,4 @@ export interface VectorStoreAdapter {
 	storeKnowledge(record: VectorStoreRecord): Promise<VectorStoreRecord>;
 	searchSimilar(query: string, options?: VectorStoreSearchOptions): Promise<VectorStoreSearchResult[]>;
 	getById?(id: string): Promise<VectorStoreSearchResult[]>;
-}
-
-export interface KeyValueStoreAdapter {
-	put(key: string, value: string, options?: { expiration?: number } | Record<string, unknown>): Promise<void>;
-	get(key: string): Promise<string | null>;
-	delete(key: string): Promise<void>;
-	list?(options?: Record<string, unknown>): Promise<string[]>;
 }

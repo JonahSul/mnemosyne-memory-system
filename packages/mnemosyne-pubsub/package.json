@@ -40,9 +40,7 @@
 		"dev": "tsc -p tsconfig.json --watch",
 		"prepublishOnly": "npm run build"
 	},
-	"dependencies": {
-		"@mnemosyne/legacy-core": "workspace:*"
-	},
+	"dependencies": {},
 	"devDependencies": {
 		"@types/node": "^24.3.0",
 		"typescript": "^5.3.3"

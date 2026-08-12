@@ -27,18 +27,6 @@
 		"downlevelIteration": true,
 		"baseUrl": ".",
 		"paths": {
-			"@mnemosyne/legacy-core": [
-				"packages/mnemosyne/src/library.ts"
-			],
-			"@mnemosyne/legacy-core/*": [
-				"packages/mnemosyne/src/*"
-			],
-			"@mnemosyne/legacy-cloudflare": [
-				"packages/mnemosyne-cloudflare/src/index.ts"
-			],
-			"@mnemosyne/legacy-cloudflare/*": [
-				"packages/mnemosyne-cloudflare/src/*"
-			],
 			"@mnemosyne/core": [
 				"packages/mnemosyne-core/src/index.ts"
 			],
@@ -80,13 +68,16 @@
 			],
 			"@mnemosyne/cli/*": [
 				"packages/mnemosyne-cli/src/*"
+			],
+			"@mnemosyne/pubsub": [
+				"packages/mnemosyne-pubsub/src/index.ts"
+			],
+			"@mnemosyne/pubsub/*": [
+				"packages/mnemosyne-pubsub/src/*"
 			]
 		}
 	},
 	"include": [
-		"src/**/*",
-		"packages/mnemosyne/src/**/*",
-		"packages/mnemosyne-cloudflare/src/**/*",
 		"packages/mnemosyne-core/src/**/*",
 		"packages/mnemosyne-infrastructure-cloudflare/src/**/*",
 		"packages/mnemosyne-infrastructure-sqlite/src/**/*",
@@ -94,6 +85,7 @@
 		"packages/mnemosyne-streaming/src/**/*",
 		"packages/mnemosyne-saas/src/**/*",
 		"packages/mnemosyne-cli/src/**/*",
+		"packages/mnemosyne-pubsub/src/**/*",
 		"tests/**/*"
 	],
 	"exclude": [
