@@ -1,54 +1,54 @@
 {
-    "name": "@mnemosyne/cli",
-    "version": "2.0.0",
-    "description": "Mnemosyne CLI — standalone MCP server over stdio with SQLite infrastructure. For local dev, CLI, and VS Code extension.",
-    "type": "module",
-    "main": "dist/index.js",
-    "bin": {
-        "mnemosyne": "dist/server.js"
-    },
-    "files": [
-        "dist",
-        "README.md",
-        "LICENSE"
-    ],
-    "publishConfig": {
-        "access": "public"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
-        "directory": "packages/mnemosyne-cli"
-    },
-    "bugs": {
-        "url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
-    },
-    "homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-cli",
-    "author": "Jonah Sul",
-    "license": "MIT",
-    "engines": {
-        "node": ">=20.0.0"
-    },
-    "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "types": "./dist/index.d.ts"
-        }
-    },
-    "scripts": {
-        "build": "tsc -p tsconfig.json",
-        "dev": "tsx src/server.ts",
-        "start": "node dist/server.js"
-    },
-    "dependencies": {
-        "@mnemosyne/core": "workspace:*",
-        "@mnemosyne/infra-sqlite": "workspace:*",
-        "@mnemosyne/mcp-server": "workspace:*",
-        "@modelcontextprotocol/sdk": "^1.17.3"
-    },
-    "devDependencies": {
-        "@types/node": "^24.3.0",
-        "tsx": "^4.7.1",
-        "typescript": "^5.3.3"
-    }
+	"name": "@mnemosyne/cli",
+	"version": "2.0.1-dev.0",
+	"description": "Mnemosyne CLI — standalone MCP server over stdio with SQLite infrastructure. For local dev, CLI, and VS Code extension.",
+	"type": "module",
+	"main": "dist/index.js",
+	"bin": {
+		"mnemosyne": "dist/server.js"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+		"directory": "packages/mnemosyne-cli"
+	},
+	"bugs": {
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+	},
+	"homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-cli",
+	"author": "Jonah Sul",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"dev": "tsx src/server.ts",
+		"start": "node dist/server.js"
+	},
+	"dependencies": {
+		"@mnemosyne/core": "workspace:*",
+		"@mnemosyne/infra-sqlite": "workspace:*",
+		"@mnemosyne/mcp-server": "workspace:*",
+		"@modelcontextprotocol/sdk": "^1.17.3"
+	},
+	"devDependencies": {
+		"@types/node": "^24.3.0",
+		"tsx": "^4.7.1",
+		"typescript": "^5.3.3"
+	}
 }

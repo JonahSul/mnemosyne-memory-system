@@ -1,56 +1,56 @@
 {
-    "name": "@mnemosyne/core",
-    "version": "2.0.0",
-    "description": "Mnemosyne core domain model — aggregates, value objects, domain events, and application services. Pure TypeScript, no I/O dependencies.",
-    "type": "module",
-    "main": "dist/index.js",
-    "module": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist",
-        "README.md",
-        "LICENSE"
-    ],
-    "publishConfig": {
-        "access": "public"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
-        "directory": "packages/mnemosyne-core"
-    },
-    "bugs": {
-        "url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
-    },
-    "homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-core",
-    "author": "Jonah Sul",
-    "license": "MIT",
-    "engines": {
-        "node": ">=20.0.0"
-    },
-    "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "types": "./dist/index.d.ts"
-        },
-        "./domain/*": {
-            "import": "./dist/domain/*.js",
-            "types": "./dist/domain/*.d.ts"
-        },
-        "./shared": {
-            "import": "./dist/shared/index.js",
-            "types": "./dist/shared/index.d.ts"
-        },
-        "./application": {
-            "import": "./dist/application/index.js",
-            "types": "./dist/application/index.d.ts"
-        }
-    },
-    "scripts": {
-        "build": "tsc -p tsconfig.json"
-    },
-    "dependencies": {
-        "jose": "^6.2.3"
-    },
-    "sideEffects": false
+	"name": "@mnemosyne/core",
+	"version": "2.0.1-dev.0",
+	"description": "Mnemosyne core domain model — aggregates, value objects, domain events, and application services. Pure TypeScript, no I/O dependencies.",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+		"directory": "packages/mnemosyne-core"
+	},
+	"bugs": {
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+	},
+	"homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-core",
+	"author": "Jonah Sul",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./domain/*": {
+			"import": "./dist/domain/*.js",
+			"types": "./dist/domain/*.d.ts"
+		},
+		"./shared": {
+			"import": "./dist/shared/index.js",
+			"types": "./dist/shared/index.d.ts"
+		},
+		"./application": {
+			"import": "./dist/application/index.js",
+			"types": "./dist/application/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"jose": "^6.2.3"
+	},
+	"sideEffects": false
 }

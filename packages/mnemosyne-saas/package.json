@@ -1,47 +1,47 @@
 {
-    "name": "@mnemosyne/saas",
-    "version": "2.0.0",
-    "description": "Mnemosyne SaaS application — Cloudflare Worker entry point. Composition root binding domain to Cloudflare infrastructure.",
-    "type": "module",
-    "main": "dist/worker.js",
-    "files": [
-        "dist",
-        "README.md",
-        "LICENSE"
-    ],
-    "private": true,
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
-        "directory": "packages/mnemosyne-saas"
-    },
-    "bugs": {
-        "url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
-    },
-    "homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-saas",
-    "author": "Jonah Sul",
-    "license": "MIT",
-    "engines": {
-        "node": ">=20.0.0"
-    },
-    "exports": {
-        ".": {
-            "import": "./dist/worker.js",
-            "types": "./dist/worker.d.ts"
-        }
-    },
-    "scripts": {
-        "build": "tsc -p tsconfig.json"
-    },
-    "dependencies": {
-        "@mnemosyne/core": "workspace:*",
-        "@mnemosyne/infra-cloudflare": "workspace:*",
-        "@mnemosyne/mcp-server": "workspace:*",
-        "@mnemosyne/streaming": "workspace:*",
-        "@mnemosyne/pubsub": "workspace:*"
-    },
-    "devDependencies": {
-        "@cloudflare/workers-types": "^4.20241127.0",
-        "typescript": "^5.3.3"
-    }
+	"name": "@mnemosyne/saas",
+	"version": "2.0.1-dev.0",
+	"description": "Mnemosyne SaaS application — Cloudflare Worker entry point. Composition root binding domain to Cloudflare infrastructure.",
+	"type": "module",
+	"main": "dist/worker.js",
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system.git",
+		"directory": "packages/mnemosyne-saas"
+	},
+	"bugs": {
+		"url": "https://github.com/JonahSul/mnemosyne-memory-system/issues"
+	},
+	"homepage": "https://github.com/JonahSul/mnemosyne-memory-system/tree/main/packages/mnemosyne-saas",
+	"author": "Jonah Sul",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/worker.js",
+			"types": "./dist/worker.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@mnemosyne/core": "workspace:*",
+		"@mnemosyne/infra-cloudflare": "workspace:*",
+		"@mnemosyne/mcp-server": "workspace:*",
+		"@mnemosyne/streaming": "workspace:*",
+		"@mnemosyne/pubsub": "workspace:*"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20241127.0",
+		"typescript": "^5.3.3"
+	}
 }
