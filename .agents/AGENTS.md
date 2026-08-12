@@ -49,22 +49,27 @@ Branch from `dev`, kebab-case, delete after merge.
 ## CI/CD Pipeline
 
 ```
-push/PR → ci.yml
+push/PR/merge_group → ci.yml
   ├─ test (build + test) ← THE GATE
   ├─ docs (dev only, needs test)
   └─ bump-version (push only, needs test)
        ├─ dev: prerelease vX.Y.Z-dev.N
        └─ main: patch/minor/major from commits since last tag
-            ↓ commits [skip ci], pushes v<version> tag
+            ↓ tags CURRENT HEAD (no branch mutation), pushes v<version> tag
 tag v* → publish.yml
   ├─ checkout tagged SHA (immutable)
+  ├─ inject version from tag into package.json (in-memory, no commit)
   ├─ pnpm build + test (prove the artifact)
   ├─ npm publish (--tag dev for prerelease, --tag latest for release)
   └─ release: GitHub Release + docs deploy (release only)
 ```
 
-Pre-commit: `lint-staged` (tsc --noEmit on staged files).
+Pre-commit: `lint-staged` (tsc --noEmit via bash -c wrapper).
 Pre-push: `pnpm build && pnpm test` (blocks push on failure).
+Merge queue: GitHub native merge queue on dev and main (requires `merge_group` trigger in ci.yml).
+
+**No `[skip ci]` anywhere.** Loop prevention is via tag-existence guard:
+if `v<version>` already exists, bump-version exits without tagging.
 
 ## Core Patterns
 
