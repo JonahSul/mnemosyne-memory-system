@@ -7,10 +7,17 @@
 
 import type { z } from 'zod';
 
+/**
+ * A single tool parameter schema entry (zod type with optional description).
+ */
 export interface MCPToolSchema {
     readonly name: string;
     readonly description: string;
-    readonly schema: Record<string, z.ZodType>;
+    /**
+     * Input parameter definitions. Keys are parameter names, values are zod
+     * types. Used to build the MCP `inputSchema` for `tools/list`.
+     */
+    readonly parameters: Record<string, z.ZodType>;
 }
 
 export interface MCPToolResult {

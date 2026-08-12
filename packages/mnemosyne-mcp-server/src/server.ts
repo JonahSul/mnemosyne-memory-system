@@ -1,13 +1,19 @@
 /**
- * MCP server — real MCP SDK server with tool registry and transport abstraction.
+ * McpServer — real MCP server backed by @modelcontextprotocol/sdk.
  *
- * Phase 5 will implement the real server using @modelcontextprotocol/sdk.
- * Supports stdio transport (for CLI/VS Code) and HTTP transport (for SaaS).
+ * Supports two transports:
+ * - `stdio`: for CLI/VS Code local execution (StdioServerTransport).
+ * - `http`: for SaaS Cloudflare Workers (WebStandardStreamableHTTPServerTransport).
  *
- * Unlike the legacy code, the server does NOT bypass the SDK's request
- * handlers — it uses them properly.
+ * Tools are registered on the SDK Server via `setRequestHandler` for
+ * `tools/list` and `tools/call`. Unlike the legacy hand-rolled JSON-RPC
+ * handler in `src/agent.ts`, this uses the SDK's request handling properly.
  */
 
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import { CallToolRequestSchema, ListToolsRequestSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolRegistry } from './tool-registry-impl.js';
 
 export interface McpServerConfig {
@@ -19,19 +25,60 @@ export interface McpServerConfig {
 
 export class McpServer {
     private readonly registry: ToolRegistry;
-    private readonly transport: 'stdio' | 'http';
+    private readonly server: Server;
 
     constructor(config: McpServerConfig) {
         this.registry = config.registry;
-        this.transport = config.transport;
+        this.server = new Server(
+            { name: config.name ?? 'mnemosyne', version: config.version ?? '2.0.0' },
+            { capabilities: { tools: {} } }
+        );
+        this.registerToolHandlers();
     }
 
-    async start(): Promise<void> {
-        // Phase 5: real implementation using @modelcontextprotocol/sdk
-        throw new Error('McpServer.start: not yet implemented (Phase 5)');
+    private registerToolHandlers(): void {
+        // tools/list — surface the registry's tools as MCP tools.
+        this.server.setRequestHandler(ListToolsRequestSchema, () => {
+            return {
+                tools: this.registry.list().map((tool) => ({
+                    name: tool.name,
+                    description: tool.description,
+                    inputSchema: this.registry.inputSchema(tool),
+                })),
+            };
+        });
+
+        // tools/call — dispatch to the registry.
+        this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+            const { name, arguments: args } = request.params;
+            const result = await this.registry.call(name, (args ?? {}) as Record<string, unknown>);
+            // A standard tool call result is `{ content: [...] }`. Cast to the
+            // SDK's ServerResult (which also permits an optional `task`).
+            return result as CallToolResult;
+        });
     }
 
-    async stop(): Promise<void> {
-        throw new Error('McpServer.stop: not yet implemented (Phase 5)');
+    /** Run the stdio transport. Resolves once the transport closes. */
+    async runStdio(): Promise<void> {
+        const transport = new StdioServerTransport();
+        await this.server.connect(transport);
+        return new Promise((resolve) => {
+            transport.onclose = () => resolve();
+        });
+    }
+
+    /**
+     * Handle a single HTTP request via the Web Standard Streamable HTTP
+     * transport. Use a fresh transport per request (stateless mode) so the
+     * server instance is shared safely across many client sessions.
+     */
+    async handleHttpRequest(request: Request): Promise<Response> {
+        const transport = new WebStandardStreamableHTTPServerTransport({});
+        await this.server.connect(transport);
+        return transport.handleRequest(request);
+    }
+
+    async close(): Promise<void> {
+        await this.server.close();
     }
 }
