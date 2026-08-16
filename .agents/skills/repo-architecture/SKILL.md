@@ -26,8 +26,7 @@ mnemosyne-memory-system/
 │   ├── mnemosyne-streaming/ → @mnemosyne/streaming (SSE + WS)
 │   ├── mnemosyne-saas/    → @mnemosyne/saas (Cloudflare Worker)
 │   └── mnemosyne-cli/     → @mnemosyne/cli (local CLI)
-├── docker/               → Dockerfiles (qdrant, redis, ollama)
-├── scripts/              → Version bump, KV setup, migrations
+├── scripts/              → Version bump, KV setup
 └── typedoc.json          → API doc generation config
 ```
 
@@ -105,4 +104,4 @@ tag v* → publish.yml
 - **CI gate**: ci.yml test job must pass before bump-version runs
 - **Publish**: publish.yml fires on tag push, checks out the tagged SHA
 - **Branch naming**: `feat/`, `fix/`, `docs/`, `refactor/`, `ci/`, `chore/`
-- **Local dev**: Docker compose (qdrant + redis + ollama) or wrangler dev
+- **Local dev**: DevContainer / Node 22 (`@mnemosyne/cli` with SQLite, or `wrangler dev`)
