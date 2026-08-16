@@ -2,29 +2,27 @@
 
 ## Prerequisites
 
-- Node.js >= 20
+- Node.js >= 22 (or use the provided VS Code DevContainer)
 - pnpm (install via `corepack enable && corepack prepare pnpm@latest --activate`)
-- Docker (for local dev: qdrant, redis, ollama)
+- C/C++ compiler and Python 3 (for building native `better-sqlite3` bindings, included automatically in the DevContainer)
 
 ## Setup
 
 ```bash
 git clone https://github.com/JonahSul/mnemosyne-memory-system.git
 cd mnemosyne-memory-system
+corepack enable
 pnpm install
 ```
 
 ## Development
 
 ```bash
-# Local stack (qdrant + redis + ollama)
-pnpm dev:local
-
-# Cloudflare Worker (dev mode)
+# Cloudflare Worker / SaaS (dev mode)
 pnpm dev
 
-# Docker-based server
-pnpm dev:docker
+# Local MCP CLI Server (SQLite-backed)
+pnpm --filter @mnemosyne/cli dev
 ```
 
 ## Building
@@ -33,7 +31,7 @@ pnpm dev:docker
 pnpm build
 ```
 
-Builds: `@mnemosyne/core`, `@mnemosyne/pubsub`, `@mnemosyne/cloudflare`, `@mnemosyne/sqlite`.
+Builds all monorepo packages: `@mnemosyne/core`, `@mnemosyne/pubsub`, `@mnemosyne/infra-cloudflare`, `@mnemosyne/infra-sqlite`, `@mnemosyne/mcp-server`, `@mnemosyne/streaming`, `@mnemosyne/saas`, `@mnemosyne/cli`.
 
 ## Testing
 
@@ -62,6 +60,7 @@ pnpm test:watch
 ## Commit Conventions
 
 [Conventional Commits](https://www.conventionalcommits.org/):
+
 - `feat:` — new feature
 - `fix:` — bug fix
 - `docs:` — documentation

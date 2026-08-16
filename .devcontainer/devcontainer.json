@@ -1,0 +1,42 @@
+{
+	"name": "Mnemosyne Memory System (DevContainer)",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": "."
+	},
+	"features": {},
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"typescript.tsdk": "node_modules/typescript/lib",
+				"editor.formatOnSave": true,
+				"editor.tabSize": 4,
+				"editor.insertSpaces": false
+			},
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"vitest.explorer",
+				"cloudflare.wrangler",
+				"GitHub.copilot",
+				"GitHub.copilot-chat"
+			]
+		}
+	},
+	"forwardPorts": [
+		8000,
+		8787
+	],
+	"portsAttributes": {
+		"8000": {
+			"label": "Local MCP / App Server",
+			"onAutoForward": "notify"
+		},
+		"8787": {
+			"label": "Wrangler Dev Server",
+			"onAutoForward": "notify"
+		}
+	},
+	"postCreateCommand": "corepack enable && pnpm install && pnpm build",
+	"remoteUser": "node"
+}
